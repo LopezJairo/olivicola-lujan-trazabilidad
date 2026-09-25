@@ -17,7 +17,7 @@ tags:
 | Término | Significado en el MVP |
 |---|---|
 | Tambor | Unidad física cuyo contenido y recorrido se registra. |
-| ID técnico | Identificador interno del registro, usado en rutas y SDK. |
+| ID técnico | Identificador interno del registro, usado en rutas y persistencia. |
 | Número de tambor | Código visible secuencial como `T000001`. |
 | Código descriptivo | Combinación de características del producto. |
 | Código completo | Código descriptivo más número del tambor. |
@@ -27,11 +27,10 @@ tags:
 | Movimiento | Registro de una acción que puede cambiar ubicación/estado. |
 | Historial | Secuencia de eventos y cambios por tambor. |
 | MVP | Versión mínima para comprobar el circuito de trabajo con usuarios. |
-| Demo local | Datos almacenados únicamente en el navegador actual. |
+| Demo local | Datos almacenados en el navegador actual para pruebas. |
 | Piloto | Prueba acotada en la empresa con condiciones y responsables definidos. |
-| App ID | Identificador público de una aplicación Base44. |
-| Transacción | Operación que garantiza que un conjunto de escrituras se confirma o revierte como unidad. No está implementada en la rama remota actual. |
-| Idempotencia | Repetir una solicitud sin duplicar su efecto. No está implementada en las mutaciones remotas. |
+| Transacción | Operación que garantiza que un conjunto de escrituras se confirma o revierte como unidad. |
+| Idempotencia | Repetir una solicitud sin duplicar su efecto. |
 
 ## Mantener la documentación
 

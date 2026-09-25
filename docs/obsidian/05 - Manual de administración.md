@@ -37,14 +37,10 @@ Usar búsqueda y filtros para revisar registros y sumar kilos. Comparar los resu
 
 ## Revisión de eventos
 
-Consultar Historial por número de tambor, fecha y descripción. Verificar movimientos contra ubicación actual. La atribución del actor viene de la sesión en la rama conectada; en demo aparece un usuario de ejemplo. El almacenamiento remoto todavía no tiene políticas de inmutabilidad verificadas.
-
-## Errores parciales en Base44
-
-Si aparece una advertencia de guardado parcial, no volver a ejecutar la acción sin revisar. Puede existir un tambor sin su evento, un movimiento sin actualización final o un evento de eliminación cuyo borrado falló. Documentar la incidencia, comparar las entidades y reconciliar con ayuda técnica. No existe reparación automática implementada.
+Consultar Historial por número de tambor, fecha y descripción. Verificar movimientos contra ubicación actual. La atribución del actor proviene del usuario activo en la sesión.
 
 ## Respaldo y uso de datos reales
 
-No hay botón de exportación, restauración ni espacio vacío separado implementados en el corte actual. Fueron propuestos y están pendientes. La demo usa almacenamiento del navegador; borrar los datos del sitio puede eliminar el inventario local. Definir respaldo y probar recuperación antes del piloto con datos oficiales.
+El sistema dispone de funciones de exportación e importación de copias de seguridad completas en formato JSON desde la pantalla de Configuración. Asimismo, permite alternar entre el Espacio de Demostración (con 12 tambores de prueba) y el Espacio Empresa (espacio limpio listo para producción), evitando mezclar datos de práctica con registros reales.
 
 Relacionado: [[Olivícola Luján/07 - Modelo de datos y catálogos|07 - Modelo de datos y catálogos]], [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]], [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]].

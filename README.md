@@ -98,14 +98,11 @@ npm run build
 ## Estructura del Proyecto
 
 ```text
-├── base44/
-│   └── entities/          # Esquemas JSON de Tambor, Historial, Movimiento y Catalogo
 ├── docs/
 │   └── obsidian/          # Documentación original del proyecto (16 archivos Markdown)
 ├── skills/                # Skills de desarrollo e ingeniería (obra/superpowers)
 ├── src/
 │   ├── api/
-│   │   ├── base44Client.js# Adaptador de conexión Base44 / fallback local
 │   │   ├── demoData.js    # Catálogos base y 12 tambores de demostración
 │   │   └── repository.js  # Persistencia, transiciones de espacio y auditoría
 │   ├── components/
@@ -122,5 +119,6 @@ npm run build
 │   └── index.css          # Tokens de diseño de alta gama y estilos de impresión
 └── tests/
     ├── domain.test.js     # Pruebas de reglas de negocio
-    └── repository.test.js # Pruebas de integración del ciclo de vida
+    ├── repository.test.js # Pruebas de integración del ciclo de vida
+    └── ui.test.jsx        # Pruebas de componentes de interfaz (Barcode, Dialog)
 ```

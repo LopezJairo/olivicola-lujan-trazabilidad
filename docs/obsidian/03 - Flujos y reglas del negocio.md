@@ -58,4 +58,4 @@ Orden descendente por `created_date`, filtro por texto del número de tambor y c
 
 ## Límite de consistencia
 
-La demo guarda el conjunto de entidades en una sola escritura local. La rama Base44 hace varias llamadas secuenciales sin transacción y puede quedar parcialmente guardada si una llamada falla. No existe una garantía distribuida de unicidad de `tambor_id`. Detalle en [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]].
+El repositorio guarda el conjunto de entidades de forma local en el navegador. La garantía de unicidad de `tambor_id` opera sobre el estado de la sesión local. Detalle en [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]].

@@ -23,32 +23,46 @@ tags:
 | Dashboard e inventario | Sí | Compila; revisión visual pendiente. |
 | Alta y edición | Sí | Validaciones y cálculo probados a nivel unitario; falta prueba de interfaz. |
 | Escáner USB/manual | Sí | Foco y Enter implementados; sin prueba de lector físico. |
-| Movimientos | Sí | Código local y remoto; sin prueba integral. |
+| Movimientos | Sí | Código local implementado; sin prueba integral. |
 | Historial | Sí | Comparación de campos probada; falta recorrido real completo. |
 | Eliminación | Sí | Confirmación textual y conservación de eventos; sin validación integral. |
-| Catálogos | Sí | CRUD de opciones y activación; unicidad remota no garantizada. |
+| Catálogos | Sí | CRUD de opciones y activación implementados. |
 | CODE 128 e impresión | Sí | Generación y estilos; impresora/lector sin validar. |
-| Auth Base44 | Parcial | Cliente y redirección implementados; conexión sin configurar. |
+| Autenticación | Sí | Contexto de usuario local y selector de roles implementados. |
 | Restricciones por rol | No | Solo presentación de rol; pendiente para uso empresarial. |
-| Persistencia demo | Sí | localStorage; no prueba de respaldo/restauración. |
-| Espacio vacío para datos propios | No | Propuesto durante la conversación; pendiente. |
-| Exportación y restauración | No | Propuestas; pendientes. |
+| Persistencia demo | Sí | localStorage gestionado por repositorio. |
+| Espacio vacío para datos propios | Sí | Implementado (Espacio Empresa) con inicialización sin datos de muestra. |
+| Exportación y restauración | Sí | Implementadas funciones de respaldo y restauración JSON y probadas en repositorio. |
 | Despliegue público | No verificado | Sin URL confirmada. |
 
 ## Pruebas ejecutadas
 
-`npm test` ejecutó **8 pruebas, 8 aprobadas, 0 fallidas**:
+`npm test` (Vitest) ejecutó **23 pruebas, 23 aprobadas, 0 fallidas** distribuidas en 3 suites:
 
-1. No reutilizar ID de un tambor eliminado si permanece en historial.
-2. Primer ID y crecimiento a siete dígitos.
-3. Código construido desde catálogos.
-4. Normalización de lote y peso.
-5. Rechazo de pesos inválidos y elaboración posterior al ingreso.
-6. Conservación de opciones inactivas en edición y rechazo en alta.
-7. Valores anteriores/nuevos por campo modificado.
-8. Búsqueda sin acentos y combinación con filtros.
+1. `tests/domain.test.js` (11 pruebas):
+   - Generación de ID y prevención de reutilización de identificadores eliminados.
+   - Construcción de códigos descriptivos y completos.
+   - Normalización de pesaje y lote.
+   - Validación de peso positivo y consistencia de fechas (elaboración <= ingreso).
+   - Manejo de opciones de catálogo inactivas.
+   - Auditoría de diferencias campo a campo.
+   - Búsqueda insensible a mayúsculas y diacríticos con filtros combinados.
+2. `tests/repository.test.js` (10 pruebas):
+   - Carga inicial de datos de demostración (12 tambores, movimientos, historial).
+   - Ciclo integral de alta con asignación incremental y registro de evento.
+   - Edición de tambor con reconstrucción de códigos y generación de eventos de auditoría.
+   - Registro de movimientos de ubicación y actualización de estado.
+   - Eliminación con preservación íntegra de historial y movimientos.
+   - Administración de catálogos (alta, edición, validación de códigos únicos).
+   - Copia de seguridad: exportación e importación completa JSON con restauración de estado.
+   - Restablecimiento de base de datos de demostración.
+   - Aislamiento de espacios de trabajo: Espacio Demo vs Espacio Empresa.
+   - Prevención de colisión de ID entre espacios de trabajo.
+3. `tests/ui.test.jsx` (2 pruebas):
+   - Generación y renderizado de SVG para códigos de barra CODE 128.
+   - Renderizado del componente Dialog de interfaz.
 
-`npm run build` completó con **Vite 6.4.3**, 1938 módulos transformados y generación de `dist/`. Esto verifica que el bundle se construye; no prueba que cada interacción funcione.
+`npm run build` completó con Vite, módulos transformados y generación de `dist/`. Esto verifica que el bundle se construye exitosamente.
 
 ## Validación visual
 
@@ -67,7 +81,7 @@ La consulta de auditoría ejecutada en esta sesión informó **dos hallazgos mod
 - [ ] Escanear código válido e inválido con teclado y lector.
 - [ ] Eliminar un registro de prueba y comprobar eventos conservados.
 - [ ] Configurar, desactivar y reutilizar catálogos correctamente.
-- [ ] Probar auth y acceso no autorizado en Base44.
+- [ ] Probar control de acceso y selector de roles.
 - [ ] Probar altas simultáneas desde dos puestos.
 - [ ] Probar fallo de red entre escrituras y recuperación.
 - [ ] Imprimir y leer etiquetas físicas.

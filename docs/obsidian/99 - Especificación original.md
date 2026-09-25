@@ -29,12 +29,11 @@ lucide-react (iconos)
 react-router-dom (rutas)
 @tanstack/react-query (estado de datos)
 jsbarcode (generación de CODE 128)
-Backend / Plataforma (Base44)
 
-Base de datos por entidades (JSON schemas en base44/entities/)
-SDK pre-inicializado en @/api/base44Client → base44.entities.\<Nombre>.\<op>
-Auth gestionada por la plataforma (AuthProvider, ProtectedRoute)
-Integraciones Core: InvokeLLM, UploadPublicFile, SendEmail, GenerateImage, etc.
+Backend / Persistencia
+
+Base de datos por entidades (Tambor, Historial, Movimiento, Catalogo)
+Auth (AuthProvider, ProtectedRoute)
 Entidades
 
 Tambor — registro de cada tambor (id, códigos, producto, presentación, variedad, calibre, calidad, lote, fechas, peso, ubicación, estado, observaciones)
@@ -94,7 +93,7 @@ Etiqueta individual
 Desde la ficha → Ver etiqueta: etiqueta única lista para imprimir.
 Auth
 
-Login/Register/ForgotPassword/ResetPassword provistos por la plataforma.
+Login/Register/ForgotPassword/ResetPassword provistos por la interfaz.
 ProtectedRoute protege todas las páginas excepto las de auth.
 Roles: Administrador y Operario (en la demo no se restringen funciones).
 Páginas y rutas

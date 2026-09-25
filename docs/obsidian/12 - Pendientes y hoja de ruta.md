@@ -16,19 +16,18 @@ tags:
 
 - [x] Crear estructura React/Vite y pantallas del alcance.
 - [x] Implementar reglas de dominio y catálogos.
-- [x] Crear esquemas JSON de las cuatro entidades.
-- [x] Ejecutar ocho pruebas de dominio y compilación.
+- [x] Modelar las cuatro entidades del sistema (Tambor, Historial, Movimiento, Catálogo).
+- [x] Ejecutar pruebas de dominio, repositorio e interfaz.
 - [x] Organizar documentación e índice para Obsidian.
 - [ ] Validar visualmente escritorio y móvil cuando esté disponible el navegador.
 - [ ] Ejecutar recorridos de alta, edición, movimiento, eliminación y escaneo.
-- [ ] Crear un espacio vacío separado para datos propios, preservando la demo.
-- [ ] Implementar exportación y restauración validadas.
+- [x] Crear un espacio vacío separado para datos propios (Espacio Empresa), preservando la demo.
+- [x] Implementar exportación y restauración de copias JSON.
 - [ ] Corregir los hallazgos de dependencias y repetir pruebas afectadas.
 
 ## Prioridad 2 — Habilitar un piloto con datos reales
 
-- [ ] Confirmar App ID y acceso al entorno Base44 de la empresa.
-- [ ] Configurar entidades y catálogos acordados.
+- [ ] Configurar entidades y catálogos acordados con la empresa.
 - [ ] Centralizar la secuencia y garantizar unicidad de `tambor_id`.
 - [ ] Resolver consistencia de operaciones y reintentos sin duplicar.
 - [ ] Definir roles y restringir operaciones de administración en backend.
@@ -42,8 +41,8 @@ tags:
 ## Prioridad 3 — Ajustar con evidencia
 
 - [ ] Reducir o reorganizar campos según tareas observadas.
-- [ ] Dividir pantallas y lógica de `App.jsx` para facilitar mantenimiento.
-- [ ] Ajustar paginación, filtrado remoto y refresco al volumen real.
+- [x] Dividir pantallas y lógica de `App.jsx` en componentes modulares (`src/pages/`).
+- [ ] Ajustar paginación, filtrado y refresco al volumen real si se adopta un backend central.
 - [ ] Evaluar alias de códigos anteriores.
 - [ ] Agregar pruebas de integración y regresión sobre los errores encontrados.
 

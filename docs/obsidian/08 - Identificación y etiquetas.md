@@ -14,7 +14,7 @@ tags:
 
 ## Tres identificadores distintos
 
-- `id`: identificador técnico utilizado por las rutas y el SDK.
+- `id`: identificador técnico interno utilizado por las rutas y el repositorio.
 - `tambor_id`: número visible y estable durante la vida del registro, por ejemplo `T000001`.
 - `codigo`: identificación completa que incluye características del producto y número visible.
 

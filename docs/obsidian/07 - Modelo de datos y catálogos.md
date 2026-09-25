@@ -14,7 +14,7 @@ tags:
 
 ## Entidades
 
-Los esquemas están en `base44/entities/`. Los identificadores `id` y las marcas temporales como `created_date` son campos de plataforma o generados por la demo; no equivalen a `tambor_id`.
+Las entidades del sistema corresponden a Tambor, Historial, Movimiento y Catálogo. Los identificadores `id` y las marcas temporales como `created_date` son campos generados automáticamente por el repositorio; no equivalen a `tambor_id`.
 
 ```mermaid
 erDiagram
@@ -67,10 +67,10 @@ Contiene `tambor_id`, `tambor_ref`, `tipo`, `ubicacion_anterior`, `ubicacion_nue
 
 Cada opción contiene `tipo`, `nombre`, `codigo`, `activo` y `orden`. Los tipos admitidos son producto, presentacion, variedad, calibre, calidad, ubicacion, estado y tipo_movimiento. Los selectores muestran opciones activas ordenadas por orden y luego por nombre. Una edición puede conservar una opción inactiva ya asignada.
 
-Los valores iniciales de demo se definen en `demo.js`, pero los formularios consultan la entidad Catalogo. Los nombres y códigos de ejemplo deben ser revisados por la empresa.
+Los valores iniciales de demo se definen en `demoData.js`, pero los formularios consultan la entidad Catalogo. Los nombres y códigos de ejemplo deben ser revisados por la empresa.
 
 ## Validaciones actuales y sus límites
 
-Hay validación de pertenencia a catálogo, activación, lote, peso y relación entre fechas. La fecha de ingreso se comprueba por patrón y el control HTML; falta una validación de calendario más estricta independiente del navegador. Los esquemas JSON no declaran unicidad de `tambor_id` ni de `(tipo, codigo)`, y tampoco incluyen políticas de acceso. Estas garantías deben resolverse del lado de la plataforma antes de operar con varios puestos.
+Hay validación de pertenencia a catálogo, activación, lote, peso y relación entre fechas. La fecha de ingreso se comprueba por patrón y el control HTML. El repositorio valida la unicidad de `tambor_id` y de `(tipo, codigo)`. Para operar con múltiples puestos concurrentes en el futuro, las garantías de concurrencia deberán resolverse del lado del servidor.
 
 Relacionado: [[Olivícola Luján/03 - Flujos y reglas del negocio|03 - Flujos y reglas del negocio]], [[Olivícola Luján/08 - Identificación y etiquetas|08 - Identificación y etiquetas]], [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]].

@@ -2,7 +2,7 @@
 title: "06 - Arquitectura y mapa del código"
 proyecto: "Olivícola Luján"
 tipo: documentacion
-actualizado: 2026-09-24
+actualizado: 2026-09-25
 tags:
   - olivicola-lujan
   - mvp
@@ -23,8 +23,7 @@ tags:
 | Rutas | react-router-dom | Navegación y rutas protegidas. |
 | Datos | TanStack React Query | Consulta, mutaciones e invalidación. |
 | Etiquetas | jsbarcode | CODE 128 en SVG. |
-| Plataforma | SDK de Base44 | Autenticación y entidades al configurar App ID. |
-| Demo | localStorage y Web Locks cuando existe | Persistencia en un navegador. |
+| Persistencia | localStorage | Persistencia en el navegador por repositorio. |
 
 Las versiones solicitadas están en `package.json`; las resueltas se fijan en `package-lock.json`. El proyecto aún no dispone de un despliegue remoto verificado.
 
@@ -35,9 +34,8 @@ flowchart TD
     UI[App y pantallas] --> Q[React Query]
     Q --> R[repository.js]
     R --> D[domain.js: validación y códigos]
-    R --> L[Demo local: localStorage]
-    R --> B[SDK Base44: entidades]
-    A[AuthProvider] --> S[Sesión Base44 o identidad demo]
+    R --> L[Persistencia local: localStorage]
+    A[AuthProvider] --> S[Sesión de usuario local]
     A --> P[ProtectedRoute]
     P --> UI
 ```
@@ -47,18 +45,19 @@ flowchart TD
 | Archivo o carpeta | Responsabilidad |
 |---|---|
 | `src/main.jsx` | Montaje, router, QueryClient y límite de errores. |
-| `src/App.jsx` | Layout, dashboard y pantallas de todas las rutas. |
-| `src/components/Auth.jsx` | Sesión, protección de rutas y entrada a auth. |
+| `src/App.jsx` | Enrutamiento principal y estructura base con Layout. |
+| `src/pages/` | Vistas y pantallas operativas de la aplicación. |
+| `src/components/Auth.jsx` | Sesión, protección de rutas y selector de rol. |
 | `src/components/Barcode.jsx` | SVG del código y generación del documento de impresión. |
 | `src/components/ui/` | Botón y modal reutilizables. |
-| `src/api/base44Client.js` | Selección demo/Base44 e inicialización del SDK. |
-| `src/api/demo.js` | Ejemplos iniciales y almacenamiento local. |
-| `src/api/repository.js` | Lectura de entidades y mutaciones locales/remotas. |
+| `src/api/demoData.js` | Ejemplos iniciales y catálogos por defecto. |
+| `src/api/repository.js` | Persistencia local, operaciones CRUD, auditoría y respaldo. |
 | `src/lib/domain.js` | Reglas, validación, diferencias y búsqueda. |
-| `src/lib/utils.js` | Composición de clases CSS. |
+| `src/lib/utils.js` | Composición de clases CSS y formateo. |
 | `src/index.css` | Tokens y estilos de escritorio/móvil. |
-| `base44/entities/` | Cuatro esquemas JSON. |
-| `tests/domain.test.js` | Ocho pruebas unitarias de dominio. |
+| `tests/domain.test.js` | Pruebas unitarias de dominio. |
+| `tests/repository.test.js` | Pruebas de integración del repositorio. |
+| `tests/ui.test.jsx` | Pruebas de componentes de interfaz. |
 
 ## Rutas
 
@@ -68,17 +67,17 @@ flowchart TD
 | `/escanear` | Lectura USB o manual. |
 | `/inventario` | Listado, búsqueda y filtros. |
 | `/historial` | Eventos globales. |
-| `/configuracion` | Catálogos. |
+| `/configuracion` | Catálogos y respaldo. |
 | `/tambores/nuevo` | Alta. |
 | `/tambores/:id` | Ficha; `id` es el identificador técnico. |
 | `/tambores/:id/editar` | Edición. |
 | `/tambores/:id/etiqueta` | Etiqueta individual. |
 | `/etiquetas` | Selección e impresión múltiple. |
 | `/ayuda` | Guía rápida. |
-| `/login`, `/register`, `/forgot-password`, `/reset-password` | Entrada común al acceso gestionado por Base44. |
+| `/login`, `/register`, `/forgot-password`, `/reset-password` | Entrada al sistema y selector de rol. |
 
 ## Lectura y actualización
 
-La consulta principal carga las cuatro entidades. La rama remota pagina la lectura de cada entidad en grupos de 500, pero acumula todos los resultados en el cliente; la interfaz no pagina el inventario. Tras una mutación exitosa se invalida la consulta principal. La caché considera frescos los datos durante 15 segundos; no hay suscripción en tiempo real.
+La consulta principal carga las entidades administradas. Tras una mutación exitosa se invalida la consulta principal en React Query. La caché considera frescos los datos durante 15 segundos.
 
-El trabajo futuro debería dividir `App.jsx` por pantallas y agregar pruebas de integración sin cambiar el alcance operativo. Ver [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]].
+Ver [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]].

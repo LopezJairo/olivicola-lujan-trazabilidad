@@ -15,7 +15,7 @@ import { ConfigurationPage } from './pages/ConfigurationPage.jsx';
 import { HelpPage } from './pages/HelpPage.jsx';
 import { Button } from './components/ui/button.jsx';
 
-// Pantalla de acceso / login gestionado por plataforma
+// Pantalla de acceso y autenticación local
 function LoginPage() {
   return (
     <div className="min-h-screen bg-bone-50 flex items-center justify-center p-4">
@@ -33,7 +33,7 @@ function LoginPage() {
             </p>
           </div>
           <p className="text-xs text-bone-600">
-            En entorno conectado, el acceso es gestionado por Base44. En este entorno local de pruebas, puedes ingresar directamente con cualquiera de los roles disponibles.
+            Puedes ingresar directamente con cualquiera de los roles disponibles para operar el sistema.
           </p>
           <div className="pt-2">
             <Link to="/">

@@ -14,18 +14,18 @@ tags:
 
 ## Condición de uso actual
 
-El MVP sirve como base para probar el flujo. El modo demo no es un inventario compartido, y la rama remota todavía no tiene conexión ni garantías de producción verificadas. La empresa debe poder diferenciar datos de práctica de su inventario oficial.
+El MVP sirve como base para probar el flujo. El modo local no es un inventario compartido entre múltiples puestos de trabajo. La empresa debe poder diferenciar datos de práctica de su inventario oficial.
 
 ## Riesgos concretos observados
 
 | Riesgo | Situación actual | Trabajo necesario |
 |---|---|---|
-| Dos tambores con igual número | `max + 1` se calcula en cada cliente remoto. | Asignación central y restricción de unicidad verificadas con concurrencia. |
-| Operación incompleta | Tambor, Movimiento e Historial se escriben en llamadas independientes. | Flujo de servidor consistente, idempotencia y recuperación probada. |
-| Historial modificable | Los esquemas no incluyen políticas de acceso. | Configurar y probar permisos de creación, lectura y modificación. |
-| Acción no autorizada | El rol no restringe acciones de la interfaz ni define reglas de servidor. | Matriz de permisos y enforcement en backend. |
+| Dos tambores con igual número | `max + 1` se calcula localmente en el cliente. | Asignación central y restricción de unicidad verificadas con concurrencia. |
+| Operación incompleta | Tambor, Movimiento e Historial se escriben en el almacenamiento del navegador. | Flujo de servidor consistente, idempotencia y recuperación probada si se centraliza. |
+| Historial modificable | Las escrituras operan a nivel de cliente. | Configurar y probar permisos de creación, lectura y modificación en servidor central. |
+| Acción no autorizada | El rol no restringe acciones críticas en la interfaz. | Matriz de permisos y enforcement. |
 | Pérdida local | localStorage se pierde al limpiar el sitio/perfil. | Respaldo, recuperación y almacenamiento compartido para operación oficial. |
-| Mezcla de ejemplos y datos propios | No hay espacio separado todavía. | Separar contextos y señalar claramente el activo. |
+| Mezcla de ejemplos y datos propios | Espacio demo y espacio empresa disponibles localmente. | Separar contextos y señalar claramente el activo. |
 | Etiqueta anterior no resuelve | El código cambia y no se guardan alias. | Política de reimpresión o búsqueda por código histórico. |
 | Historia incompleta | Alta y eliminación no guardan ficha completa. | Snapshots suficientes para reconstrucción y revisión histórica. |
 | Nombres históricos cambian | El historial resuelve referencias contra catálogos actuales. | Guardar valor legible histórico o versionar catálogos. |
@@ -33,9 +33,9 @@ El MVP sirve como base para probar el flujo. El modo demo no es un inventario co
 | Datos desactualizados | No hay actualizaciones en tiempo real ni control de versión. | Refresco y detección de conflictos según volumen real. |
 | Inventario grande | Las cuatro entidades se cargan completas en memoria. | Filtrado/paginación del lado servidor cuando sea necesario. |
 
-## Acceso a Base44
+## Seguridad y control de acceso
 
-Proteger una ruta React no protege por sí solo los datos. Es necesario configurar y probar las autorizaciones en Base44. Los controles de validación del cliente pueden ser omitidos por otro cliente; las reglas esenciales deben ser comprobadas por el backend.
+Proteger una ruta React no protege por sí solo los datos si se expone una base de datos centralizada. En caso de desplegar un backend distribuido, las reglas esenciales de validación y autorización deben ser comprobadas por el servidor.
 
 ## Antes de usar datos oficiales
 

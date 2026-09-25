@@ -30,7 +30,7 @@ Encontrar y actualizar un tambor sin depender de la memoria de una persona. Redu
 - Historial global y por tambor, conservado tras una eliminación.
 - Catálogos administrables sin opciones fijas en los formularios.
 - Etiquetas individuales y por selección, con medidas configurables.
-- Acceso gestionado por Base44 y rutas protegidas.
+- Control de acceso de usuarios y rutas protegidas.
 - Ayuda dentro de la aplicación.
 
 ## Qué significa MVP en este proyecto
@@ -39,7 +39,7 @@ Validar el circuito **registrar → etiquetar → escanear → mover → consult
 
 ## Fuera del alcance confirmado
 
-No se solicitaron facturación, contabilidad, compras, integración con balanzas, lectura por cámara, funcionamiento offline sincronizado, gestión de varias empresas, API pública ni integración con un ERP. Las integraciones Core de Base44 se mencionaron como parte de la plataforma, pero no existe un caso de uso aprobado para IA, email o generación de imágenes.
+No se solicitaron facturación, contabilidad, compras, integración con balanzas, lectura por cámara, funcionamiento offline sincronizado, gestión de varias empresas, API pública ni integración con un ERP. No existen integraciones con servicios externos de terceros.
 
 ## Criterio propuesto de éxito
 

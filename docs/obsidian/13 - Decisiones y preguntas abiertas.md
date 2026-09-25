@@ -18,15 +18,17 @@ tags:
 |---|---|---|
 | Priorizar facilidad para operarios con conocimientos tecnológicos casi nulos | Objetivo original | Requisito rector. |
 | Mantener herramientas más complejas para gerentes | Objetivo original | Alcance de producto; permisos pendientes. |
-| React 18, Vite, Tailwind y Base44 | Objetivo original | Stack de la implementación. |
-| Entidades Tambor, Historial, Movimiento y Catalogo | Objetivo original | Esquemas y repositorio creados. |
+| React 18, Vite y Tailwind | Objetivo original | Stack de la implementación. |
+| Entidades Tambor, Historial, Movimiento y Catalogo | Objetivo original | Modelo y repositorio creados. |
 | CODE 128 y lector USB como teclado | Objetivo original | Implementado; hardware pendiente. |
 | Construir un MVP para una empresa que cargará datos reales | Aclaración del usuario durante la sesión | El piloto debe separar ejemplos y operación real. |
 | Documentar en Obsidian con índice y archivos ordenados | Solicitud posterior del usuario | Sección específica preparada. |
 
 ## Decisiones de implementación
 
-- Sin App ID se utiliza una demo persistente en el navegador.
+- Se utiliza persistencia local en el navegador mediante el repositorio (`localStorage`).
+- Se implementó aislamiento de espacios de trabajo (Espacio Demo con 12 tambores de prueba vs Espacio Empresa limpio).
+- Se implementó exportación e importación completa de copias de seguridad en formato JSON.
 - Se añade estado opcional al formulario de movimientos.
 - Se consulta también Historial al calcular el siguiente número para evitar reutilización tras borrado.
 - Eliminar requiere escribir el identificador visible.
@@ -34,13 +36,9 @@ tags:
 
 Estas elecciones pueden ajustarse después del piloto. El modo local no fue elegido por la empresa como almacenamiento oficial.
 
-## Propuestas todavía no implementadas
-
-Se propuso separar un espacio vacío para datos propios y agregar copia de seguridad. En el corte documentado ambas siguen pendientes. No se debe describirlas como entregadas hasta implementarlas y probarlas.
-
 ## Preguntas abiertas para la empresa
 
-1. ¿Existe una aplicación Base44 y quién administra esa cuenta?
+1. ¿Quién administrará las cuentas y los accesos en el sistema?
 2. ¿Cuántas personas y computadoras registrarán datos simultáneamente?
 3. ¿Qué catálogos, códigos y nomenclatura de lotes se usan hoy?
 4. ¿Qué impresora, tamaño de papel y lector USB estarán disponibles?
