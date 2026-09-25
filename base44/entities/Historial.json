@@ -1,0 +1,22 @@
+{
+  "name": "Historial",
+  "type": "object",
+  "properties": {
+    "tambor_id": { "type": "string", "description": "Número visible del tambor (permanece aún si se borra la ficha)" },
+    "tambor_ref": { "type": "string", "description": "ID técnico del registro de tambor" },
+    "tipo": { "type": "string", "description": "Tipo de evento (Creación, Edición, Movimiento, Eliminación)" },
+    "campo": { "type": "string", "description": "Nombre del campo modificado si aplica" },
+    "valor_anterior": { "type": "string", "description": "Valor serializado antes del cambio" },
+    "valor_nuevo": { "type": "string", "description": "Valor serializado después del cambio" },
+    "descripcion": { "type": "string", "description": "Descripción humana legible del evento" },
+    "observaciones": { "type": "string", "description": "Notas adicionales de la acción" },
+    "actor": { "type": "string", "description": "Usuario responsable" },
+    "created_date": { "type": "string", "format": "date-time" }
+  },
+  "required": [
+    "tambor_id",
+    "tipo",
+    "descripcion",
+    "created_date"
+  ]
+}
