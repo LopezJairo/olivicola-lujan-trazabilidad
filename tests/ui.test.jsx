@@ -30,4 +30,24 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
     expect(jsonStr).toContain('ENT-VDE-ALOR-161/200-PRI-T000001');
     expect(jsonStr).toContain('Tambor T000001');
   });
+
+  it('3. PhysicalLabel soporta formato de impresión directa sin bordes decorativos en papel térmico', () => {
+    const mockDrum = {
+      id: 'tb-002',
+      tambor_id: 'T000002',
+      codigo_descriptivo: 'DES-NEG-ARAU-201/240-SEC',
+      codigo: 'DES-NEG-ARAU-201/240-SEC-T000002',
+      lote: 'LOTE-TEST-2',
+      peso: 180.0,
+      fecha_ingreso: '2026-09-25',
+      ubicacion_nombre: 'Patio B',
+    };
+
+    const element = PhysicalLabel({ drum: mockDrum, widthMm: 50, heightMm: 100, showBorder: false });
+    expect(element).toBeDefined();
+
+    const jsonStr = JSON.stringify(element);
+    expect(jsonStr).toContain('printable-label-page');
+    expect(jsonStr).not.toContain('border-dashed');
+  });
 });

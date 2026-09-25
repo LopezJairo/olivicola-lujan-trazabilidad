@@ -1,5 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import JsBarcode from 'jsbarcode';
+
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
 /**
  * Componente generador de código de barras CODE 128 en SVG.
@@ -16,7 +19,7 @@ export function BarcodeSvg({
 }) {
   const svgRef = useRef(null);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!svgRef.current || !value) return;
     try {
       JsBarcode(svgRef.current, String(value), {

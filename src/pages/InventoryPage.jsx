@@ -18,6 +18,7 @@ import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Badge } from '../components/ui/badge.jsx';
 import { Card } from '../components/ui/card.jsx';
+import { PhysicalLabel } from '../components/Barcode.jsx';
 
 export function InventoryPage() {
   const navigate = useNavigate();
@@ -36,6 +37,31 @@ export function InventoryPage() {
 
   // Selección múltiple para impresión
   const [selectedDrumIds, setSelectedDrumIds] = useState(new Set());
+  const [singleDrumToPrint, setSingleDrumToPrint] = useState(null);
+
+  const handlePrintSingleDrum = (drum) => {
+    setSingleDrumToPrint(drum);
+  };
+
+  useEffect(() => {
+    if (!singleDrumToPrint) return;
+    const timer = setTimeout(() => {
+      window.print();
+      // Limpieza de seguridad post-impresión
+      setTimeout(() => {
+        setSingleDrumToPrint(null);
+      }, 500);
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [singleDrumToPrint]);
+
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      setSingleDrumToPrint(null);
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, []);
 
   // Catálogos filtrados por tipo
   const productCats = useMemo(() => catalogos.filter((c) => c.tipo === 'producto'), [catalogos]);
@@ -123,7 +149,8 @@ export function InventoryPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <>
+      <div className="no-print space-y-6 animate-in fade-in duration-300">
       {/* ---------------- CABECERA ---------------- */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-bone-200">
         <div>
@@ -469,13 +496,14 @@ export function InventoryPage() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          <Link
-                            to={`/tambores/${drum.tambor_id}/etiqueta`}
-                            className="p-1.5 rounded-lg text-bone-600 hover:text-obsidian hover:bg-bone-100"
-                            title="Ver etiqueta"
+                          <button
+                            type="button"
+                            onClick={() => handlePrintSingleDrum(drum)}
+                            className="p-1.5 rounded-lg text-bone-600 hover:text-obsidian hover:bg-bone-100 transition-colors cursor-pointer"
+                            title="Imprimir etiqueta"
                           >
                             <Printer className="w-4 h-4" />
-                          </Link>
+                          </button>
                           <Link
                             to={`/tambores/${drum.tambor_id}`}
                             className="p-1.5 rounded-lg text-olive-800 hover:text-olive-950 hover:bg-olive-100"
@@ -494,5 +522,21 @@ export function InventoryPage() {
         </div>
       </div>
     </div>
+
+    {/* Impresión directa de tambor individual (oculto en pantalla, activo al imprimir) */}
+    {singleDrumToPrint && (
+      <div className="print-only">
+        <PhysicalLabel
+          drum={{
+            ...singleDrumToPrint,
+            ubicacion_nombre: resolveCatalogName(catalogos, singleDrumToPrint.ubicacion, 'ubicacion'),
+          }}
+          widthMm={50}
+          heightMm={100}
+          showBorder={false}
+        />
+      </div>
+    )}
+  </>
   );
 }

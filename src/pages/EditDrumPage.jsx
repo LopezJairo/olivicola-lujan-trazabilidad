@@ -7,7 +7,6 @@ import {
   Layers,
   Scale,
   Calendar,
-  Sparkles,
   ArrowRight,
 } from 'lucide-react';
 import { loadDatabase, updateDrum } from '../api/repository.js';
@@ -21,7 +20,6 @@ import { useAuth } from '../components/Auth.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Input, Textarea } from '../components/ui/input.jsx';
 import { Badge } from '../components/ui/badge.jsx';
-import { BarcodeSvg } from '../components/Barcode.jsx';
 
 export function EditDrumPage() {
   const { id } = useParams();
@@ -76,7 +74,7 @@ export function EditDrumPage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Previsualización dinámica de códigos
+  // Recálculo dinámico de códigos
   const liveDescriptiveCode = useMemo(() => {
     return buildDescriptiveCode(formData, catalogos);
   }, [formData, catalogos]);
@@ -368,32 +366,33 @@ export function EditDrumPage() {
           </div>
         </div>
 
-        {/* Lateral de Previsualización */}
+        {/* Lateral de Acciones y Guardado */}
         <div className="space-y-6">
           <div className="bezel-shell sticky top-6">
             <div className="bezel-core p-6 bg-white space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-bone-200">
-                <span className="text-xs font-mono uppercase tracking-wider text-olive-900 font-bold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-olive-700" />
-                  Código Recalculado
+                <span className="text-xs font-mono uppercase tracking-wider text-olive-900 font-bold">
+                  Acciones de Edición
                 </span>
                 <Badge variant="outline" className="text-[10px]">
                   {drum.tambor_id}
                 </Badge>
               </div>
 
-              <div className="border border-bone-300 bg-bone-50/50 p-4 rounded-xl text-center space-y-2 text-xs">
-                <span className="font-mono text-xs font-bold text-obsidian block truncate">
-                  {liveDescriptiveCode}
-                </span>
-                <div className="bg-white p-2 rounded-lg border border-bone-200 flex flex-col items-center">
-                  <BarcodeSvg
-                    value={liveFullCode}
-                    width={1.1}
-                    height={40}
-                    displayValue={false}
-                  />
-                  <span className="font-mono text-[9px] text-bone-600 mt-1 break-all">
+              <div className="border border-bone-300 bg-bone-50/50 p-4 rounded-xl space-y-2.5 text-xs">
+                <div>
+                  <span className="text-[10px] uppercase font-mono text-bone-500 block">
+                    Código Descriptivo
+                  </span>
+                  <span className="font-mono text-xs font-bold text-obsidian block truncate mt-0.5">
+                    {liveDescriptiveCode}
+                  </span>
+                </div>
+                <div className="border-t border-bone-200 pt-2">
+                  <span className="text-[10px] uppercase font-mono text-bone-500 block">
+                    Código de Trazabilidad
+                  </span>
+                  <span className="font-mono text-[11px] text-bone-700 font-semibold block break-all mt-0.5">
                     {liveFullCode}
                   </span>
                 </div>

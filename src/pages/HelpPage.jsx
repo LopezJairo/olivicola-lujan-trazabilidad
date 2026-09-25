@@ -44,7 +44,7 @@ export function HelpPage() {
     {
       title: '4. Imprimir Etiquetas Físicas',
       icon: Printer,
-      desc: 'Desde la ficha del tambor pulsa "Ver Etiqueta" o ve a "Imprimir Etiquetas" para seleccionar varios tambores. El formato está diseñado para impresoras térmicas de 50 × 100 mm.',
+      desc: 'Desde la ficha del tambor pulsa "Imprimir Etiqueta" o ve a "Imprimir Etiquetas" para seleccionar varios tambores. El sistema envía las etiquetas directamente a la impresora térmica de 50 × 100 mm.',
       tip: 'Cada etiqueta se imprime en una hoja independiente con el código de barras CODE 128.',
       path: '/etiquetas',
       btnText: 'Impresión de Etiquetas',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -38,7 +38,7 @@ import {
   DialogFooter,
 } from '../components/ui/dialog.jsx';
 import { Input, Textarea } from '../components/ui/input.jsx';
-import { BarcodeSvg } from '../components/Barcode.jsx';
+import { BarcodeSvg, PhysicalLabel } from '../components/Barcode.jsx';
 
 export function DrumDetailPage() {
   const { id } = useParams();
@@ -80,6 +80,21 @@ export function DrumDetailPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const handleDirectPrint = () => {
+    window.print();
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('print') === '1' || params.get('print') === 'true' || location.state?.autoPrint) {
+      window.history.replaceState(null, '', location.pathname);
+      const timer = setTimeout(() => {
+        window.print();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [location.search, location.state, location.pathname]);
 
   const deletedHistory = (historial || []).filter(
     (h) => h.tambor_id?.toUpperCase() === id?.toUpperCase() || h.tambor_ref === id
@@ -273,7 +288,8 @@ export function DrumDetailPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 max-w-5xl mx-auto">
+    <>
+      <div className="no-print space-y-8 animate-in fade-in duration-300 max-w-5xl mx-auto">
       {/* Mensaje temporal si viene de una redirección */}
       {location.state?.message && (
         <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm flex items-center gap-2">
@@ -329,12 +345,15 @@ export function DrumDetailPage() {
             Registrar Movimiento
           </Button>
 
-          <Link to={`/tambores/${drum.tambor_id}/etiqueta`}>
-            <Button variant="outline" size="default" className="text-xs">
-              <Printer className="w-4 h-4 mr-1.5" />
-              Ver Etiqueta
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="default"
+            onClick={handleDirectPrint}
+            className="text-xs"
+          >
+            <Printer className="w-4 h-4 mr-1.5" />
+            Imprimir Etiqueta
+          </Button>
 
           <Link to={`/tambores/${drum.tambor_id}/editar`}>
             <Button variant="secondary" size="default" className="text-xs">
@@ -757,5 +776,19 @@ export function DrumDetailPage() {
         </DialogContent>
       </Dialog>
     </div>
+
+    {/* Impresión directa de etiqueta (oculto en pantalla, activo al imprimir) */}
+    <div className="print-only">
+      <PhysicalLabel
+        drum={{
+          ...drum,
+          ubicacion_nombre: resolveCatalogName(catalogos, drum.ubicacion, 'ubicacion'),
+        }}
+        widthMm={50}
+        heightMm={100}
+        showBorder={false}
+      />
+    </div>
+  </>
   );
 }

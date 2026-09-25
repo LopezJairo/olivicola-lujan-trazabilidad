@@ -154,33 +154,73 @@ export function BatchLabelsPage() {
         </div>
       </div>
 
-      {/* ---------------- VISTA PREVIA Y CONTENEDOR DE IMPRESIÓN ---------------- */}
-      <div className="space-y-4">
-        <div className="no-print text-center text-xs text-bone-500 font-mono">
-          Vista previa del lote a imprimir ({selectedDrums.length} etiquetas):
-        </div>
+      {/* ---------------- RESUMEN DE LOTE PARA IMPRESIÓN (SIN PREVIEW) ---------------- */}
+      <div className="no-print bezel-shell">
+        <div className="bezel-core p-4 sm:p-6 bg-white space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-bone-200">
+            <div>
+              <h3 className="font-serif text-lg font-bold text-obsidian">
+                Lote preparado para impresión
+              </h3>
+              <p className="text-xs text-bone-600">
+                {selectedDrums.length} {selectedDrums.length === 1 ? 'tambor listo' : 'tambores listos'} · Formato térmico directo ({widthMm} × {heightMm} mm)
+              </p>
+            </div>
+            <div className="text-xs font-mono text-bone-500">
+              Impresión directa por hoja sin previsualización en pantalla
+            </div>
+          </div>
 
-        {selectedDrums.length === 0 ? (
-          <div className="no-print text-center py-12 bg-white rounded-2xl border border-bone-200 text-bone-500 text-sm">
-            No has seleccionado ningún tambor para imprimir.
-          </div>
-        ) : (
-          <div className="flex flex-wrap justify-center gap-6 p-6 bg-bone-100/50 rounded-2xl border border-bone-200">
-            {selectedDrums.map((drum) => (
-              <div
-                key={drum.id}
-                className="shadow-md bg-white printable-label-page"
-              >
-                <PhysicalLabel
-                  drum={drum}
-                  widthMm={widthMm}
-                  heightMm={heightMm}
-                  showBorder={true}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+          {selectedDrums.length === 0 ? (
+            <div className="text-center py-10 bg-bone-50 rounded-xl border border-bone-200 text-bone-500 text-sm">
+              No has seleccionado ningún tambor para imprimir. Usa el panel superior para seleccionar tambores.
+            </div>
+          ) : (
+            <div className="overflow-x-auto max-h-96">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-bone-50 sticky top-0 border-b border-bone-200">
+                  <tr className="text-[10px] uppercase font-mono text-bone-500">
+                    <th className="py-2.5 px-3">Tambor ID</th>
+                    <th className="py-2.5 px-3">Código Descriptivo</th>
+                    <th className="py-2.5 px-3">Lote</th>
+                    <th className="py-2.5 px-3 text-right">Peso</th>
+                    <th className="py-2.5 px-3">Ubicación</th>
+                    <th className="py-2.5 px-3 text-center">Estado Impresión</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-bone-100 font-mono">
+                  {selectedDrums.map((drum) => (
+                    <tr key={drum.id} className="hover:bg-bone-50/60 transition-colors">
+                      <td className="py-2 px-3 font-bold text-obsidian">{drum.tambor_id}</td>
+                      <td className="py-2 px-3 text-bone-700">{drum.codigo_descriptivo || '—'}</td>
+                      <td className="py-2 px-3 text-bone-600">{drum.lote || '—'}</td>
+                      <td className="py-2 px-3 text-right text-bone-800 font-bold">{drum.peso} kg</td>
+                      <td className="py-2 px-3 text-bone-600">{drum.ubicacion_nombre || drum.ubicacion || '—'}</td>
+                      <td className="py-2 px-3 text-center">
+                        <span className="text-[10px] bg-olive-100 text-olive-900 px-2 py-0.5 rounded font-semibold font-sans">
+                          Listo
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ---------------- CONTENEDOR DE IMPRESIÓN (SOLO AL IMPRIMIR, SIN PREVIEW) ---------------- */}
+      <div className="print-only">
+        {selectedDrums.map((drum) => (
+          <PhysicalLabel
+            key={drum.id}
+            drum={drum}
+            widthMm={widthMm}
+            heightMm={heightMm}
+            showBorder={false}
+          />
+        ))}
       </div>
     </div>
   );

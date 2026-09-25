@@ -19,7 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.
 import { Input } from '../components/ui/input.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Badge } from '../components/ui/badge.jsx';
-import { BarcodeSvg } from '../components/Barcode.jsx';
+import { BarcodeSvg, PhysicalLabel } from '../components/Barcode.jsx';
 
 // Web Audio API para feedback sonoro en planta
 function playChime(success = true) {
@@ -148,11 +148,16 @@ export function ScanPage() {
     }, 50);
   };
 
+  const handleDirectPrintLastScanned = () => {
+    window.print();
+  };
+
   return (
-    <div
-      onClick={handleContainerClick}
-      className="space-y-8 animate-in fade-in duration-300 max-w-4xl mx-auto"
-    >
+    <>
+      <div
+        onClick={handleContainerClick}
+        className="no-print space-y-8 animate-in fade-in duration-300 max-w-4xl mx-auto"
+      >
       {/* Cabecera de Escaneo */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-bone-200">
         <div>
@@ -373,7 +378,7 @@ export function ScanPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => navigate(`/tambores/${lastScanned.tambor_id}/etiqueta`)}
+                  onClick={handleDirectPrintLastScanned}
                   className="text-xs"
                 >
                   <Printer className="w-3.5 h-3.5 mr-1.5" />
@@ -436,5 +441,21 @@ export function ScanPage() {
         </Card>
       )}
     </div>
+
+    {/* Impresión directa de etiqueta escaneada (oculto en pantalla, activo al imprimir) */}
+    {lastScanned && (
+      <div className="print-only">
+        <PhysicalLabel
+          drum={{
+            ...lastScanned,
+            ubicacion_nombre: resolveCatalogName(catalogos, lastScanned.ubicacion, 'ubicacion'),
+          }}
+          widthMm={50}
+          heightMm={100}
+          showBorder={false}
+        />
+      </div>
+    )}
+  </>
   );
 }

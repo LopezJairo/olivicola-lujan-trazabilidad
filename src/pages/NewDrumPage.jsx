@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   QrCode,
   Scale,
   Calendar,
@@ -26,7 +25,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.
 import { Button } from '../components/ui/button.jsx';
 import { Input, Textarea } from '../components/ui/input.jsx';
 import { Badge } from '../components/ui/badge.jsx';
-import { BarcodeSvg } from '../components/Barcode.jsx';
 
 export function NewDrumPage() {
   const navigate = useNavigate();
@@ -70,7 +68,7 @@ export function NewDrumPage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Previsualización dinámica de códigos
+  // Cálculo dinámico de códigos
   const liveDescriptiveCode = useMemo(() => {
     return buildDescriptiveCode(formData, catalogos);
   }, [formData, catalogos]);
@@ -402,49 +400,46 @@ export function NewDrumPage() {
           </div>
         </div>
 
-        {/* Columna Derecha: Previsualización en Vivo de la Etiqueta */}
+        {/* Columna Derecha: Resumen de Registro y Acciones */}
         <div className="space-y-6">
           <div className="bezel-shell sticky top-6">
             <div className="bezel-core p-6 bg-white space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-bone-200">
                 <span className="text-xs font-mono uppercase tracking-wider text-olive-900 font-bold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-olive-700" />
-                  Previsualización
+                  <CheckCircle2 className="w-3.5 h-3.5 text-olive-700" />
+                  Resumen de Registro
                 </span>
                 <Badge variant="paleGreen" className="text-[10px]">
-                  En tiempo real
+                  Nuevo Tambor
                 </Badge>
               </div>
 
-              {/* Ficha de Etiqueta Simulada */}
-              <div className="border border-bone-300 bg-bone-50/50 p-4 rounded-xl text-center space-y-3">
+              {/* Resumen de Datos Clave */}
+              <div className="border border-bone-300 bg-bone-50/50 p-4 rounded-xl space-y-3">
                 <div>
-                  <span className="text-[9px] uppercase tracking-wider font-mono text-bone-500 block">
-                    OLIVÍCOLA LUJÁN
-                  </span>
-                  <span className="font-mono text-xs font-bold text-obsidian block truncate">
-                    {liveDescriptiveCode || 'COMPLETANDO DATOS'}
-                  </span>
-                </div>
-
-                <div className="bg-white p-2 rounded-lg border border-bone-200 flex flex-col items-center">
-                  <BarcodeSvg
-                    value={liveFullCode}
-                    width={1.1}
-                    height={40}
-                    displayValue={false}
-                  />
-                  <span className="font-mono text-[9px] text-bone-600 mt-1 break-all">
-                    {liveFullCode}
-                  </span>
-                </div>
-
-                <div className="border-t border-bone-200 pt-2">
                   <span className="text-[10px] uppercase font-mono text-bone-500 block">
                     Número Asignado
                   </span>
                   <span className="font-mono text-2xl font-black text-obsidian">
                     {nextId}
+                  </span>
+                </div>
+
+                <div className="border-t border-bone-200 pt-2">
+                  <span className="text-[10px] uppercase font-mono text-bone-500 block">
+                    Código Descriptivo
+                  </span>
+                  <span className="font-mono text-xs font-bold text-obsidian block truncate mt-0.5">
+                    {liveDescriptiveCode || 'Completando clasificación...'}
+                  </span>
+                </div>
+
+                <div className="border-t border-bone-200 pt-2">
+                  <span className="text-[10px] uppercase font-mono text-bone-500 block">
+                    Código de Trazabilidad
+                  </span>
+                  <span className="font-mono text-[11px] text-bone-700 font-semibold block break-all mt-0.5">
+                    {liveFullCode}
                   </span>
                 </div>
               </div>
@@ -462,7 +457,7 @@ export function NewDrumPage() {
                   {isSubmitting ? 'Guardando en Planta...' : 'Registrar Tambor'}
                 </Button>
                 <p className="text-[11px] text-center text-bone-500 mt-2">
-                  Al guardar, se abrirá la ficha y podrás imprimir la etiqueta.
+                  Al guardar, se registrará el tambor y podrás imprimir su etiqueta física directamente desde la ficha.
                 </p>
               </div>
             </div>
