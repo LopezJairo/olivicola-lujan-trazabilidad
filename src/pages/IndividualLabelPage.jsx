@@ -11,7 +11,7 @@ export function IndividualLabelPage() {
   const db = loadDatabase();
   const { tambores, catalogos } = db;
 
-  const drum = tambores.find((d) => d.id === id || d.tambor_id === id);
+  const drum = tambores.find((d) => d.id === id || d.tambor_id?.toUpperCase() === id?.toUpperCase());
 
   const [widthMm, setWidthMm] = useState(50);
   const [heightMm, setHeightMm] = useState(100);

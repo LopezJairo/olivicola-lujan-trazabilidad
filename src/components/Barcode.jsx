@@ -103,7 +103,7 @@ export function PhysicalLabel({
           Identificación
         </span>
         <span className="text-[16px] font-mono font-black tracking-wider block">
-          {drum.tambor_id}
+          {`Tambor ${drum.tambor_id}`}
         </span>
       </div>
 

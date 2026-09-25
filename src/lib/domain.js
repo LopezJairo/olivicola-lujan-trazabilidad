@@ -323,11 +323,28 @@ export function searchDrums(drums = [], query = '', filters = {}, catalogs = [])
 
   const normQuery = removeAccents(query);
 
+  // Helper para comparar catálogo por id o por código
+  const matchesFilter = (itemValue, filterValue, tipo) => {
+    if (!filterValue) return true;
+    if (itemValue === filterValue) return true;
+    const itemOption = (catalogs || []).find(
+      (c) => c && (!tipo || c.tipo === tipo) && (c.id === itemValue || c.codigo === itemValue)
+    );
+    const filterOption = (catalogs || []).find(
+      (c) => c && (!tipo || c.tipo === tipo) && (c.id === filterValue || c.codigo === filterValue)
+    );
+    if (itemOption && filterOption && itemOption.id === filterOption.id) return true;
+    return false;
+  };
+
   // Mapa de nombres legibles para optimizar búsqueda de texto
   const catNamesMap = new Map();
   for (const c of catalogs || []) {
     if (c?.id) {
       catNamesMap.set(c.id, removeAccents(c.nombre));
+    }
+    if (c?.codigo) {
+      catNamesMap.set(c.codigo, removeAccents(c.nombre));
     }
   }
 
@@ -335,13 +352,13 @@ export function searchDrums(drums = [], query = '', filters = {}, catalogs = [])
     if (!d) return false;
 
     // Filtros exactos por catálogo
-    if (filters.producto && d.producto !== filters.producto) return false;
-    if (filters.presentacion && d.presentacion !== filters.presentacion) return false;
-    if (filters.variedad && d.variedad !== filters.variedad) return false;
-    if (filters.calibre && d.calibre !== filters.calibre) return false;
-    if (filters.calidad && d.calidad !== filters.calidad) return false;
-    if (filters.ubicacion && d.ubicacion !== filters.ubicacion) return false;
-    if (filters.estado && d.estado !== filters.estado) return false;
+    if (filters.producto && !matchesFilter(d.producto, filters.producto, 'producto')) return false;
+    if (filters.presentacion && !matchesFilter(d.presentacion, filters.presentacion, 'presentacion')) return false;
+    if (filters.variedad && !matchesFilter(d.variedad, filters.variedad, 'variedad')) return false;
+    if (filters.calibre && !matchesFilter(d.calibre, filters.calibre, 'calibre')) return false;
+    if (filters.calidad && !matchesFilter(d.calidad, filters.calidad, 'calidad')) return false;
+    if (filters.ubicacion && !matchesFilter(d.ubicacion, filters.ubicacion, 'ubicacion')) return false;
+    if (filters.estado && !matchesFilter(d.estado, filters.estado, 'estado')) return false;
     if (filters.lote && removeAccents(d.lote) !== removeAccents(filters.lote)) return false;
 
     // Búsqueda por texto
@@ -354,9 +371,23 @@ export function searchDrums(drums = [], query = '', filters = {}, catalogs = [])
       const varMatch = (catNamesMap.get(d.variedad) || '').includes(normQuery);
       const calMatch = (catNamesMap.get(d.calibre) || '').includes(normQuery);
       const presMatch = (catNamesMap.get(d.presentacion) || '').includes(normQuery);
+      const qualMatch = (catNamesMap.get(d.calidad) || '').includes(normQuery);
       const ubiMatch = (catNamesMap.get(d.ubicacion) || '').includes(normQuery);
+      const estMatch = (catNamesMap.get(d.estado) || '').includes(normQuery);
 
-      if (!idMatch && !codeMatch && !descMatch && !loteMatch && !prodMatch && !varMatch && !calMatch && !presMatch && !ubiMatch) {
+      if (
+        !idMatch &&
+        !codeMatch &&
+        !descMatch &&
+        !loteMatch &&
+        !prodMatch &&
+        !varMatch &&
+        !calMatch &&
+        !presMatch &&
+        !qualMatch &&
+        !ubiMatch &&
+        !estMatch
+      ) {
         return false;
       }
     }

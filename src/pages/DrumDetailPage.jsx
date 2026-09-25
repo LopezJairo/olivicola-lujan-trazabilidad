@@ -81,7 +81,117 @@ export function DrumDetailPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const deletedHistory = (historial || []).filter(
+    (h) => h.tambor_id?.toUpperCase() === id?.toUpperCase() || h.tambor_ref === id
+  );
+
   if (!drum) {
+    if (deletedHistory.length > 0) {
+      return (
+        <div className="space-y-6 animate-in fade-in duration-300 max-w-4xl mx-auto">
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-serif text-lg font-bold text-obsidian">
+                    Tambor {id} (Dado de Baja)
+                  </h3>
+                  <Badge variant="paleRed" className="text-[10px]">
+                    Eliminado del inventario activo
+                  </Badge>
+                </div>
+                <p className="text-xs text-amber-800 mt-1">
+                  Este tambor fue retirado de planta o dado de baja. Su historial se conserva inalterable como constancia de su trazabilidad.
+                </p>
+              </div>
+            </div>
+            <Link to="/inventario">
+              <Button variant="outline" size="sm" className="text-xs shrink-0">
+                Volver al inventario
+              </Button>
+            </Link>
+          </div>
+
+          {/* Historial preservado */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-olive-800" />
+                  <span>Historial de Auditoría Preservado</span>
+                </CardTitle>
+                <p className="text-xs text-bone-500 mt-0.5">
+                  Registro inalterable de los eventos que ocurrieron durante la vida de este tambor.
+                </p>
+              </div>
+              <span className="font-mono text-xs text-bone-500">
+                {deletedHistory.length} {deletedHistory.length === 1 ? 'evento' : 'eventos'}
+              </span>
+            </CardHeader>
+            <CardContent>
+              <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-bone-200">
+                {deletedHistory.map((evt) => (
+                  <div key={evt.id} className="relative">
+                    <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2 border-white bg-olive-800 shadow-sm" />
+                    <div className="p-4 rounded-xl border border-bone-200 bg-bone-50/50 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              evt.tipo === 'Creación'
+                                ? 'paleGreen'
+                                : evt.tipo === 'Movimiento'
+                                ? 'paleBlue'
+                                : evt.tipo === 'Eliminación'
+                                ? 'paleRed'
+                                : 'default'
+                            }
+                            className="text-[10px]"
+                          >
+                            {evt.tipo}
+                          </Badge>
+                          {evt.campo && (
+                            <span className="font-mono text-bone-500 font-semibold">
+                              [{evt.campo}]
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-mono text-bone-500 text-[11px]">
+                          {formatDateTime(evt.created_date)}
+                        </span>
+                      </div>
+                      <p className="text-obsidian font-semibold">{evt.descripcion}</p>
+                      {evt.campo && (
+                        <div className="bg-white p-2 rounded-lg border border-bone-200 font-mono text-[11px] grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-red-700 block">Antes:</span>
+                            <span className="text-bone-700">{evt.valor_anterior || '(vacío)'}</span>
+                          </div>
+                          <div>
+                            <span className="text-emerald-700 block">Ahora:</span>
+                            <span className="text-obsidian font-bold">{evt.valor_nuevo || '(vacío)'}</span>
+                          </div>
+                        </div>
+                      )}
+                      {evt.observaciones && (
+                        <p className="text-bone-600 italic text-[11px]">
+                          Nota: {evt.observaciones}
+                        </p>
+                      )}
+                      <div className="text-[10px] text-bone-400 pt-1 border-t border-bone-100">
+                        <span>Responsable: {evt.actor || 'Operario Planta'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
     return (
       <div className="text-center py-16 space-y-4 max-w-md mx-auto">
         <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 mx-auto flex items-center justify-center">
@@ -110,10 +220,14 @@ export function DrumDetailPage() {
     (m) => m.tambor_id === drum.tambor_id || m.tambor_ref === drum.id
   );
 
-  // Opciones de catálogo activas
+  // Opciones de catálogo activas (incluyendo la actual del tambor si está inactiva)
   const activeMovementTypes = catalogos.filter((c) => c.tipo === 'tipo_movimiento' && c.activo);
-  const activeLocations = catalogos.filter((c) => c.tipo === 'ubicacion' && c.activo);
-  const activeStatuses = catalogos.filter((c) => c.tipo === 'estado' && c.activo);
+  const activeLocations = catalogos.filter(
+    (c) => c.tipo === 'ubicacion' && (c.activo || (drum && c.id === drum.ubicacion))
+  );
+  const activeStatuses = catalogos.filter(
+    (c) => c.tipo === 'estado' && (c.activo || (drum && c.id === drum.estado))
+  );
 
   const handleOpenMovementDialog = () => {
     setMovementForm({

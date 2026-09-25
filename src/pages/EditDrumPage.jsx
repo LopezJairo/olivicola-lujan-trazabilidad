@@ -30,7 +30,7 @@ export function EditDrumPage() {
   const db = loadDatabase();
   const { tambores, catalogos } = db;
 
-  const drum = tambores.find((d) => d.id === id || d.tambor_id === id);
+  const drum = tambores.find((d) => d.id === id || d.tambor_id?.toUpperCase() === id?.toUpperCase());
 
   if (!drum) {
     return (

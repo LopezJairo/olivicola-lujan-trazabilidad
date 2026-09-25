@@ -272,4 +272,35 @@ describe('Reglas de Dominio - OLIVÍCOLA LUJÁN', () => {
     expect(totals.totalKg).toBe(700);
     expect(totals.totalLocations).toBe(2);
   });
+
+  // Test 11: Búsqueda por calidad, estado y compatibilidad de filtros con códigos de catálogo
+  it('11. Busca por términos de calidad/estado y filtra por ID o código de catálogo', () => {
+    const drums = [
+      {
+        id: '1',
+        tambor_id: 'T000001',
+        codigo: 'ENT-VDE-ALOR-161/200-PRI-T000001',
+        producto: 'prod-1',
+        variedad: 'var-1',
+        calibre: 'cal-1',
+        calidad: 'qual-1', // Primera
+        estado: 'est-1', // En fermentación
+        lote: 'L-01',
+        peso: 200,
+        ubicacion: 'ubi-1',
+      },
+    ];
+
+    // Búsqueda por calidad "primera"
+    const foundQual = searchDrums(drums, 'primera', {}, mockCatalogs);
+    expect(foundQual).toHaveLength(1);
+
+    // Búsqueda por estado "fermentacion" (sin acento)
+    const foundEst = searchDrums(drums, 'fermentacion', {}, mockCatalogs);
+    expect(foundEst).toHaveLength(1);
+
+    // Filtro por código en vez de id
+    const foundByCode = searchDrums(drums, '', { variedad: 'ALOR' }, mockCatalogs);
+    expect(foundByCode).toHaveLength(1);
+  });
 });

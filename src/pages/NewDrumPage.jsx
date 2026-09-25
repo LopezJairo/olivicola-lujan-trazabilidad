@@ -20,6 +20,7 @@ import {
   normalizeDrumInput,
   resolveCatalogName,
 } from '../lib/domain.js';
+import { getTodayDateString } from '../lib/utils.js';
 import { useAuth } from '../components/Auth.jsx';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.jsx';
 import { Button } from '../components/ui/button.jsx';
@@ -59,7 +60,7 @@ export function NewDrumPage() {
     calidad: qualityOptions[0]?.id || '',
     lote: '',
     peso: '',
-    fecha_ingreso: new Date().toISOString().split('T')[0],
+    fecha_ingreso: getTodayDateString(),
     fecha_elaboracion: '',
     ubicacion: locationOptions[0]?.id || '',
     estado: statusOptions[0]?.id || '',

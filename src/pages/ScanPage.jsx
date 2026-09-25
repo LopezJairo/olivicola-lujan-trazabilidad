@@ -54,12 +54,13 @@ function playChime(success = true) {
 export function ScanPage() {
   const navigate = useNavigate();
   const db = loadDatabase();
-  const { tambores, catalogos } = db;
+  const { tambores, catalogos, historial } = db;
 
   const [scanInput, setScanInput] = useState('');
   const [lastScanned, setLastScanned] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
-  const [autoRedirect, setAutoRedirect] = useState(false);
+  const [deletedTamborId, setDeletedTamborId] = useState(null);
+  const [autoRedirect, setAutoRedirect] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [scanHistory, setScanHistory] = useState([]);
 
@@ -90,6 +91,7 @@ export function ScanPage() {
     if (match) {
       if (soundEnabled) playChime(true);
       setErrorMessage('');
+      setDeletedTamborId(null);
       setLastScanned(match);
       setScanHistory((prev) => [
         { drum: match, timestamp: new Date(), query },
@@ -102,7 +104,18 @@ export function ScanPage() {
       }
     } else {
       if (soundEnabled) playChime(false);
-      setErrorMessage(`Código desconocido: "${query}". Verifica la etiqueta o el número.`);
+      // Verificar si corresponde a un tambor dado de baja en el historial
+      const deletedEvent = (historial || []).find(
+        (h) => h.tambor_id?.toUpperCase() === query.toUpperCase()
+      );
+
+      if (deletedEvent) {
+        setErrorMessage(`El tambor "${query}" existe en el registro pero fue dado de baja del inventario activo.`);
+        setDeletedTamborId(deletedEvent.tambor_id);
+      } else {
+        setErrorMessage(`Código desconocido: "${query}". Verifica la etiqueta o el número.`);
+        setDeletedTamborId(null);
+      }
       setScanInput('');
       setLastScanned(null);
     }
@@ -238,15 +251,26 @@ export function ScanPage() {
               </div>
             </div>
 
-            {/* Mensaje de Error si el código no existe */}
+            {/* Mensaje de Error si el código no existe o fue eliminado */}
             {errorMessage && (
               <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 flex items-start gap-3 text-xs sm:text-sm animate-in fade-in duration-200">
                 <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                <div className="flex-1">
+                <div className="flex-1 space-y-2">
                   <p className="font-semibold">{errorMessage}</p>
-                  <p className="text-red-700 text-xs mt-0.5">
+                  <p className="text-red-700 text-xs">
                     El escáner limpió el campo para tu próximo intento.
                   </p>
+                  {deletedTamborId && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/tambores/${deletedTamborId}`)}
+                      className="text-xs bg-white text-red-900 border-red-300 hover:bg-red-100"
+                    >
+                      Consultar historial de auditoría de {deletedTamborId} →
+                    </Button>
+                  )}
                 </div>
               </div>
             )}

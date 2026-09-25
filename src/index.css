@@ -116,6 +116,11 @@ kbd {
     box-sizing: border-box !important;
   }
 
+  .printable-label-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
   @page {
     margin: 0;
   }

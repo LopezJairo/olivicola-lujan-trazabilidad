@@ -194,4 +194,51 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
     const dbAfter = loadDatabase();
     expect(dbAfter.tambores).toHaveLength(12);
   });
+
+  it('8. Operaciones con identificador insensible a mayúsculas (t000001 vs T000001)', async () => {
+    // updateDrum con id en minúsculas
+    const updated = await updateDrum('t000001', {
+      lote: 'LOTE-MINUSCULA',
+      peso: 220,
+    });
+    expect(updated.tambor_id).toBe('T000001');
+    expect(updated.lote).toBe('LOTE-MINUSCULA');
+
+    // recordDrumMovement con id en minúsculas
+    const moveRes = await recordDrumMovement('t000001', {
+      tipo: 'cat-mov-1',
+      ubicacion_nueva: 'cat-ubi-2',
+    });
+    expect(moveRes.drum.ubicacion).toBe('cat-ubi-2');
+
+    // deleteDrum con id en minúsculas y confirmación en minúsculas
+    const delRes = await deleteDrum('t000001', 't000001');
+    expect(delRes.success).toBe(true);
+  });
+
+  it('9. Movimientos: rechaza tipos de movimiento o ubicaciones inexistentes', async () => {
+    await expect(
+      recordDrumMovement('T000002', {
+        tipo: 'tipo-falso',
+        ubicacion_nueva: 'cat-ubi-1',
+      })
+    ).rejects.toThrow(/tipo de movimiento/);
+
+    await expect(
+      recordDrumMovement('T000002', {
+        tipo: 'cat-mov-1',
+        ubicacion_nueva: 'ubicacion-falsa',
+      })
+    ).rejects.toThrow(/ubicación de destino/);
+  });
+
+  it('10. Catálogos: rechaza caracteres inválidos en códigos de catálogo', async () => {
+    await expect(
+      saveCatalogItem({
+        tipo: 'variedad',
+        nombre: 'Variedad Rara',
+        codigo: 'VAR#01',
+      })
+    ).rejects.toThrow(/El código solo puede contener letras mayúsculas/);
+  });
 });

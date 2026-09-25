@@ -15,7 +15,7 @@ import {
 import { loadDatabase } from '../api/repository.js';
 import { calculateInventoryTotals, resolveCatalogName } from '../lib/domain.js';
 import { formatKg, formatDateTime } from '../lib/utils.js';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.jsx';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card.jsx';
 import { Badge } from '../components/ui/badge.jsx';
 import { Button } from '../components/ui/button.jsx';
 

@@ -199,14 +199,15 @@ export async function createDrum(rawInput, currentUser = null) {
  */
 export async function updateDrum(id, rawInput, currentUser = null) {
   const state = loadDatabase();
-  const drumIndex = state.tambores.findIndex((d) => d.id === id || d.tambor_id === id);
+  const drumIndex = state.tambores.findIndex((d) => d.id === id || d.tambor_id?.toUpperCase() === id?.toUpperCase());
 
   if (drumIndex === -1) {
     throw new Error(`No se encontró el tambor solicitado (${id})`);
   }
 
   const existingDrum = state.tambores[drumIndex];
-  const normalized = normalizeDrumInput(rawInput);
+  const mergedInput = { ...existingDrum, ...rawInput };
+  const normalized = normalizeDrumInput(mergedInput);
 
   const validation = validateDrum(normalized, state.catalogos, {
     isEdit: true,
@@ -261,7 +262,7 @@ export async function updateDrum(id, rawInput, currentUser = null) {
  */
 export async function recordDrumMovement(drumId, movementInput, currentUser = null) {
   const state = loadDatabase();
-  const drumIndex = state.tambores.findIndex((d) => d.id === drumId || d.tambor_id === drumId);
+  const drumIndex = state.tambores.findIndex((d) => d.id === drumId || d.tambor_id?.toUpperCase() === drumId?.toUpperCase());
 
   if (drumIndex === -1) {
     throw new Error(`No se encontró el tambor solicitado (${drumId})`);
@@ -277,11 +278,26 @@ export async function recordDrumMovement(drumId, movementInput, currentUser = nu
     throw new Error('Debe indicar la nueva ubicación');
   }
 
-  const tipoItem = state.catalogos.find((c) => c.id === tipo || c.codigo === tipo);
-  const tipoNombre = tipoItem?.nombre || 'Movimiento registrado';
+  const tipoItem = state.catalogos.find((c) => (c.id === tipo || c.codigo === tipo) && c.tipo === 'tipo_movimiento');
+  if (!tipoItem) {
+    throw new Error('El tipo de movimiento seleccionado no es válido');
+  }
+  const tipoNombre = tipoItem.nombre || 'Movimiento registrado';
+
+  const ubiItem = state.catalogos.find((c) => (c.id === ubicacion_nueva || c.codigo === ubicacion_nueva) && c.tipo === 'ubicacion');
+  if (!ubiItem) {
+    throw new Error('La ubicación de destino seleccionada no es válida');
+  }
+
+  if (estado_nuevo) {
+    const estItem = state.catalogos.find((c) => (c.id === estado_nuevo || c.codigo === estado_nuevo) && c.tipo === 'estado');
+    if (!estItem) {
+      throw new Error('El estado seleccionado no es válido');
+    }
+  }
 
   const ubiAntId = drum.ubicacion;
-  const ubiNuevaId = ubicacion_nueva;
+  const ubiNuevaId = ubiItem.id;
   const estAntId = drum.estado;
   const estNuevoId = estado_nuevo || drum.estado;
 
@@ -367,7 +383,7 @@ export async function recordDrumMovement(drumId, movementInput, currentUser = nu
  */
 export async function deleteDrum(drumId, confirmationText, currentUser = null) {
   const state = loadDatabase();
-  const drumIndex = state.tambores.findIndex((d) => d.id === drumId || d.tambor_id === drumId);
+  const drumIndex = state.tambores.findIndex((d) => d.id === drumId || d.tambor_id?.toUpperCase() === drumId?.toUpperCase());
 
   if (drumIndex === -1) {
     throw new Error(`No se encontró el tambor solicitado (${drumId})`);
@@ -410,6 +426,11 @@ export async function saveCatalogItem(catalogItem) {
   }
 
   const cleanCode = String(codigo).trim().toUpperCase();
+
+  // Validar formato del código (letras sin acento, números, / y guiones)
+  if (!/^[A-Z0-9]+([/-][A-Z0-9]+)*$/.test(cleanCode)) {
+    throw new Error('El código solo puede contener letras mayúsculas, números, / y guiones');
+  }
 
   // Validar unicidad del código dentro del mismo tipo
   const duplicate = state.catalogos.find(
