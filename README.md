@@ -69,7 +69,7 @@ npm install
 ```bash
 npm test
 ```
-*Ejecuta los 17 tests de dominio y repositorio (10 de reglas de negocio + 7 de repositorio integral).*
+*Ejecuta los 23 tests automatizados de dominio, repositorio y componentes UI.*
 
 ### 4. Iniciar servidor de desarrollo local
 ```bash
