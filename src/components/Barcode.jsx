@@ -84,51 +84,29 @@ export function PhysicalLabel({
       }}
     >
       {/* 1. Código Descriptivo + Identificador Único de Tambor + Cabecera de Empresa */}
-      <div className="text-center pt-0.5">
+      <div className="text-center mb-1">
         <div className="flex items-center justify-center gap-2 flex-wrap">
-          <span className="text-[13px] sm:text-[15px] font-black font-mono tracking-tight text-black uppercase leading-tight">
+          <span className="text-[14px] sm:text-[16px] font-black font-mono tracking-tight text-black uppercase leading-tight">
             {drum.codigo_descriptivo || '—'}
           </span>
-          <span className="text-[10px] sm:text-[11px] font-bold font-mono tracking-wider bg-black text-white px-1.5 py-0.5 rounded leading-none shrink-0">
+          <span className="text-[11px] sm:text-[12px] font-bold font-mono tracking-wider bg-black text-white px-2 py-0.5 rounded leading-none shrink-0">
             {`Tambor ${drum.tambor_id}`}
           </span>
         </div>
-        <div className="text-[11px] sm:text-[12px] font-bold tracking-[0.22em] uppercase font-sans text-black mt-1">
+        <div className="text-[12px] sm:text-[13px] font-bold tracking-[0.24em] uppercase font-sans text-black mt-1">
           OLIVÍCOLA LUJÁN
         </div>
       </div>
 
-      {/* 2. Código de barras CODE 128 limpio y de alto contraste (con valor único por tambor) */}
-      <div className="flex flex-col items-center justify-center my-1 bg-white">
+      {/* 2. Código de barras CODE 128 limpio y de alto contraste (sin códigos ni pie debajo) */}
+      <div className="flex flex-col items-center justify-center my-auto bg-white py-1">
         <BarcodeSvg
           value={barcodeValue}
-          width={1.5}
-          height={44}
+          width={1.6}
+          height={68}
           displayValue={false}
           className="max-w-full"
         />
-        {/* Texto bajo el código de barras (muestra código completo con ID) */}
-        <div className="text-[9.5px] font-mono font-bold tracking-tight text-center mt-0.5 text-black break-all px-1">
-          {uniqueCode}
-        </div>
-        {drum.codigo_compacto && (
-          <div className="text-[7.5px] font-mono text-gray-500 tracking-tighter text-center">
-            {drum.codigo_compacto}
-          </div>
-        )}
-      </div>
-
-      {/* 3. Metadata operativa esencial en pie compacto */}
-      <div className="text-[7.5px] font-mono flex items-center justify-between border-t border-gray-300 pt-1 text-gray-700 px-1">
-        <span>
-          Lote: <strong className="text-black font-bold">{drum.lote || '—'}</strong>
-        </span>
-        <span>
-          Peso: <strong className="text-black font-bold">{drum.peso} kg</strong>
-        </span>
-        <span>
-          Ubicación: <strong className="text-black font-bold">{drum.ubicacion_nombre || drum.ubicacion || '—'}</strong>
-        </span>
       </div>
     </div>
   );

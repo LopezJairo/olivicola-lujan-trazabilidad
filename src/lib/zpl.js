@@ -103,7 +103,7 @@ export function generateDrumZPL(drum, options = {}) {
   const barcodeGeo = calculateBarcodeGeometry(barcodeValue, widthDots, 2);
   const barcodeModuleWidth = barcodeGeo.moduleWidth;
   const barcodeX = barcodeGeo.xPos;
-  const barcodeHeight = 100;
+  const barcodeHeight = 180; // Altura generosa aprovechando el espacio limpio
 
   return [
     '^XA',
@@ -112,31 +112,17 @@ export function generateDrumZPL(drum, options = {}) {
     '^LS0',
     '^CI28', // UTF-8 Encoding
     // Cabecera: Código Descriptivo + Badge de Tambor ID
-    `^FO40,24^A0N,28,26^FB530,1,0,L,0^FD${codigoDescriptivo}^FS`,
+    `^FO40,32^A0N,32,30^FB520,1,0,L,0^FD${codigoDescriptivo}^FS`,
     // Badge invertido negro para Tambor ID
-    `^FO580,18^GB180,36,36,B,1^FS`,
-    `^FO580,24^A0N,24,22^FR^FB180,1,0,C,0^FDTambor ${tamborId}^FS`,
+    `^FO580,24^GB180,42,42,B,1^FS`,
+    `^FO580,32^A0N,28,26^FR^FB180,1,0,C,0^FDTambor ${tamborId}^FS`,
     // Renglón de Empresa
-    `^FO40,62^A0N,24,22^FB720,1,0,C,0^FDOLIVICOLA LUJAN^FS`,
+    `^FO40,82^A0N,28,26^FB720,1,0,C,0^FDOLIVICOLA LUJAN^FS`,
     // Línea divisoria superior
-    `^FO40,90^GB720,2,2^FS`,
-    // Código de Barras CODE 128 centrado dinámicamente para no cortar zonas de silencio
+    `^FO40,120^GB720,2,2^FS`,
+    // Código de Barras CODE 128 limpio y centrado (sin texto ni pie debajo)
     `^BY${barcodeModuleWidth},3,${barcodeHeight}`,
-    `^FO${barcodeX},105^BCN,${barcodeHeight},N,N,N,A^FD${barcodeValue}^FS`,
-    // Texto legible bajo el código de barras (Código completo único)
-    `^FO40,218^A0N,22,20^FB720,1,0,C,0^FD${uniqueCode}^FS`,
-    // Código compacto secundario (si existe)
-    codigoCompacto
-      ? `^FO40,245^A0N,18,16^FB720,1,0,C,0^FD${codigoCompacto}^FS`
-      : '',
-    // Línea divisoria inferior
-    `^FO40,272^GB720,2,2^FS`,
-    // Metadatos esenciales de pie: Lote | Peso | Ubicación
-    `^FO40,285^A0N,22,20^FB240,1,0,L,0^FDLote: ${lote}^FS`,
-    `^FO280,285^A0N,22,20^FB240,1,0,C,0^FDPeso: ${peso}^FS`,
-    `^FO520,285^A0N,22,20^FB240,1,0,R,0^FDUbic: ${ubicacion}^FS`,
-    // Pie institucional
-    `^FO40,325^A0N,18,16^FB720,1,0,C,0^FDPlanta Lujan de Cuyo - Trazabilidad Oficial^FS`,
+    `^FO${barcodeX},145^BCN,${barcodeHeight},N,N,N,A^FD${barcodeValue}^FS`,
     '^XZ',
   ]
     .filter(Boolean)

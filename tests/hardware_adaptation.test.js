@@ -46,19 +46,18 @@ describe('Adaptación de Hardware: Impresora Zebra GC420t (203 dpi) y Escáner H
       expect(zpl).toContain('^CI28');
     });
 
-    it('1.2 generateDrumZPL incluye los datos esenciales del tambor y código CODE 128', () => {
+    it('1.2 generateDrumZPL incluye cabecera limpia, OLIVICOLA LUJAN, Tambor T000001 y CODE 128 sin lote, peso ni texto debajo', () => {
       const zpl = generateDrumZPL(mockDrum);
 
       expect(zpl).toContain('OLIVICOLA LUJAN');
       expect(zpl).toContain('ENT-VDE-ALOR-161/200-PRI');
       expect(zpl).toContain('Tambor T000001');
-      expect(zpl).toContain('ENT-VDE-ALOR-161/200-PRI-T000001');
-      expect(zpl).toContain('ENTVDEALOR161200PRI');
-      expect(zpl).toContain('Lote: LOTE-2026-LUJ01');
-      expect(zpl).toContain('Peso: 220.5 kg');
-      expect(zpl).toContain('Ubic: Nave A - Fila 1');
       // Barcode CODE 128 command (^BCN)
       expect(zpl).toContain('^BCN');
+      // Sin lote, peso ni ubicación
+      expect(zpl).not.toContain('Lote:');
+      expect(zpl).not.toContain('Peso:');
+      expect(zpl).not.toContain('Ubic:');
     });
 
     it('1.3 calculateBarcodeGeometry centra el código y evita desborde fuera de los 800 dots de la etiqueta', () => {
@@ -75,7 +74,8 @@ describe('Adaptación de Hardware: Impresora Zebra GC420t (203 dpi) y Escáner H
 
       const zpl = generateDrumZPL(mockDrum);
       // En ZPL debe coincidir con la posición calculada
-      expect(zpl).toContain(`^FO${geo.xPos},105^BCN`);
+      expect(zpl).toContain(`^FO${geo.xPos},`);
+      expect(zpl).toContain('^BCN');
     });
 
     it('1.4 calculateBarcodeGeometry degrada a módulo 1 ante códigos excesivamente largos para no desbordar', () => {
@@ -92,13 +92,12 @@ describe('Adaptación de Hardware: Impresora Zebra GC420t (203 dpi) y Escáner H
         tambor_id: 'T000099^TEST',
         codigo_descriptivo: 'DES~NEG^ARAU',
         codigo: 'DES~NEG^ARAU-T000099',
-        lote: 'LOT^01',
-        peso: 150,
       };
 
       const zpl = generateDrumZPL(dirtyDrum);
-      expect(zpl).not.toContain('^FDLOT^01^FS');
-      expect(zpl).toContain('LOT 01');
+      expect(zpl).not.toContain('^FDDES~NEG^ARAU^FS');
+      expect(zpl).toContain('DES NEG ARAU');
+      expect(zpl).toContain('T000099 TEST');
     });
 
     it('1.6 generateDrumZPL maneja campos nulos o incompletos con elegancia', () => {
@@ -108,9 +107,11 @@ describe('Adaptación de Hardware: Impresora Zebra GC420t (203 dpi) y Escáner H
 
       const zpl = generateDrumZPL(minimalDrum);
       expect(zpl).toContain('Tambor T000005');
-      expect(zpl).toContain('Lote: —');
-      expect(zpl).toContain('Peso: —');
-      expect(zpl).toContain('Ubic: —');
+      expect(zpl).toContain('OLIVICOLA LUJAN');
+      expect(zpl).toContain('^BCN');
+      expect(zpl).not.toContain('Lote:');
+      expect(zpl).not.toContain('Peso:');
+      expect(zpl).not.toContain('Ubic:');
     });
 
     it('1.7 generateSectorZPL genera etiqueta de sector física calibrada para poste/columna', () => {

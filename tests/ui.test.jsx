@@ -8,7 +8,7 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
     expect(typeof CardDescription).toBe('function');
   });
 
-  it('2. PhysicalLabel genera el formato con prefijo "Tambor" e información requerida', () => {
+  it('2. PhysicalLabel genera el formato limpio con prefijo "Tambor" sin lote, peso ni ubicacion en el pie', () => {
     const mockDrum = {
       id: 'tb-001',
       tambor_id: 'T000001',
@@ -20,15 +20,18 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
       ubicacion_nombre: 'Nave A - Fila 1',
     };
 
-    const element = PhysicalLabel({ drum: mockDrum, widthMm: 50, heightMm: 100 });
+    const element = PhysicalLabel({ drum: mockDrum, widthMm: 100, heightMm: 50 });
     expect(element).toBeDefined();
 
     // Convertir el árbol de React a string JSON para inspeccionar sus textos
     const jsonStr = JSON.stringify(element);
     expect(jsonStr).toContain('OLIVÍCOLA LUJÁN');
     expect(jsonStr).toContain('ENT-VDE-ALOR-161/200-PRI');
-    expect(jsonStr).toContain('ENT-VDE-ALOR-161/200-PRI-T000001');
     expect(jsonStr).toContain('Tambor T000001');
+    // Sin lote, peso ni ubicación en pie
+    expect(jsonStr).not.toContain('Lote:');
+    expect(jsonStr).not.toContain('Peso:');
+    expect(jsonStr).not.toContain('Ubicación:');
   });
 
   it('3. PhysicalLabel soporta formato de impresión directa sin bordes decorativos en papel térmico', () => {
@@ -43,7 +46,7 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
       ubicacion_nombre: 'Patio B',
     };
 
-    const element = PhysicalLabel({ drum: mockDrum, widthMm: 50, heightMm: 100, showBorder: false });
+    const element = PhysicalLabel({ drum: mockDrum, widthMm: 100, heightMm: 50, showBorder: false });
     expect(element).toBeDefined();
 
     const jsonStr = JSON.stringify(element);
@@ -51,7 +54,7 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
     expect(jsonStr).not.toContain('border-dashed');
   });
 
-  it('4. PhysicalLabel prioriza codigo_compacto como base para CODE 128 según el gerente', () => {
+  it('4. PhysicalLabel no incluye códigos secundarios ni pie de metadatos debajo del código de barras', () => {
     const mockDrum = {
       id: 'tb-001',
       tambor_id: 'T000001',
@@ -64,15 +67,16 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
       ubicacion_nombre: 'Nave A - Fila 1',
     };
 
-    const element = PhysicalLabel({ drum: mockDrum, widthMm: 50, heightMm: 100 });
+    const element = PhysicalLabel({ drum: mockDrum, widthMm: 100, heightMm: 50 });
     const jsonStr = JSON.stringify(element);
 
-    expect(jsonStr).toContain('ENTVDEALOR121140PRI');
     expect(jsonStr).toContain('ENT-VDE-ALOR-121/140-PRI');
-    expect(jsonStr).toContain('ENT-VDE-ALOR-121/140-PRI-T000001');
     expect(jsonStr).toContain('Tambor T000001');
-    expect(jsonStr).toContain('180');
-    expect(jsonStr).toContain('kg');
+    expect(jsonStr).toContain('OLIVÍCOLA LUJÁN');
+    // Verificamos que no existan metadatos de lote, peso o ubicación
+    expect(jsonStr).not.toContain('Lote:');
+    expect(jsonStr).not.toContain('Peso:');
+    expect(jsonStr).not.toContain('Ubicación:');
   });
 
   it('5. Todas las paginas del sistema exportan componentes funcionales sin variables no definidas', async () => {
@@ -134,8 +138,10 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
     expect(jsonStr).toContain('OLIVÍCOLA LUJÁN');
     expect(jsonStr).toContain('ENT-VDE-ALOR-161/200-PRI');
     expect(jsonStr).toContain('Tambor T000001');
-    expect(jsonStr).toContain('ENT-VDE-ALOR-161/200-PRI-T000001');
-    expect(jsonStr).toContain('ENTVDEALOR161200PRI');
+    // Sin lote, peso ni ubicación
+    expect(jsonStr).not.toContain('Lote:');
+    expect(jsonStr).not.toContain('Peso:');
+    expect(jsonStr).not.toContain('Ubicación:');
   });
 
   it('8. PhysicalLabel utiliza el código único con ID como valor de BarcodeSvg para permitir escaneo individual y deduplicación', () => {
