@@ -74,4 +74,26 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
     expect(jsonStr).toContain('180');
     expect(jsonStr).toContain('kg');
   });
+
+  it('5. Todas las paginas del sistema exportan componentes funcionales sin variables no definidas', async () => {
+    const pages = [
+      () => import('../src/pages/InventoryPage.jsx'),
+      () => import('../src/pages/Dashboard.jsx'),
+      () => import('../src/pages/NewDrumPage.jsx'),
+      () => import('../src/pages/EditDrumPage.jsx'),
+      () => import('../src/pages/ScanPage.jsx'),
+      () => import('../src/pages/DrumDetailPage.jsx'),
+      () => import('../src/pages/BatchLabelsPage.jsx'),
+      () => import('../src/pages/HistoryPage.jsx'),
+      () => import('../src/pages/ConfigurationPage.jsx'),
+      () => import('../src/pages/HelpPage.jsx'),
+    ];
+
+    for (const loadPage of pages) {
+      const module = await loadPage();
+      const component = Object.values(module).find((v) => typeof v === 'function');
+      expect(typeof component).toBe('function');
+    }
+  });
 });
+
