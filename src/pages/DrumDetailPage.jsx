@@ -382,16 +382,24 @@ export function DrumDetailPage() {
       <div className="bezel-shell">
         <div className="bezel-core p-6 bg-white flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex-1 space-y-2">
-            <span className="text-xs font-mono uppercase tracking-wider text-bone-500">
-              Código de Barras CODE 128
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-bone-500">
+                Código de Barras CODE 128
+              </span>
+              <span className="text-[10px] font-mono text-olive-800 bg-olive-100 px-2 py-0.5 rounded font-semibold">
+                Base: {drum.codigo_compacto || drum.codigo}
+              </span>
+            </div>
             <div className="bg-bone-50 p-3 rounded-xl border border-bone-200 inline-block max-w-full overflow-hidden">
               <BarcodeSvg
-                value={drum.codigo}
+                value={drum.codigo_compacto || drum.codigo}
                 width={1.4}
                 height={50}
                 displayValue={false}
               />
+              <div className="text-[10px] font-mono text-center text-bone-600 font-bold mt-1">
+                {drum.codigo_compacto || drum.codigo}
+              </div>
             </div>
           </div>
 

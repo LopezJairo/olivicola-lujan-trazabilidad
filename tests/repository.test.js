@@ -42,15 +42,20 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
     resetDemoDatabase();
   });
 
-  it('1. Carga inicial de demostración con 12 tambores y catálogos', () => {
+  it('1. Carga inicial de demostración con 12 tambores y catálogos oficiales', () => {
     const db = loadDatabase();
     expect(db.tambores).toHaveLength(12);
-    expect(db.catalogos.length).toBeGreaterThan(10);
+    expect(db.catalogos.length).toBeGreaterThan(15);
     expect(db.historial.length).toBeGreaterThan(0);
     expect(db.movimientos.length).toBeGreaterThan(0);
+
+    // Verificar tambor con código compacto y peso oficial
+    const tb1 = db.tambores[0];
+    expect(tb1.codigo_compacto).toBe('ENTVDEALOR121140PRI');
+    expect(tb1.peso).toBe(180);
   });
 
-  it('2. Ciclo de Alta: calcula T000013, crea evento de historial y persiste en BD', async () => {
+  it('2. Ciclo de Alta: calcula T000013, genera código compacto y persiste en BD', async () => {
     const dbBefore = loadDatabase();
     expect(dbBefore.tambores).toHaveLength(12);
 
@@ -62,7 +67,7 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
       calidad: 'cat-qual-1',
       lote: 'LOTE-TEST-01',
       fecha_ingreso: '2026-09-25',
-      peso: '225,5',
+      peso: '180,0',
       ubicacion: 'cat-ubi-1',
       estado: 'cat-est-1',
     };
@@ -70,9 +75,10 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
     const created = await createDrum(newDrumInput, { nombre: 'Operario Test' });
 
     expect(created.tambor_id).toBe('T000013');
-    expect(created.peso).toBe(225.5);
-    expect(created.codigo_descriptivo).toBe('ENT-VDE-ALOR-161/200-PRI');
-    expect(created.codigo).toBe('ENT-VDE-ALOR-161/200-PRI-T000013');
+    expect(created.peso).toBe(180.0);
+    expect(created.codigo_descriptivo).toBe('ENT-VDE-ALOR-121/140-PRI');
+    expect(created.codigo_compacto).toBe('ENTVDEALOR121140PRI');
+    expect(created.codigo).toBe('ENT-VDE-ALOR-121/140-PRI-T000013');
 
     const dbAfter = loadDatabase();
     expect(dbAfter.tambores).toHaveLength(13);
@@ -85,31 +91,32 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
     expect(createEvent.actor).toBe('Operario Test');
   });
 
-  it('3. Ciclo de Edición: preserva tambor_id, recalcula código y guarda diferencias', async () => {
+  it('3. Ciclo de Edición: preserva tambor_id, recalcula código compacto y guarda diferencias', async () => {
     const db = loadDatabase();
-    const target = db.tambores[0]; // T000001
+    const target = db.tambores[0]; // T000001: Aloreña (ALOR)
 
     const updated = await updateDrum(
       target.id,
       {
         ...target,
-        variedad: 'cat-var-2', // Cambia de Arauco (ALOR) a Manzanilla (MANZ)
-        peso: 230,
+        variedad: 'cat-var-2', // Cambia de Aloreña (ALOR) a Arauco (ARA)
+        peso: 185,
       },
       { nombre: 'Supervisor' }
     );
 
     expect(updated.tambor_id).toBe('T000001');
-    expect(updated.codigo_descriptivo).toContain('MANZ');
-    expect(updated.codigo).toBe(`ENT-VDE-MANZ-161/200-PRI-T000001`);
+    expect(updated.codigo_descriptivo).toBe('ENT-VDE-ARA-121/140-PRI');
+    expect(updated.codigo_compacto).toBe('ENTVDEARA121140PRI');
+    expect(updated.codigo).toBe('ENT-VDE-ARA-121/140-PRI-T000001');
 
     const dbAfter = loadDatabase();
     const varDiff = dbAfter.historial.find(
       (h) => h.tambor_id === 'T000001' && h.campo === 'variedad'
     );
     expect(varDiff).toBeDefined();
-    expect(varDiff.valor_anterior).toBe('Arauco');
-    expect(varDiff.valor_nuevo).toBe('Manzanilla');
+    expect(varDiff.valor_anterior).toBe('Aloreña');
+    expect(varDiff.valor_nuevo).toBe('Arauco');
   });
 
   it('4. Ciclo de Movimiento: actualiza ubicación/estado y genera registros', async () => {
@@ -172,7 +179,7 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
     await expect(
       saveCatalogItem({
         tipo: 'variedad',
-        nombre: 'Arauco Clon 2',
+        nombre: 'Aloreña Clon 2',
         codigo: 'ALOR',
         activo: true,
       })
@@ -199,7 +206,7 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
     // updateDrum con id en minúsculas
     const updated = await updateDrum('t000001', {
       lote: 'LOTE-MINUSCULA',
-      peso: 220,
+      peso: 180,
     });
     expect(updated.tambor_id).toBe('T000001');
     expect(updated.lote).toBe('LOTE-MINUSCULA');
@@ -232,13 +239,53 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
     ).rejects.toThrow(/ubicación de destino/);
   });
 
-  it('10. Catálogos: rechaza caracteres inválidos en códigos de catálogo', async () => {
+  it('10. Catálogos: rechaza caracteres inválidos en códigos pero acepta espacios y barras oficiales', async () => {
+    // Rechaza caracteres inválidos como #
     await expect(
       saveCatalogItem({
         tipo: 'variedad',
         nombre: 'Variedad Rara',
         codigo: 'VAR#01',
       })
-    ).rejects.toThrow(/El código solo puede contener letras mayúsculas/);
+    ).rejects.toThrow(/El código solo puede contener/);
+
+    // Acepta códigos oficiales con espacio como "SIN CAL"
+    const savedSinCal = await saveCatalogItem({
+      tipo: 'calibre',
+      nombre: 'Sin Calibre Especial',
+      codigo: 'SIN CAL 2',
+      activo: true,
+    });
+    expect(savedSinCal).toBeDefined();
+
+    // Acepta códigos oficiales con barra como "P/GR"
+    const savedBarra = await saveCatalogItem({
+      tipo: 'presentacion',
+      nombre: 'Presentación Con Barra',
+      codigo: 'P/GR2',
+      activo: true,
+    });
+    expect(savedBarra).toBeDefined();
+  });
+
+  it('11. Migración automática: actualiza catálogos obsoletos almacenados en localStorage', () => {
+    // Simular un estado viejo en localStorage con catálogos provisionales (sin FET ni GRI ni SIN CAL)
+    const oldState = {
+      catalogos: [
+        { id: 'cat-prod-1', tipo: 'producto', nombre: 'Aceituna Vieja', codigo: 'VIEJA' },
+      ],
+      tambores: [{ id: 'tb-old', tambor_id: 'T000001', codigo: 'VIEJA-T000001' }],
+      historial: [],
+      movimientos: [],
+    };
+    localStorage.setItem('olivicola-lujan-store-demo-v1', JSON.stringify(oldState));
+
+    // Al cargar la base de datos debe detectar que está obsoleto y migrar a los catálogos oficiales
+    const loaded = loadDatabase();
+    const codes = loaded.catalogos.map((c) => c.codigo);
+    expect(codes).toContain('FET');
+    expect(codes).toContain('GRI');
+    expect(codes).toContain('SIN CAL');
+    expect(codes).toContain('ENT');
   });
 });

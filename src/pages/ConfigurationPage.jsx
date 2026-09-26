@@ -38,14 +38,14 @@ import {
 } from '../components/ui/dialog.jsx';
 
 const CATALOG_TYPES = [
-  { key: 'producto', label: 'Productos', desc: 'Aceituna, AOVE, etc.' },
-  { key: 'presentacion', label: 'Presentaciones', desc: 'Verde en salmuera, Granel, etc.' },
-  { key: 'variedad', label: 'Variedades', desc: 'Arauco, Manzanilla, Picual, etc.' },
-  { key: 'calibre', label: 'Calibres', desc: '161/200, 201/240, S/C, etc.' },
-  { key: 'calidad', label: 'Calidades', desc: 'Primera, Segunda, Exportación, etc.' },
-  { key: 'ubicacion', label: 'Ubicaciones', desc: 'Naves, Filas, Patios de fermentación' },
-  { key: 'estado', label: 'Estados de Proceso', desc: 'En fermentación, En reposo, etc.' },
-  { key: 'tipo_movimiento', label: 'Tipos de Movimiento', desc: 'Traslados, Muestreos, Despachos' },
+  { key: 'producto', label: 'Productos', desc: 'Entera, Descarozada, Rodajas, Griegas, Rellenas, Rotas' },
+  { key: 'presentacion', label: 'Presentaciones', desc: 'Verde, Negra, Base, Californiana, Clara, Para Griega, Sin Carozo, Con Pasta, Aceite' },
+  { key: 'variedad', label: 'Variedades', desc: 'Aloreña, Arauco, Manzanilla Fina, Picual, Empeltre' },
+  { key: 'calibre', label: 'Calibres', desc: '121/140, 141/160, 161/180, 181/200, 201/240, 241/280, Sin Calibre, etc.' },
+  { key: 'calidad', label: 'Calidades', desc: 'Primera (PRI), Segunda (SDA), Tercera (TRA)' },
+  { key: 'ubicacion', label: 'Ubicaciones', desc: 'Naves, Filas, Patios de fermentación, Despacho' },
+  { key: 'estado', label: 'Estados de Proceso', desc: 'En fermentación, En reposo, Salmuera, Calibrado, etc.' },
+  { key: 'tipo_movimiento', label: 'Tipos de Movimiento', desc: 'Traslados, Reubicación, Muestreo, Ingreso, Despacho' },
 ];
 
 export function ConfigurationPage() {

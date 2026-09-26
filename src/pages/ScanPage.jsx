@@ -58,6 +58,7 @@ export function ScanPage() {
 
   const [scanInput, setScanInput] = useState('');
   const [lastScanned, setLastScanned] = useState(null);
+  const [multipleMatches, setMultipleMatches] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [deletedTamborId, setDeletedTamborId] = useState(null);
   const [autoRedirect, setAutoRedirect] = useState(true);
@@ -75,38 +76,83 @@ export function ScanPage() {
     inputRef.current?.focus();
   };
 
-  const handleScanSubmit = (e) => {
-    e.preventDefault();
-    const query = scanInput.trim();
+  const processQuery = (rawQuery) => {
+    const query = (rawQuery || '').trim();
     if (!query) return;
 
-    // Buscar coincidencia exacta (insensible a mayúsculas) por tambor_id o código completo
-    const match = tambores.find(
+    const norm = query.toUpperCase();
+    const cleanNorm = norm.replace(/[-/\s]/g, '');
+
+    // 1. Coincidencia exacta única por identificador de tambor
+    const exactUnique = tambores.find(
       (t) =>
-        t.tambor_id?.toUpperCase() === query.toUpperCase() ||
-        t.codigo?.toUpperCase() === query.toUpperCase() ||
-        t.id?.toUpperCase() === query.toUpperCase()
+        t.tambor_id?.toUpperCase() === norm ||
+        t.codigo?.toUpperCase() === norm ||
+        t.id?.toUpperCase() === norm ||
+        (t.codigo_compacto && `${t.codigo_compacto}${t.tambor_id}`.toUpperCase() === norm) ||
+        (t.codigo_compacto && `${t.codigo_compacto}-${t.tambor_id}`.toUpperCase() === norm)
     );
 
-    if (match) {
+    if (exactUnique) {
       if (soundEnabled) playChime(true);
       setErrorMessage('');
       setDeletedTamborId(null);
+      setMultipleMatches([]);
+      setLastScanned(exactUnique);
+      setScanHistory((prev) => [
+        { drum: exactUnique, timestamp: new Date(), query },
+        ...prev.slice(0, 9),
+      ]);
+      setScanInput('');
+      if (autoRedirect) {
+        navigate(`/tambores/${exactUnique.tambor_id}`);
+      }
+      return;
+    }
+
+    // 2. Coincidencia por código de producto (compacto o descriptivo)
+    const matches = tambores.filter(
+      (t) =>
+        t.codigo_compacto?.toUpperCase() === norm ||
+        t.codigo_descriptivo?.toUpperCase() === norm ||
+        (t.codigo_compacto && t.codigo_compacto.replace(/[-/\s]/g, '').toUpperCase() === cleanNorm) ||
+        (t.codigo_descriptivo && t.codigo_descriptivo.replace(/[-/\s]/g, '').toUpperCase() === cleanNorm)
+    );
+
+    if (matches.length === 1) {
+      const match = matches[0];
+      if (soundEnabled) playChime(true);
+      setErrorMessage('');
+      setDeletedTamborId(null);
+      setMultipleMatches([]);
       setLastScanned(match);
       setScanHistory((prev) => [
         { drum: match, timestamp: new Date(), query },
         ...prev.slice(0, 9),
       ]);
       setScanInput('');
-
       if (autoRedirect) {
         navigate(`/tambores/${match.tambor_id}`);
       }
+    } else if (matches.length > 1) {
+      // Múltiples tambores comparten este código de producto (ej: ENTVDEALOR121140PRI)
+      if (soundEnabled) playChime(true);
+      setErrorMessage('');
+      setDeletedTamborId(null);
+      setLastScanned(null);
+      setMultipleMatches(matches);
+      setScanHistory((prev) => [
+        { drum: matches[0], timestamp: new Date(), query, count: matches.length },
+        ...prev.slice(0, 9),
+      ]);
+      setScanInput('');
     } else {
       if (soundEnabled) playChime(false);
+      setMultipleMatches([]);
+      setLastScanned(null);
       // Verificar si corresponde a un tambor dado de baja en el historial
       const deletedEvent = (historial || []).find(
-        (h) => h.tambor_id?.toUpperCase() === query.toUpperCase()
+        (h) => h.tambor_id?.toUpperCase() === norm
       );
 
       if (deletedEvent) {
@@ -117,10 +163,12 @@ export function ScanPage() {
         setDeletedTamborId(null);
       }
       setScanInput('');
-      setLastScanned(null);
     }
+  };
 
-    // Regresar foco inmediatamente
+  const handleScanSubmit = (e) => {
+    e.preventDefault();
+    processQuery(scanInput);
     inputRef.current?.focus();
   };
 
@@ -128,22 +176,7 @@ export function ScanPage() {
   const handleQuickTestScan = (targetCode) => {
     setScanInput(targetCode);
     setTimeout(() => {
-      const match = tambores.find(
-        (t) =>
-          t.tambor_id?.toUpperCase() === targetCode.toUpperCase() ||
-          t.codigo?.toUpperCase() === targetCode.toUpperCase()
-      );
-      if (match) {
-        if (soundEnabled) playChime(true);
-        setErrorMessage('');
-        setLastScanned(match);
-        setScanHistory((prev) => [
-          { drum: match, timestamp: new Date(), query: targetCode },
-          ...prev.slice(0, 9),
-        ]);
-        setScanInput('');
-        if (autoRedirect) navigate(`/tambores/${match.tambor_id}`);
-      }
+      processQuery(targetCode);
       inputRef.current?.focus();
     }, 50);
   };
@@ -297,10 +330,87 @@ export function ScanPage() {
                   {t.tambor_id} ({t.codigo_descriptivo?.split('-')[0] || 'Tambor'})
                 </button>
               ))}
+              {tambores[0]?.codigo_compacto && (
+                <button
+                  type="button"
+                  onClick={() => handleQuickTestScan(tambores[0].codigo_compacto)}
+                  className="px-2.5 py-1 text-xs font-mono font-bold rounded-lg bg-olive-100 hover:bg-olive-200 text-olive-900 border border-olive-300 transition-colors"
+                  title="Simular escaneo de código de barras CODE 128 (Código Compacto)"
+                >
+                  CODE 128: {tambores[0].codigo_compacto}
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* ---------------- MÚLTIPLES TAMBORES ENCONTRADOS (DESAMBIGUACIÓN) ---------------- */}
+      {multipleMatches.length > 1 && (
+        <div className="bezel-shell animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bezel-core p-6 bg-white border border-amber-300 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-bone-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full font-bold">
+                    Código de Producto
+                  </span>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {multipleMatches.length} tambores activos
+                  </Badge>
+                </div>
+                <h3 className="font-serif text-xl font-bold text-obsidian mt-1">
+                  Múltiples tambores coinciden con este código de clasificación
+                </h3>
+                <p className="text-xs text-bone-600">
+                  Selecciona el tambor que estás manipulando según su número visible, lote o ubicación:
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {multipleMatches.map((m) => (
+                <div
+                  key={m.id}
+                  className="p-4 rounded-xl border border-bone-200 hover:border-olive-500 bg-bone-50/50 hover:bg-olive-50/20 transition-all flex items-center justify-between gap-4"
+                >
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif text-lg font-black text-obsidian">
+                        {m.tambor_id}
+                      </span>
+                      <span className="font-mono text-[11px] text-bone-500 font-semibold">
+                        Lote: {m.lote}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-bone-600 space-y-0.5">
+                      <div>
+                        <span className="font-semibold text-bone-700">Ubicación: </span>
+                        <span>{resolveCatalogName(catalogos, m.ubicacion, 'ubicacion')}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-bone-700">Peso: </span>
+                        <span>{m.peso} kg</span>
+                        <span className="mx-1.5">·</span>
+                        <span className="font-semibold text-bone-700">Estado: </span>
+                        <span>{resolveCatalogName(catalogos, m.estado, 'estado')}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="olive"
+                    size="sm"
+                    onClick={() => navigate(`/tambores/${m.tambor_id}`)}
+                    className="shrink-0 text-xs"
+                  >
+                    Seleccionar →
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ---------------- FICHA RESUMEN DEL TAMBOR ENCONTRADO ---------------- */}
       {lastScanned && (
@@ -367,7 +477,7 @@ export function ScanPage() {
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="bg-bone-50 p-2 rounded-xl border border-bone-200">
                 <BarcodeSvg
-                  value={lastScanned.codigo}
+                  value={lastScanned.codigo_compacto || lastScanned.codigo}
                   width={1.2}
                   height={36}
                   displayValue={false}

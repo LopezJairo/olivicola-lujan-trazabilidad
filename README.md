@@ -11,7 +11,8 @@ Diseñado con enfoque de **baja fricción para operarios** de planta con conocim
 1. **Gestión de Tambores (CRUD Completo):**
    - Asignación secuencial automática e incremental de identificador visible (`T000001` … `T999999` y crecimiento a 7 dígitos).
    - Prevención de reciclado de identificadores de tambores eliminados consultando tanto tambores como historial.
-   - Construcción de código descriptivo (`ENT-VDE-ALOR-161/200-PRI`) y código completo (`ENT-VDE-ALOR-161/200-PRI-T000001`).
+   - Construcción de código descriptivo oficial (`ENT-VDE-ALOR-121/140-PRI`), código compacto (`ENTVDEALOR121140PRI`) y código completo (`ENT-VDE-ALOR-121/140-PRI-T000001`).
+   - Soporte de **pesos sugeridos/predeterminados por producto** para agilizar la carga en planta: Descarozada (140 kg), Entera/Griega (180 kg), Rellenas/Rodajas/Rotas (160 kg).
    - Normalización de pesaje en kg, lote y validación estricta de fechas de calendario (`fecha_elaboracion <= fecha_ingreso`).
    - Eliminación protegida por confirmación explícita escribiendo el identificador exacto del tambor.
    - Conservación inalterable del historial y movimientos tras una baja.
@@ -19,18 +20,18 @@ Diseñado con enfoque de **baja fricción para operarios** de planta con conocim
 2. **Puesto de Escaneo con Lector USB:**
    - Foco automático permanente en el campo de lectura.
    - Detección instantánea al recibir retorno de carro (`Enter`).
-   - Búsqueda exacta insensible a mayúsculas contra `tambor_id` o `codigo`.
+   - Búsqueda exacta insensible a mayúsculas contra `tambor_id`, `codigo` o `codigo_compacto` (CODE 128).
    - Feedback auditivo mediante síntesis Web Audio API (chime de confirmación o alerta).
    - Acceso inmediato con un clic a ficha, movimiento o impresión.
 
 3. **Inventario y Búsqueda Multicriterio:**
-   - Búsqueda insensible a mayúsculas y acentos (`cordoba` encuentra `LOTE-CÓRDOBA`).
+   - Búsqueda insensible a mayúsculas y acentos (`cordoba` encuentra `LOTE-CÓRDOBA`) y por código compacto.
    - Filtros avanzados por los 7 catálogos del tambor (Producto, Presentación, Variedad, Calibre, Calidad, Ubicación, Estado).
    - Resumen dinámico de totales: cantidad de tambores, kilogramos netos acumulados y ubicaciones ocupadas.
    - Selección múltiple para impresión masiva de etiquetas.
 
 4. **Etiquetas Físicas y Código de Barras CODE 128:**
-   - Generación de código de barras CODE 128 en formato vectorial SVG con `jsbarcode`.
+   - Generación de código de barras CODE 128 en formato vectorial SVG con `jsbarcode`, utilizando el **Código Compacto oficial (sin guiones ni barra del calibre)** como base para máxima legibilidad.
    - Dimensiones predeterminadas de 50 mm ancho × 100 mm alto (5 × 10 cm), configurables en milímetros.
    - Hojas de estilo de impresión `@media print` con saltos de página obligatorios (`page-break-after: always`).
    - Impresión individual y por lotes seleccionados.
@@ -69,7 +70,7 @@ npm install
 ```bash
 npm test
 ```
-*Ejecuta los 23 tests automatizados de dominio, repositorio y componentes UI.*
+*Ejecuta los 27 tests automatizados de dominio, repositorio y componentes UI.*
 
 ### 4. Iniciar servidor de desarrollo local
 ```bash

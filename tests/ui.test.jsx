@@ -50,4 +50,28 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
     expect(jsonStr).toContain('printable-label-page');
     expect(jsonStr).not.toContain('border-dashed');
   });
+
+  it('4. PhysicalLabel prioriza codigo_compacto como base para CODE 128 según el gerente', () => {
+    const mockDrum = {
+      id: 'tb-001',
+      tambor_id: 'T000001',
+      codigo_descriptivo: 'ENT-VDE-ALOR-121/140-PRI',
+      codigo_compacto: 'ENTVDEALOR121140PRI',
+      codigo: 'ENT-VDE-ALOR-121/140-PRI-T000001',
+      lote: 'LOTE-2026-LUJ01',
+      peso: 180.0,
+      fecha_ingreso: '2026-09-01',
+      ubicacion_nombre: 'Nave A - Fila 1',
+    };
+
+    const element = PhysicalLabel({ drum: mockDrum, widthMm: 50, heightMm: 100 });
+    const jsonStr = JSON.stringify(element);
+
+    expect(jsonStr).toContain('ENTVDEALOR121140PRI');
+    expect(jsonStr).toContain('ENT-VDE-ALOR-121/140-PRI');
+    expect(jsonStr).toContain('ENT-VDE-ALOR-121/140-PRI-T000001');
+    expect(jsonStr).toContain('Tambor T000001');
+    expect(jsonStr).toContain('180');
+    expect(jsonStr).toContain('kg');
+  });
 });

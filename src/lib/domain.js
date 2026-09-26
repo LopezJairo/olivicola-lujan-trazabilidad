@@ -109,13 +109,118 @@ export function buildDescriptiveCode(drumData = {}, catalogs = []) {
 /**
  * Construye el código completo del tambor:
  * codigo_descriptivo-tambor_id
- * Ejemplo: ENT-VDE-ALOR-161/200-PRI-T000001
+ * Ejemplo: ENT-VDE-ALOR-121/140-PRI-T000001
  */
 export function buildFullCode(descriptiveCode, tamborId) {
   if (!descriptiveCode && !tamborId) return '';
   if (!descriptiveCode) return tamborId || '';
   if (!tamborId) return descriptiveCode;
   return `${descriptiveCode}-${tamborId}`;
+}
+
+/**
+ * Construye el código compacto (sin guiones ni barra del calibre)
+ * especificado por la gerencia de Olivícola Luján como base para la generación de CODE 128.
+ * Ejemplo: "ENT-VDE-ALOR-121/140-PRI" -> "ENTVDEALOR121140PRI"
+ *
+ * @param {Object|string} input - Objeto de tambor o string con código descriptivo
+ * @param {Array} [catalogs] - Catálogos si se pasa un objeto con IDs
+ * @returns {string} Código compacto sin guiones, barras ni espacios en mayúsculas
+ */
+export function buildCompactCode(input, catalogs = []) {
+  let descriptiveCode = '';
+  if (typeof input === 'string') {
+    descriptiveCode = input;
+  } else if (input && typeof input === 'object') {
+    if (catalogs && catalogs.length > 0) {
+      descriptiveCode = buildDescriptiveCode(input, catalogs);
+    } else if (input.codigo_compacto) {
+      return String(input.codigo_compacto).replace(/[-/\s]/g, '').toUpperCase();
+    } else if (input.codigo_descriptivo) {
+      descriptiveCode = input.codigo_descriptivo;
+    } else {
+      descriptiveCode = buildDescriptiveCode(input, catalogs);
+    }
+  }
+  if (!descriptiveCode) return '';
+  return descriptiveCode.replace(/[-/\s]/g, '').toUpperCase();
+}
+
+/**
+ * Obtiene el código base para generar el código de barras CODE 128.
+ * Coincide con el código compacto según la planilla oficial del gerente.
+ */
+export function getCode128Base(drumData, catalogs = []) {
+  if (drumData && typeof drumData === 'object' && drumData.codigo_compacto) {
+    return drumData.codigo_compacto;
+  }
+  return buildCompactCode(drumData, catalogs);
+}
+
+/**
+ * Pesos sugeridos / predeterminados oficiales por tipo de producto (kg por tambor)
+ * según la especificación del gerente de Olivícola Luján:
+ * - Entera: 180 kg
+ * - Griega / Griegas: 180 kg
+ * - Descarozada: 140 kg
+ * - Rellenas: 160 kg
+ * - Rodajas: 160 kg
+ * - Rotas: 160 kg
+ */
+export const DEFAULT_PRODUCT_WEIGHTS = {
+  ENT: 180,
+  GRI: 180,
+  DES: 140,
+  RELL: 160,
+  FET: 160,
+  ROTA: 160,
+};
+
+const DEFAULT_PRODUCT_ID_WEIGHTS = {
+  'cat-prod-1': 180, // Entera
+  'cat-prod-2': 140, // Descarozada
+  'cat-prod-3': 160, // Rodajas
+  'cat-prod-4': 180, // Griegas
+  'cat-prod-5': 160, // Rellenas
+  'cat-prod-6': 160, // Rotas
+};
+
+/**
+ * Obtiene el peso sugerido / predeterminado por tambor según el producto seleccionado.
+ *
+ * @param {string} productValue - ID de catálogo, código de producto o nombre
+ * @param {Array} [catalogs] - Catálogos del sistema
+ * @returns {number|null} Peso neto en kg sugerido o null
+ */
+export function getSuggestedWeightForProduct(productValue, catalogs = []) {
+  if (!productValue) return null;
+
+  let code = '';
+  if (catalogs && catalogs.length > 0) {
+    code = resolveCatalogCode(catalogs, productValue, 'producto');
+  }
+  if (!code) {
+    code = String(productValue).trim().toUpperCase();
+  }
+
+  if (DEFAULT_PRODUCT_WEIGHTS[code] !== undefined) {
+    return DEFAULT_PRODUCT_WEIGHTS[code];
+  }
+
+  if (DEFAULT_PRODUCT_ID_WEIGHTS[productValue] !== undefined) {
+    return DEFAULT_PRODUCT_ID_WEIGHTS[productValue];
+  }
+
+  // Fallback por texto normalizado
+  const norm = removeAccents(productValue);
+  if (norm.includes('descaroz')) return 140;
+  if (norm.includes('enter')) return 180;
+  if (norm.includes('grieg')) return 180;
+  if (norm.includes('rellen')) return 160;
+  if (norm.includes('rodaj')) return 160;
+  if (norm.includes('rota')) return 160;
+
+  return null;
 }
 
 /**
@@ -363,9 +468,13 @@ export function searchDrums(drums = [], query = '', filters = {}, catalogs = [])
 
     // Búsqueda por texto
     if (normQuery) {
+      const cleanCompactQuery = normQuery.replace(/[-/\s]/g, '');
       const idMatch = removeAccents(d.tambor_id).includes(normQuery);
       const codeMatch = removeAccents(d.codigo).includes(normQuery);
       const descMatch = removeAccents(d.codigo_descriptivo).includes(normQuery);
+      const compactMatch =
+        removeAccents(d.codigo_compacto || '').includes(normQuery) ||
+        (cleanCompactQuery.length >= 3 && removeAccents(d.codigo_compacto || '').includes(cleanCompactQuery));
       const loteMatch = removeAccents(d.lote).includes(normQuery);
       const prodMatch = (catNamesMap.get(d.producto) || '').includes(normQuery);
       const varMatch = (catNamesMap.get(d.variedad) || '').includes(normQuery);
@@ -379,6 +488,7 @@ export function searchDrums(drums = [], query = '', filters = {}, catalogs = [])
         !idMatch &&
         !codeMatch &&
         !descMatch &&
+        !compactMatch &&
         !loteMatch &&
         !prodMatch &&
         !varMatch &&

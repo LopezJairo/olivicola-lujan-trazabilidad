@@ -14,7 +14,9 @@ import { loadDatabase, createDrum } from '../api/repository.js';
 import {
   nextTamborId,
   buildDescriptiveCode,
+  buildCompactCode,
   buildFullCode,
+  getSuggestedWeightForProduct,
   validateDrum,
   normalizeDrumInput,
   resolveCatalogName,
@@ -49,6 +51,11 @@ export function NewDrumPage() {
   const locationOptions = useMemo(() => activeCatalogs.filter((c) => c.tipo === 'ubicacion'), [activeCatalogs]);
   const statusOptions = useMemo(() => activeCatalogs.filter((c) => c.tipo === 'estado'), [activeCatalogs]);
 
+  // Peso sugerido para el primer producto por defecto
+  const initialDefaultWeight = useMemo(() => {
+    return getSuggestedWeightForProduct(productOptions[0]?.id, catalogos);
+  }, [productOptions, catalogos]);
+
   // Estado del formulario
   const [formData, setFormData] = useState({
     producto: productOptions[0]?.id || '',
@@ -57,7 +64,7 @@ export function NewDrumPage() {
     calibre: caliberOptions[0]?.id || '',
     calidad: qualityOptions[0]?.id || '',
     lote: '',
-    peso: '',
+    peso: initialDefaultWeight ? String(initialDefaultWeight) : '',
     fecha_ingreso: getTodayDateString(),
     fecha_elaboracion: '',
     ubicacion: locationOptions[0]?.id || '',
@@ -73,12 +80,33 @@ export function NewDrumPage() {
     return buildDescriptiveCode(formData, catalogos);
   }, [formData, catalogos]);
 
+  const liveCompactCode = useMemo(() => {
+    return buildCompactCode(liveDescriptiveCode);
+  }, [liveDescriptiveCode]);
+
   const liveFullCode = useMemo(() => {
     return buildFullCode(liveDescriptiveCode, nextId);
   }, [liveDescriptiveCode, nextId]);
 
+  const currentSuggestedWeight = useMemo(() => {
+    return getSuggestedWeightForProduct(formData.producto, catalogos);
+  }, [formData.producto, catalogos]);
+
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === 'producto') {
+      const prevSuggested = getSuggestedWeightForProduct(formData.producto, catalogos);
+      const newSuggested = getSuggestedWeightForProduct(value, catalogos);
+      setFormData((prev) => {
+        const shouldUpdateWeight = !prev.peso || (prevSuggested && Number(prev.peso) === prevSuggested);
+        return {
+          ...prev,
+          producto: value,
+          peso: shouldUpdateWeight && newSuggested ? String(newSuggested) : prev.peso,
+        };
+      });
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -288,19 +316,36 @@ export function NewDrumPage() {
 
                 {/* Peso Neto */}
                 <div>
-                  <label className="text-xs font-semibold text-bone-700 block mb-1">
-                    Peso Neto (Kilogramos) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-bone-700 block">
+                      Peso Neto (Kilogramos) *
+                    </label>
+                    {currentSuggestedWeight && (
+                      <button
+                        type="button"
+                        onClick={() => handleChange('peso', String(currentSuggestedWeight))}
+                        className="text-[10px] font-mono text-olive-800 hover:text-olive-950 bg-olive-50 hover:bg-olive-100 px-2 py-0.5 rounded border border-olive-200 transition-colors"
+                        title="Hacer clic para autocompletar el peso sugerido"
+                      >
+                        Sugerido: {currentSuggestedWeight} kg
+                      </button>
+                    )}
+                  </div>
                   <Input
                     type="number"
                     step="0.1"
                     min="0.1"
-                    placeholder="ej: 220.5"
+                    placeholder={currentSuggestedWeight ? `ej: ${currentSuggestedWeight}` : 'ej: 180'}
                     value={formData.peso}
                     onChange={(e) => handleChange('peso', e.target.value)}
                     error={errors.peso}
                     mono
                   />
+                  {currentSuggestedWeight && (
+                    <span className="text-[10px] text-bone-500 mt-1 block">
+                      Estándar oficial de planta: {currentSuggestedWeight} kg/tambor
+                    </span>
+                  )}
                 </div>
 
                 {/* Fecha de Ingreso */}
@@ -431,6 +476,20 @@ export function NewDrumPage() {
                   </span>
                   <span className="font-mono text-xs font-bold text-obsidian block truncate mt-0.5">
                     {liveDescriptiveCode || 'Completando clasificación...'}
+                  </span>
+                </div>
+
+                <div className="border-t border-bone-200 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-mono text-bone-500 block">
+                      Código Compacto (Base CODE 128)
+                    </span>
+                    <span className="text-[9px] font-mono text-olive-800 bg-olive-100 px-1.5 py-0.2 rounded font-semibold">
+                      Sin guiones / barra
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-olive-900 block truncate mt-0.5">
+                    {liveCompactCode || 'Completando clasificación...'}
                   </span>
                 </div>
 

@@ -12,11 +12,13 @@ tags:
 
 [[Olivícola Luján/00 - Índice general|← Volver al índice general]]
 
-## Tres identificadores distintos
+## Identificadores del tambor
 
 - `id`: identificador técnico interno utilizado por las rutas y el repositorio.
 - `tambor_id`: número visible y estable durante la vida del registro, por ejemplo `T000001`.
-- `codigo`: identificación completa que incluye características del producto y número visible.
+- `codigo_descriptivo`: código alfanumérico con guiones de los 5 atributos oficiales (`ENT-VDE-ALOR-121/140-PRI`).
+- `codigo_compacto`: código sin guiones ni barra del calibre (`ENTVDEALOR121140PRI`), especificado por la gerencia como la base oficial para generar el código de barras **CODE 128**.
+- `codigo`: identificación completa de trazabilidad que une el descriptivo y el número visible (`ENT-VDE-ALOR-121/140-PRI-T000001`).
 
 ## Numeración
 
@@ -28,18 +30,28 @@ La secuencia calculada en el cliente no es segura frente a altas simultáneas de
 
 ```text
 producto_codigo-presentacion_codigo-variedad_codigo-calibre_codigo-calidad_codigo
-ENT-VDE-ALOR-161/200-PRI
+ENT-VDE-ALOR-121/140-PRI
 ```
 
-El ejemplo procede del objetivo original. La implementación obtiene también el calibre desde su código en Catalogo, por lo que se debe configurar como `161/200` si se quiere ese resultado.
+Procede del Generador Automático de Códigos de Producto oficial de la gerencia.
 
-## Código completo
+## Código compacto y código de barras CODE 128
 
 ```text
-ENT-VDE-ALOR-161/200-PRI-T000001
+CÓDIGO COMPACTO (SIN GUIONES NI BARRA DEL CALIBRE):
+ENTVDEALOR121140PRI
+
+CÓDIGO BASE PARA GENERAR CODE 128:
+ENTVDEALOR121140PRI
 ```
 
-Se genera un código de barras **CODE 128** desde esta cadena. El lector debe poder leer la cadena íntegra y enviar Enter.
+El código de barras **CODE 128** en las etiquetas se genera a partir de este formato compacto, reduciendo la densidad de barras en etiquetas térmicas de 50 mm y facilitando una lectura óptica inmediata y sin fallos por parte de los lectores USB de planta. El escáner admite la búsqueda tanto por número `tambor_id`, código completo `codigo`, código compacto `codigo_compacto` o código descriptivo.
+
+## Código completo de trazabilidad
+
+```text
+ENT-VDE-ALOR-121/140-PRI-T000001
+```
 
 ## Contenido y papel
 

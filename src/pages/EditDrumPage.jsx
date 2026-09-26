@@ -12,7 +12,9 @@ import {
 import { loadDatabase, updateDrum } from '../api/repository.js';
 import {
   buildDescriptiveCode,
+  buildCompactCode,
   buildFullCode,
+  getSuggestedWeightForProduct,
   validateDrum,
   normalizeDrumInput,
 } from '../lib/domain.js';
@@ -79,12 +81,33 @@ export function EditDrumPage() {
     return buildDescriptiveCode(formData, catalogos);
   }, [formData, catalogos]);
 
+  const liveCompactCode = useMemo(() => {
+    return buildCompactCode(liveDescriptiveCode);
+  }, [liveDescriptiveCode]);
+
   const liveFullCode = useMemo(() => {
     return buildFullCode(liveDescriptiveCode, drum.tambor_id);
   }, [liveDescriptiveCode, drum.tambor_id]);
 
+  const currentSuggestedWeight = useMemo(() => {
+    return getSuggestedWeightForProduct(formData.producto, catalogos);
+  }, [formData.producto, catalogos]);
+
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === 'producto') {
+      const prevSuggested = getSuggestedWeightForProduct(formData.producto, catalogos);
+      const newSuggested = getSuggestedWeightForProduct(value, catalogos);
+      setFormData((prev) => {
+        const shouldUpdateWeight = !prev.peso || (prevSuggested && Number(prev.peso) === prevSuggested);
+        return {
+          ...prev,
+          producto: value,
+          peso: shouldUpdateWeight && newSuggested ? String(newSuggested) : prev.peso,
+        };
+      });
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -276,7 +299,19 @@ export function EditDrumPage() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-bone-700 block mb-1">Peso Neto (kg) *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-semibold text-bone-700 block">Peso Neto (kg) *</label>
+                    {currentSuggestedWeight && (
+                      <button
+                        type="button"
+                        onClick={() => handleChange('peso', String(currentSuggestedWeight))}
+                        className="text-[10px] font-mono text-olive-800 hover:text-olive-950 bg-olive-50 hover:bg-olive-100 px-2 py-0.5 rounded border border-olive-200 transition-colors"
+                        title="Aplicar peso sugerido oficial"
+                      >
+                        Sugerido: {currentSuggestedWeight} kg
+                      </button>
+                    )}
+                  </div>
                   <Input
                     type="number"
                     step="0.1"
@@ -286,6 +321,11 @@ export function EditDrumPage() {
                     error={errors.peso}
                     mono
                   />
+                  {currentSuggestedWeight && (
+                    <span className="text-[10px] text-bone-500 mt-1 block">
+                      Estándar oficial de planta: {currentSuggestedWeight} kg/tambor
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -386,6 +426,19 @@ export function EditDrumPage() {
                   </span>
                   <span className="font-mono text-xs font-bold text-obsidian block truncate mt-0.5">
                     {liveDescriptiveCode}
+                  </span>
+                </div>
+                <div className="border-t border-bone-200 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-mono text-bone-500 block">
+                      Código Compacto (Base CODE 128)
+                    </span>
+                    <span className="text-[9px] font-mono text-olive-800 bg-olive-100 px-1.5 py-0.2 rounded font-semibold">
+                      Sin guiones / barra
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-olive-900 block truncate mt-0.5">
+                    {liveCompactCode}
                   </span>
                 </div>
                 <div className="border-t border-bone-200 pt-2">

@@ -14,6 +14,7 @@ import {
 import {
   nextTamborId,
   buildDescriptiveCode,
+  buildCompactCode,
   buildFullCode,
   normalizeDrumInput,
   validateDrum,
@@ -63,6 +64,12 @@ function getInitialState(mode) {
   };
 }
 
+function isCatalogOutdated(cachedCatalogs = []) {
+  if (!Array.isArray(cachedCatalogs) || cachedCatalogs.length === 0) return false;
+  const codes = new Set(cachedCatalogs.map((c) => c?.codigo));
+  return !codes.has('FET') || !codes.has('GRI') || !codes.has('ROTA') || !codes.has('SIN CAL');
+}
+
 export function loadDatabase() {
   const mode = getCurrentWorkspaceMode();
   const key = getStorageKeyForMode(mode);
@@ -74,6 +81,31 @@ export function loadDatabase() {
       return initial;
     }
     const parsed = JSON.parse(raw);
+
+    // Migración automática si los catálogos en caché son provisionales o desactualizados
+    if (isCatalogOutdated(parsed.catalogos)) {
+      if (mode === 'demo') {
+        const freshDemo = getInitialState('demo');
+        saveDatabase(freshDemo, 'demo');
+        return freshDemo;
+      }
+      const existingCodes = new Set((parsed.catalogos || []).map((c) => `${c.tipo}:${c.codigo}`));
+      const mergedCatalogs = [...(parsed.catalogos || [])];
+      for (const official of INITIAL_CATALOGOS) {
+        if (!existingCodes.has(`${official.tipo}:${official.codigo}`)) {
+          mergedCatalogs.push(official);
+        }
+      }
+      const updated = {
+        catalogos: mergedCatalogs,
+        tambores: Array.isArray(parsed.tambores) ? parsed.tambores : [],
+        historial: Array.isArray(parsed.historial) ? parsed.historial : [],
+        movimientos: Array.isArray(parsed.movimientos) ? parsed.movimientos : [],
+      };
+      saveDatabase(updated, mode);
+      return updated;
+    }
+
     return {
       catalogos: Array.isArray(parsed.catalogos) ? parsed.catalogos : INITIAL_CATALOGOS,
       tambores: Array.isArray(parsed.tambores) ? parsed.tambores : [],
@@ -165,6 +197,7 @@ export async function createDrum(rawInput, currentUser = null) {
   // Asignar ID secuencial único evitando reciclados
   const nextId = nextTamborId(state.tambores, state.historial);
   const descCode = buildDescriptiveCode(normalized, state.catalogos);
+  const compactCode = buildCompactCode(descCode);
   const fullCode = buildFullCode(descCode, nextId);
 
   const newDrum = {
@@ -172,6 +205,7 @@ export async function createDrum(rawInput, currentUser = null) {
     id: `tb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     tambor_id: nextId,
     codigo_descriptivo: descCode,
+    codigo_compacto: compactCode,
     codigo: fullCode,
     created_date: new Date().toISOString(),
   };
@@ -221,6 +255,7 @@ export async function updateDrum(id, rawInput, currentUser = null) {
 
   // Recalcular códigos conservando tambor_id
   const descCode = buildDescriptiveCode(normalized, state.catalogos);
+  const compactCode = buildCompactCode(descCode);
   const fullCode = buildFullCode(descCode, existingDrum.tambor_id);
 
   const updatedDrum = {
@@ -229,6 +264,7 @@ export async function updateDrum(id, rawInput, currentUser = null) {
     id: existingDrum.id,
     tambor_id: existingDrum.tambor_id,
     codigo_descriptivo: descCode,
+    codigo_compacto: compactCode,
     codigo: fullCode,
     updated_date: new Date().toISOString(),
   };
@@ -427,8 +463,8 @@ export async function saveCatalogItem(catalogItem) {
 
   const cleanCode = String(codigo).trim().toUpperCase();
 
-  // Validar formato del código (letras sin acento, números, / y guiones)
-  if (!/^[A-Z0-9]+([/-][A-Z0-9]+)*$/.test(cleanCode)) {
+  // Validar formato del código (letras mayúsculas sin acento, números, espacios, / y guiones)
+  if (!/^[A-Z0-9]+([ /\\-][A-Z0-9]+)*$/.test(cleanCode)) {
     throw new Error('El código solo puede contener letras mayúsculas, números, / y guiones');
   }
 

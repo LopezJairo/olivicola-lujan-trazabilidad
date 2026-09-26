@@ -86,28 +86,42 @@ export function PhysicalLabel({
         </span>
       </div>
 
-      {/* Código de barras CODE 128 */}
+      {/* Código de barras CODE 128 (basado en Código Compacto según especificación oficial) */}
       <div className="flex flex-col items-center justify-center my-1 bg-white">
         <BarcodeSvg
-          value={drum.codigo || drum.tambor_id}
+          value={drum.codigo_compacto || drum.codigo || drum.tambor_id}
           width={1.2}
           height={48}
           displayValue={false}
           className="max-w-full"
         />
         <div className="text-[8.5px] font-mono tracking-tighter text-center mt-1 text-black font-semibold break-all px-1">
-          {drum.codigo || drum.tambor_id}
+          {drum.codigo_compacto || drum.codigo || drum.tambor_id}
         </div>
       </div>
 
       {/* Identificador Principal */}
-      <div className="text-center my-1 border-t border-b border-black py-1.5 bg-gray-50">
-        <span className="text-[9px] uppercase tracking-wider text-gray-600 block">
+      <div className="text-center my-1 border-t border-b border-black py-1 bg-gray-50">
+        <span className="text-[8px] uppercase tracking-wider text-gray-600 block">
           Identificación
         </span>
-        <span className="text-[16px] font-mono font-black tracking-wider block">
+        <span className="text-[15px] font-mono font-black tracking-wider block">
           {`Tambor ${drum.tambor_id}`}
         </span>
+        <div className="flex flex-col items-center justify-center my-0.5">
+          <BarcodeSvg
+            value={drum.tambor_id}
+            width={1.3}
+            height={22}
+            displayValue={false}
+            className="max-w-full"
+          />
+        </div>
+        {drum.codigo && (
+          <span className="text-[7.5px] font-mono text-gray-600 block truncate mt-0.5">
+            {drum.codigo}
+          </span>
+        )}
       </div>
 
       {/* Metadata operativa esencial */}
