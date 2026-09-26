@@ -11,6 +11,7 @@ import {
   importDatabaseJSON,
   resetDemoDatabase,
   setCurrentWorkspaceMode,
+  applyInventoryAudit,
 } from '../src/api/repository.js';
 
 // Mock localStorage para Vitest en entorno Node
@@ -288,4 +289,79 @@ describe('Pruebas de Repositorio y Ciclo Integral de Trazabilidad', () => {
     expect(codes).toContain('SIN CAL');
     expect(codes).toContain('ENT');
   });
+
+  it('12. applyInventoryAudit actualiza tambores reubicados, genera movimientos y registra historial', async () => {
+    const dbBefore = loadDatabase();
+    const targetDrum = dbBefore.tambores[0]; // T000001, ubicada en cat-ubi-1 (Nave A - Fila 1)
+    expect(targetDrum.ubicacion).toBe('cat-ubi-1');
+
+    // Simular resultado de auditoría donde T000001 fue escaneado en cat-ubi-2 (Nave A - Fila 2)
+    const auditData = {
+      relocations: [
+        {
+          drumId: targetDrum.id,
+          tambor_id: targetDrum.tambor_id,
+          oldSectorId: 'cat-ubi-1',
+          newSectorId: 'cat-ubi-2',
+        },
+      ],
+    };
+
+    const result = await applyInventoryAudit(auditData, { nombre: 'Auditor Planta' });
+    expect(result.success).toBe(true);
+    expect(result.relocationsApplied).toBe(1);
+    expect(result.movementsCreated).toBe(1);
+
+    const dbAfter = loadDatabase();
+    const updatedDrum = dbAfter.tambores.find((d) => d.id === targetDrum.id);
+    expect(updatedDrum.ubicacion).toBe('cat-ubi-2');
+
+    // Verificar que se registró la entidad Movimiento
+    const latestMove = dbAfter.movimientos[0];
+    expect(latestMove.tambor_id).toBe(targetDrum.tambor_id);
+    expect(latestMove.ubicacion_anterior).toBe('cat-ubi-1');
+    expect(latestMove.ubicacion_nueva).toBe('cat-ubi-2');
+    expect(latestMove.observaciones).toContain('Nave A - Fila 2');
+
+    // Verificar que se registró el evento de Movimiento y Edición en Historial
+    const historyMove = dbAfter.historial.find(
+      (h) => h.tambor_id === targetDrum.tambor_id && h.tipo === 'Movimiento'
+    );
+    expect(historyMove).toBeDefined();
+    expect(historyMove.actor).toBe('Auditor Planta');
+  });
+
+  it('13. applyInventoryAudit estampa ultima_auditoria en tambores verificados y registra evento global de inventario', async () => {
+    const dbBefore = loadDatabase();
+    const verifiedDrum = dbBefore.tambores[1]; // T000002
+
+    const auditData = {
+      validDrumsCount: 1,
+      sectorsCount: 1,
+      relocations: [], // 0 reubicaciones (todos en su lugar)
+      sectors: [
+        {
+          sector: { id: 'cat-ubi-1', codigo: 'NAV-A1', nombre: 'Nave A - Fila 1' },
+          drums: [{ tambor_id: verifiedDrum.tambor_id, raw: verifiedDrum.codigo }],
+        },
+      ],
+    };
+
+    const result = await applyInventoryAudit(auditData, { nombre: 'Jefe de Planta' });
+    expect(result.success).toBe(true);
+    expect(result.relocationsApplied).toBe(0);
+    expect(result.auditedCount).toBe(1);
+
+    const dbAfter = loadDatabase();
+    const updated = dbAfter.tambores.find((d) => d.id === verifiedDrum.id);
+    expect(updated.ultima_auditoria).toBeDefined();
+
+    // Evento de Inventario global
+    const invEvent = dbAfter.historial.find((h) => h.tipo === 'Inventario');
+    expect(invEvent).toBeDefined();
+    expect(invEvent.descripcion).toContain('1 tambores auditados');
+    expect(invEvent.actor).toBe('Jefe de Planta');
+  });
 });
+
+

@@ -11,6 +11,7 @@ import { EditDrumPage } from './pages/EditDrumPage.jsx';
 import { IndividualLabelPage } from './pages/IndividualLabelPage.jsx';
 import { BatchLabelsPage } from './pages/BatchLabelsPage.jsx';
 import { HistoryPage } from './pages/HistoryPage.jsx';
+import { InventoryAuditPage } from './pages/InventoryAuditPage.jsx';
 import { ConfigurationPage } from './pages/ConfigurationPage.jsx';
 import { HelpPage } from './pages/HelpPage.jsx';
 import { Button } from './components/ui/button.jsx';
@@ -67,6 +68,7 @@ export function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/escanear" element={<ScanPage />} />
                 <Route path="/inventario" element={<InventoryPage />} />
+                <Route path="/inventario/toma" element={<InventoryAuditPage />} />
                 <Route path="/tambores/nuevo" element={<NewDrumPage />} />
                 <Route path="/tambores/:id" element={<DrumDetailPage />} />
                 <Route path="/tambores/:id/editar" element={<EditDrumPage />} />

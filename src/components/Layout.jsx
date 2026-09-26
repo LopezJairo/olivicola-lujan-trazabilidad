@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Sparkles,
   Database,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from './Auth.jsx';
 import { getCurrentWorkspaceMode, setCurrentWorkspaceMode, resetDemoDatabase } from '../api/repository.js';
@@ -64,7 +65,9 @@ export function Layout({ children }) {
     { label: 'Inicio', path: '/', icon: Home, kbd: '1' },
     { label: 'Escanear Tambor', path: '/escanear', icon: QrCode, kbd: '2', highlight: true },
     { label: 'Inventario', path: '/inventario', icon: Layers, kbd: '3' },
+    { label: 'Toma por Sectores', path: '/inventario/toma', icon: Building2 },
     { label: 'Registrar Tambor', path: '/tambores/nuevo', icon: PlusCircle, kbd: '4', primary: true },
+    { label: 'Etiquetas Térmicas', path: '/etiquetas', icon: Printer },
     { label: 'Historial Global', path: '/historial', icon: Clock, kbd: '5' },
     { label: 'Configuración', path: '/configuracion', icon: Settings, kbd: '6' },
     { label: 'Ayuda y Manual', path: '/ayuda', icon: HelpCircle },

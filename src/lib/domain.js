@@ -537,3 +537,440 @@ export function calculateInventoryTotals(drums = []) {
     totalLocations: locations.size,
   };
 }
+
+/**
+ * Normaliza un código de sector o ubicación para comparación tolerante.
+ * Elimina prefijos comunes como 'SEC-', 'SECTOR-', 'UBI-', 'UBICACION-',
+ * guiones, barras, espacios y acentos.
+ */
+export function normalizeSectorCode(str) {
+  if (!str) return '';
+  let clean = removeAccents(str).toUpperCase().trim();
+  // Eliminar asteriscos de simbologías o etiquetas físicas (ej: * NAV-A1 *)
+  clean = clean.replace(/^\*+|\*+$/g, '').trim();
+  clean = clean.replace(/^(SEC|SECTOR|UBI|UBICACION)[-_:\s]*/i, '');
+  return clean.replace(/[-_/\s]/g, '').trim();
+}
+
+/**
+ * Determina si una cadena de texto o código escaneado corresponde a un sector de la planta.
+ * Compara contra el catálogo oficial de ubicaciones (por código, id o nombre).
+ *
+ * @param {string} code - Código escaneado (ej: "NAV-A1", "SEC-NAV-A1", "cat-ubi-1")
+ * @param {Array} catalogs - Catálogos del sistema
+ * @returns {{ isSector: boolean, sector: Object | null, sectorCode: string }}
+ */
+export function isSectorCode(code, catalogs = []) {
+  if (!code || typeof code !== 'string') {
+    return { isSector: false, sector: null, sectorCode: '' };
+  }
+
+  const rawTrimmed = code.trim().replace(/^\*+|\*+$/g, '').trim();
+  const upperTrimmed = rawTrimmed.toUpperCase();
+  const normalizedInput = normalizeSectorCode(rawTrimmed);
+
+  if (!normalizedInput) {
+    return { isSector: false, sector: null, sectorCode: '' };
+  }
+
+  // Filtrar ubicaciones del catálogo
+  const locations = (catalogs || []).filter((c) => c && c.tipo === 'ubicacion');
+
+  for (const loc of locations) {
+    if (!loc) continue;
+
+    // 1. Coincidencia por ID técnico (ej: "cat-ubi-1")
+    if (loc.id && loc.id.toUpperCase() === upperTrimmed) {
+      return { isSector: true, sector: loc, sectorCode: loc.codigo || loc.id };
+    }
+
+    // 2. Coincidencia por código de sector (ej: "NAV-A1")
+    if (loc.codigo) {
+      const locCodeNorm = normalizeSectorCode(loc.codigo);
+      if (
+        loc.codigo.toUpperCase() === upperTrimmed ||
+        locCodeNorm === normalizedInput ||
+        upperTrimmed === `SEC-${loc.codigo.toUpperCase()}` ||
+        upperTrimmed === `SECTOR-${loc.codigo.toUpperCase()}`
+      ) {
+        return { isSector: true, sector: loc, sectorCode: loc.codigo };
+      }
+    }
+
+    // 3. Coincidencia por nombre exacto normalizado
+    if (loc.nombre) {
+      const locNameNorm = normalizeSectorCode(loc.nombre);
+      if (locNameNorm === normalizedInput && normalizedInput.length >= 4) {
+        return { isSector: true, sector: loc, sectorCode: loc.codigo || loc.id };
+      }
+    }
+  }
+
+  // 4. Si tiene prefijo explícito SEC- o SECTOR- pero no está en catálogo, reconocerlo como sector genérico
+  if (/^(SEC|SECTOR)[-_:\s]+/i.test(rawTrimmed)) {
+    const extractedCode = rawTrimmed.replace(/^(SEC|SECTOR)[-_:\s]*/i, '').trim().toUpperCase();
+    return {
+      isSector: true,
+      sector: {
+        id: `custom-sec-${extractedCode}`,
+        codigo: extractedCode,
+        nombre: `Sector ${extractedCode}`,
+        tipo: 'ubicacion',
+        activo: true,
+      },
+      sectorCode: extractedCode,
+    };
+  }
+
+  return { isSector: false, sector: null, sectorCode: '' };
+}
+
+/**
+ * Extrae el tambor_id y el código descriptivo/compacto de una lectura de escáner.
+ * Soporta múltiples formatos de escaneo:
+ * - Código completo: "ENT-VDE-ALOR-121/140-PRI-T000001"
+ * - ID único: "T000001"
+ * - Compacto con ID: "ENTVDEALOR121140PRI-T000001" o "ENTVDEALOR121140PRIT000001"
+ * - Código descriptivo solo: "ENT-VDE-ALOR-121/140-PRI" (no fabrica tambor_id arbitrario)
+ *
+ * @param {string} rawString - Lectura cruda del escáner
+ * @param {Array} drums - Lista de tambores existentes para desambiguación/enriquecimiento
+ * @returns {Object} { tamborId, descriptiveCode, compactCode, raw }
+ */
+export function extractDrumIdAndCode(rawString, drums = []) {
+  if (!rawString || typeof rawString !== 'string') {
+    return { tamborId: null, descriptiveCode: '', compactCode: '', raw: '' };
+  }
+
+  const raw = rawString.trim().replace(/^\*+|\*+$/g, '').trim();
+  const upper = raw.toUpperCase();
+
+  let tamborId = null;
+  let descriptiveCode = '';
+
+  // 1. Buscar patrón de tambor_id (T seguido de 4 a 8 dígitos, ej: T000001)
+  const idMatch = upper.match(/(?:^|[-_/])(T\d{4,})(?:$|[-_/])/i) || upper.match(/(T\d{4,})/i);
+  if (idMatch) {
+    tamborId = idMatch[1].toUpperCase();
+  }
+
+  // 2. Extraer código descriptivo si el string tiene formato <codigo>-<tambor_id>
+  if (tamborId && upper.endsWith(tamborId)) {
+    const prefix = raw.slice(0, raw.length - tamborId.length).replace(/[-_/\s]+$/, '').trim();
+    if (prefix) {
+      descriptiveCode = prefix;
+    }
+  }
+
+  // 3. Si se reconoció tambor_id, buscar tambor exacto en BD para enriquecer su código descriptivo
+  if (tamborId) {
+    const drumById = drums.find((d) => d.tambor_id?.toUpperCase() === tamborId);
+    if (drumById?.codigo_descriptivo) {
+      if (!descriptiveCode || !descriptiveCode.includes('-')) {
+        descriptiveCode = drumById.codigo_descriptivo;
+      }
+    }
+  } else {
+    // 4. Si NO hay tambor_id explícito, verificar si el texto coincide con ID único técnico (ej: "tb-001")
+    const drumByExactId = drums.find((d) => d.id && d.id.toUpperCase() === upper);
+    if (drumByExactId) {
+      tamborId = drumByExactId.tambor_id;
+      descriptiveCode = drumByExactId.codigo_descriptivo || descriptiveCode;
+    } else {
+      // O si coincide con el código completo único (ej: ENT-VDE-ALOR-121/140-PRI-T000001)
+      const drumByFullCode = drums.find((d) => d.codigo && d.codigo.toUpperCase() === upper);
+      if (drumByFullCode) {
+        tamborId = drumByFullCode.tambor_id;
+        descriptiveCode = drumByFullCode.codigo_descriptivo || descriptiveCode;
+      }
+    }
+  }
+
+  // 5. Si aún no hay código descriptivo pero el string contiene especificación o coincide con compacto
+  if (!descriptiveCode) {
+    if (raw.includes('-')) {
+      descriptiveCode = raw;
+    } else {
+      const drumByCompact = drums.find((d) => d.codigo_compacto && d.codigo_compacto.toUpperCase() === upper);
+      if (drumByCompact?.codigo_descriptivo) {
+        descriptiveCode = drumByCompact.codigo_descriptivo;
+      } else {
+        descriptiveCode = raw;
+      }
+    }
+  }
+
+  const compactCode = descriptiveCode ? buildCompactCode(descriptiveCode) : '';
+
+  return {
+    tamborId,
+    descriptiveCode,
+    compactCode,
+    raw,
+  };
+}
+
+/**
+ * Parsea el flujo de lectura de inventario generado por un escáner con memoria interna,
+ * volcado tabular (TSV/CSV) o pistola USB en vivo.
+ * Reconoce el sector activo y asocia los tambores subsiguientes a ese sector.
+ * Realiza:
+ * 1. Detección y cambio de sector en base a códigos de sector (ej: NAV-A1).
+ * 2. Control estricto de duplicados mediante ID único (T000001) omitiendo re-escaneos.
+ * 3. Agrupación y conteo por código alfanumérico descriptivo (ej: "11 tambores de ENT-VDE-ALOR-121/140-PRI").
+ * 4. Detección de discrepancias:
+ *    - Tambores reubicados (su ubicación en BD es distinta al sector donde fueron escaneados).
+ *    - Tambores faltantes (estaban registrados en el sector en BD pero no fueron escaneados).
+ *    - Tambores no registrados (escaneados pero inexistentes en BD).
+ *
+ * @param {string|Array<string>} rawInput - Texto con saltos de línea/delimitadores o array de strings
+ * @param {Object} options - { catalogos: Array, tambores: Array }
+ * @returns {Object} Resultado estructurado de la toma de inventario
+ */
+export function parseInventoryScanStream(rawInput, { catalogos = [], tambores = [] } = {}) {
+  // Convertir entrada a array de líneas limpias
+  let rawLines = [];
+  if (Array.isArray(rawInput)) {
+    rawLines = rawInput.map((l) => (l != null ? String(l).trim() : '')).filter(Boolean);
+  } else if (typeof rawInput === 'string') {
+    rawLines = rawInput.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  }
+
+  // Detector de columnas secundarias que son metadatos y no códigos de barras
+  const isMetadataToken = (token) => {
+    if (!token) return true;
+    const t = token.trim();
+    const clean = removeAccents(t);
+    if (/^(n[°o]|num|numero|item|id|index|codigo|cod|barcode|sector|ubicacion|fecha|date|hora|time|timestamp|scan)$/i.test(clean)) return true;
+    if (/^\d{1,4}$/.test(t)) return true; // Números de fila (1, 2, 3...)
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(t) || /^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(t)) return true; // Fechas
+    if (/^\d{1,2}:\d{2}(:\d{2})?(\s*(am|pm))?$/i.test(t)) return true; // Horas
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}[ T]\d{1,2}:\d{2}/.test(t)) return true; // Timestamp completo
+    if (/^[|\-=_*#]+$/.test(t)) return true; // Decoradores
+    return false;
+  };
+
+  const lines = [];
+  for (const line of rawLines) {
+    if (line.startsWith('//') || line.startsWith('#')) continue;
+
+    if (line.includes('\t') || line.includes('|')) {
+      const parts = line.split(/[\t|]+/).map((p) => p.trim()).filter(Boolean);
+      for (const part of parts) {
+        if (!isMetadataToken(part)) {
+          lines.push(part);
+        }
+      }
+    } else if (line.includes(',') || line.includes(';')) {
+      const parts = line.split(/[,;]+/).map((p) => p.trim()).filter(Boolean);
+      for (const part of parts) {
+        if (!isMetadataToken(part)) {
+          lines.push(part);
+        }
+      }
+    } else {
+      if (!isMetadataToken(line)) {
+        lines.push(line);
+      }
+    }
+  }
+
+  const seenDrumIds = new Set();
+  const duplicateScans = [];
+  const relocations = [];
+  const unregistered = [];
+  const scannedValidDrums = [];
+
+  // Mapa ordenado de sectores
+  const sectorsMap = new Map();
+
+  const getOrCreateSectorEntry = (sectorObj) => {
+    const secId = sectorObj?.id || 'unassigned';
+    if (!sectorsMap.has(secId)) {
+      sectorsMap.set(secId, {
+        sector: sectorObj || {
+          id: 'unassigned',
+          codigo: 'SIN_SECTOR',
+          nombre: 'Sin Sector Asignado',
+          tipo: 'ubicacion',
+        },
+        drums: [],
+        duplicates: [],
+        groups: new Map(), // descriptiveCode -> { count, drums, totalKg }
+        missingDrums: [],
+        relocations: [],
+      });
+    }
+    return sectorsMap.get(secId);
+  };
+
+  let currentSector = null;
+
+  for (const line of lines) {
+    // 1. ¿Es código de sector?
+    const sectorDetection = isSectorCode(line, catalogos);
+    if (sectorDetection.isSector) {
+      currentSector = sectorDetection.sector;
+      getOrCreateSectorEntry(currentSector);
+      continue;
+    }
+
+    // 2. Es lectura de tambor
+    const targetSector = currentSector || {
+      id: 'unassigned',
+      codigo: 'SIN_SECTOR',
+      nombre: 'Sin Sector Asignado',
+      tipo: 'ubicacion',
+    };
+    const sectorEntry = getOrCreateSectorEntry(targetSector);
+
+    const parsed = extractDrumIdAndCode(line, tambores);
+
+    // Si tiene tambor_id, verificar unicidad
+    if (parsed.tamborId) {
+      if (seenDrumIds.has(parsed.tamborId)) {
+        const dupItem = {
+          tamborId: parsed.tamborId,
+          raw: line,
+          sector: targetSector,
+          descriptiveCode: parsed.descriptiveCode,
+        };
+        duplicateScans.push(dupItem);
+        sectorEntry.duplicates.push(dupItem);
+        continue; // Omitir duplicado para no contabilizar dos veces
+      }
+      seenDrumIds.add(parsed.tamborId);
+    }
+
+    // Buscar en BD
+    const dbDrum = tambores.find(
+      (d) =>
+        (parsed.tamborId && d.tambor_id?.toUpperCase() === parsed.tamborId.toUpperCase()) ||
+        d.codigo?.toUpperCase() === line.toUpperCase() ||
+        d.id === line
+    );
+
+    let weight = 0;
+    let descCode = parsed.descriptiveCode;
+
+    if (dbDrum) {
+      weight = Number(dbDrum.peso) || 0;
+      if (!descCode) descCode = dbDrum.codigo_descriptivo;
+
+      // Verificar si cambió de sector
+      if (targetSector.id !== 'unassigned' && dbDrum.ubicacion !== targetSector.id) {
+        const relocationItem = {
+          drumId: dbDrum.id,
+          tambor_id: dbDrum.tambor_id,
+          codigo: dbDrum.codigo,
+          codigo_descriptivo: dbDrum.codigo_descriptivo,
+          peso: dbDrum.peso,
+          lote: dbDrum.lote,
+          oldSectorId: dbDrum.ubicacion,
+          oldSectorName: resolveCatalogName(catalogos, dbDrum.ubicacion, 'ubicacion'),
+          newSectorId: targetSector.id,
+          newSectorName: targetSector.nombre || targetSector.codigo,
+        };
+        relocations.push(relocationItem);
+        sectorEntry.relocations.push(relocationItem);
+      }
+    } else {
+      // Sugerir peso predeterminado del producto si no está en BD
+      const prodCode = (descCode || line).split('-')[0];
+      weight = getSuggestedWeightForProduct(prodCode, catalogos) || 0;
+
+      if (parsed.tamborId) {
+        unregistered.push({
+          tamborId: parsed.tamborId,
+          raw: line,
+          sector: targetSector,
+        });
+      }
+    }
+
+    if (!descCode) {
+      descCode = line;
+    }
+
+    const drumEntry = {
+      raw: line,
+      tambor_id: parsed.tamborId || (dbDrum ? dbDrum.tambor_id : null),
+      codigo_descriptivo: descCode,
+      peso: weight,
+      dbDrum: dbDrum || null,
+      isRelocated: Boolean(dbDrum && targetSector.id !== 'unassigned' && dbDrum.ubicacion !== targetSector.id),
+      isUnregistered: Boolean(!dbDrum && parsed.tamborId),
+      sectorId: targetSector.id,
+      sectorCode: targetSector.codigo,
+      sectorName: targetSector.nombre,
+    };
+
+    sectorEntry.drums.push(drumEntry);
+    scannedValidDrums.push(drumEntry);
+
+    // Agrupación por código alfanumérico dentro del sector
+    const groupKey = descCode || 'SIN_CODIGO';
+    if (!sectorEntry.groups.has(groupKey)) {
+      sectorEntry.groups.set(groupKey, {
+        codigo_descriptivo: groupKey,
+        count: 0,
+        totalKg: 0,
+        drumIds: [],
+        drums: [],
+      });
+    }
+    const group = sectorEntry.groups.get(groupKey);
+    group.count += 1;
+    group.totalKg += weight;
+    if (drumEntry.tambor_id) {
+      group.drumIds.push(drumEntry.tambor_id);
+    }
+    group.drums.push(drumEntry);
+  }
+
+  // Detectar tambores faltantes en cada sector auditado
+  let totalMissing = 0;
+  for (const [secId, entry] of sectorsMap.entries()) {
+    if (secId === 'unassigned') continue;
+
+    // Tambores que según la BD deberían estar en este sector
+    const expectedInSector = tambores.filter((d) => d.ubicacion === secId);
+    entry.missingDrums = expectedInSector.filter((d) => !seenDrumIds.has(d.tambor_id));
+    totalMissing += entry.missingDrums.length;
+  }
+
+  // Convertir mapas de grupos a arrays limpios
+  const processedSectors = Array.from(sectorsMap.values()).map((s) => ({
+    sector: s.sector,
+    totalDrums: s.drums.length,
+    totalKg: Math.round(s.drums.reduce((acc, d) => acc + (d.peso || 0), 0) * 100) / 100,
+    groups: Array.from(s.groups.values()).map((g) => ({
+      ...g,
+      totalKg: Math.round(g.totalKg * 100) / 100,
+    })),
+    duplicatesCount: s.duplicates.length,
+    duplicates: s.duplicates,
+    relocationsCount: s.relocations.length,
+    relocations: s.relocations,
+    missingCount: s.missingDrums.length,
+    missingDrums: s.missingDrums,
+    drums: s.drums,
+  }));
+
+  const totalKgAll = scannedValidDrums.reduce((acc, d) => acc + (d.peso || 0), 0);
+
+  return {
+    totalScannedCount: lines.length,
+    validDrumsCount: scannedValidDrums.length,
+    duplicatesCount: duplicateScans.length,
+    duplicateScans,
+    relocationsCount: relocations.length,
+    relocations,
+    missingCount: totalMissing,
+    unregisteredCount: unregistered.length,
+    unregistered,
+    totalKg: Math.round(totalKgAll * 100) / 100,
+    sectorsCount: processedSectors.filter((s) => s.sector.id !== 'unassigned').length,
+    sectors: processedSectors,
+  };
+}

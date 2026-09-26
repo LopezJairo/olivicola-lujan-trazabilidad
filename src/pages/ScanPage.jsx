@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   QrCode,
   Search,
@@ -12,9 +12,10 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
+  Building2,
 } from 'lucide-react';
 import { loadDatabase } from '../api/repository.js';
-import { resolveCatalogName } from '../lib/domain.js';
+import { resolveCatalogName, isSectorCode } from '../lib/domain.js';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Button } from '../components/ui/button.jsx';
@@ -61,6 +62,7 @@ export function ScanPage() {
   const [multipleMatches, setMultipleMatches] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [deletedTamborId, setDeletedTamborId] = useState(null);
+  const [detectedSector, setDetectedSector] = useState(null);
   const [autoRedirect, setAutoRedirect] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [scanHistory, setScanHistory] = useState([]);
@@ -97,6 +99,7 @@ export function ScanPage() {
       if (soundEnabled) playChime(true);
       setErrorMessage('');
       setDeletedTamborId(null);
+      setDetectedSector(null);
       setMultipleMatches([]);
       setLastScanned(exactUnique);
       setScanHistory((prev) => [
@@ -124,6 +127,7 @@ export function ScanPage() {
       if (soundEnabled) playChime(true);
       setErrorMessage('');
       setDeletedTamborId(null);
+      setDetectedSector(null);
       setMultipleMatches([]);
       setLastScanned(match);
       setScanHistory((prev) => [
@@ -139,6 +143,7 @@ export function ScanPage() {
       if (soundEnabled) playChime(true);
       setErrorMessage('');
       setDeletedTamborId(null);
+      setDetectedSector(null);
       setLastScanned(null);
       setMultipleMatches(matches);
       setScanHistory((prev) => [
@@ -150,17 +155,29 @@ export function ScanPage() {
       if (soundEnabled) playChime(false);
       setMultipleMatches([]);
       setLastScanned(null);
-      // Verificar si corresponde a un tambor dado de baja en el historial
-      const deletedEvent = (historial || []).find(
-        (h) => h.tambor_id?.toUpperCase() === norm
-      );
 
-      if (deletedEvent) {
-        setErrorMessage(`El tambor "${query}" existe en el registro pero fue dado de baja del inventario activo.`);
-        setDeletedTamborId(deletedEvent.tambor_id);
-      } else {
-        setErrorMessage(`Código desconocido: "${query}". Verifica la etiqueta o el número.`);
+      // Verificar si es un código de sector de planta
+      const sectorDetection = isSectorCode(query, catalogos);
+      if (sectorDetection.isSector) {
+        setErrorMessage(
+          `El código "${query}" corresponde al Sector de Planta "${sectorDetection.sector?.nombre || sectorDetection.sectorCode}". Para realizar el inventario físico de este sector, utiliza la Toma de Inventario por Sectores.`
+        );
+        setDetectedSector(sectorDetection.sector);
         setDeletedTamborId(null);
+      } else {
+        setDetectedSector(null);
+        // Verificar si corresponde a un tambor dado de baja en el historial
+        const deletedEvent = (historial || []).find(
+          (h) => h.tambor_id?.toUpperCase() === norm
+        );
+
+        if (deletedEvent) {
+          setErrorMessage(`El tambor "${query}" existe en el registro pero fue dado de baja del inventario activo.`);
+          setDeletedTamborId(deletedEvent.tambor_id);
+        } else {
+          setErrorMessage(`Código desconocido: "${query}". Verifica la etiqueta o el número.`);
+          setDeletedTamborId(null);
+        }
       }
       setScanInput('');
     }
@@ -244,6 +261,17 @@ export function ScanPage() {
             />
             <span>Abrir ficha directo al escanear</span>
           </label>
+
+          <Link to="/inventario/toma" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs border-olive-400 bg-olive-50/60 text-olive-900 hover:bg-olive-100 font-semibold"
+            >
+              <Building2 className="w-4 h-4 mr-1.5 text-olive-800" />
+              Toma por Sectores
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -307,6 +335,17 @@ export function ScanPage() {
                       className="text-xs bg-white text-red-900 border-red-300 hover:bg-red-100"
                     >
                       Consultar historial de auditoría de {deletedTamborId} →
+                    </Button>
+                  )}
+                  {detectedSector && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => navigate('/inventario/toma', { state: { initialSector: detectedSector.codigo } })}
+                      className="text-xs font-mono"
+                    >
+                      Abrir Toma de Inventario por Sectores ({detectedSector.codigo}) →
                     </Button>
                   )}
                 </div>

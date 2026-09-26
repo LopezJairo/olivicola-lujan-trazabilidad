@@ -13,6 +13,9 @@ import {
   isValidDateString,
   getSuggestedWeightForProduct,
   DEFAULT_PRODUCT_WEIGHTS,
+  isSectorCode,
+  extractDrumIdAndCode,
+  parseInventoryScanStream,
 } from '../src/lib/domain.js';
 
 const mockCatalogs = [
@@ -463,4 +466,200 @@ describe('Reglas de Dominio - OLIVÍCOLA LUJÁN', () => {
     const foundCaliberSpaces = searchDrums(drums, '121 140', {}, mockCatalogs);
     expect(foundCaliberSpaces).toHaveLength(1);
   });
+
+  // Test 14: Detección inteligente de códigos de sector
+  it('14. isSectorCode identifica códigos de sectores de planta con o sin prefijo SEC-', () => {
+    // Código directo existente en mockCatalogs (NAV-A3)
+    const res1 = isSectorCode('NAV-A3', mockCatalogs);
+    expect(res1.isSector).toBe(true);
+    expect(res1.sectorCode).toBe('NAV-A3');
+
+    // Con prefijo SEC-
+    const res2 = isSectorCode('SEC-NAV-A3', mockCatalogs);
+    expect(res2.isSector).toBe(true);
+    expect(res2.sectorCode).toBe('NAV-A3');
+
+    // Minúsculas y espacios tolerantes
+    const res3 = isSectorCode('  nav-a3  ', mockCatalogs);
+    expect(res3.isSector).toBe(true);
+
+    // Código de tambor NO debe ser sector
+    const resDrum = isSectorCode('ENT-VDE-ALOR-121/140-PRI-T000001', mockCatalogs);
+    expect(resDrum.isSector).toBe(false);
+
+    // Entrada vacía
+    expect(isSectorCode('', mockCatalogs).isSector).toBe(false);
+    expect(isSectorCode(null, mockCatalogs).isSector).toBe(false);
+  });
+
+  // Test 15: Extracción de tambor_id y código descriptivo/compacto
+  it('15. extractDrumIdAndCode descompone lecturas completas o individuales', () => {
+    // Código completo
+    const parsedFull = extractDrumIdAndCode('ENT-VDE-ALOR-121/140-PRI-T000001');
+    expect(parsedFull.tamborId).toBe('T000001');
+    expect(parsedFull.descriptiveCode).toBe('ENT-VDE-ALOR-121/140-PRI');
+    expect(parsedFull.compactCode).toBe('ENTVDEALOR121140PRI');
+
+    // Solo ID con tambores existentes en BD
+    const mockDrums = [
+      {
+        tambor_id: 'T000005',
+        codigo_descriptivo: 'DES-NEG-ARA-161/200-SDA',
+        codigo_compacto: 'DESNEGARA161200SDA',
+      },
+    ];
+    const parsedIdOnly = extractDrumIdAndCode('T000005', mockDrums);
+    expect(parsedIdOnly.tamborId).toBe('T000005');
+    expect(parsedIdOnly.descriptiveCode).toBe('DES-NEG-ARA-161/200-SDA');
+  });
+
+  // Test 16: Flujo integral de Toma de Inventario por Sectores con deduplicación y agrupación
+  it('16. parseInventoryScanStream agrupa tambores con mismo contenido y distinto ID, previene duplicados y detecta discrepancias', () => {
+    // Tambores en BD:
+    // T000001 a T000011 en sector NAV-A3
+    // T000012 en sector DEP-V (inactivo)
+    // T000015 en sector NAV-A3 (esperado en NAV-A3 pero no será escaneado -> faltante)
+    const existingDrums = [];
+    for (let i = 1; i <= 11; i++) {
+      const idStr = `T${String(i).padStart(6, '0')}`;
+      existingDrums.push({
+        id: `tb-${i}`,
+        tambor_id: idStr,
+        codigo_descriptivo: 'ENT-VDE-ALOR-121/140-PRI',
+        codigo_compacto: 'ENTVDEALOR121140PRI',
+        codigo: `ENT-VDE-ALOR-121/140-PRI-${idStr}`,
+        peso: 180,
+        ubicacion: 'ubi-1', // NAV-A3
+      });
+    }
+
+    // T000012 registrado previamente en otra ubicación (DEP-V)
+    existingDrums.push({
+      id: 'tb-12',
+      tambor_id: 'T000012',
+      codigo_descriptivo: 'ENT-VDE-ARA-161/200-PRI',
+      codigo_compacto: 'ENTVDEARA161200PRI',
+      codigo: 'ENT-VDE-ARA-161/200-PRI-T000012',
+      peso: 180,
+      ubicacion: 'ubi-inactiva',
+    });
+
+    // T000015 registrado en NAV-A3 que NO será escaneado
+    existingDrums.push({
+      id: 'tb-15',
+      tambor_id: 'T000015',
+      codigo_descriptivo: 'ENT-VDE-ALOR-121/140-PRI',
+      codigo: 'ENT-VDE-ALOR-121/140-PRI-T000015',
+      peso: 180,
+      ubicacion: 'ubi-1',
+    });
+
+    // Flujo volcado desde la memoria del escáner:
+    // 1. Sector NAV-A3
+    // 2. 11 tambores con el mismo contenido ENT-VDE-ALOR-121/140-PRI pero distinto ID
+    // 3. Un re-escaneo duplicado intencional de T000001
+    // 4. Tambor T000012 hallado aquí (reubicación)
+    const scannerDump = [
+      'NAV-A3',
+      ...existingDrums.slice(0, 11).map((d) => d.codigo),
+      'ENT-VDE-ALOR-121/140-PRI-T000001', // ¡Duplicado del escáner!
+      'ENT-VDE-ARA-161/200-PRI-T000012', // Reubicado aquí
+    ];
+
+    const result = parseInventoryScanStream(scannerDump, {
+      catalogos: mockCatalogs,
+      tambores: existingDrums,
+    });
+
+    // Verificaciones globales
+    expect(result.validDrumsCount).toBe(12); // 11 iguales + 1 distinto (el duplicado fue ignorado)
+    expect(result.duplicatesCount).toBe(1);
+    expect(result.duplicateScans[0].tamborId).toBe('T000001');
+
+    // 1 Sector procesado
+    expect(result.sectorsCount).toBe(1);
+    const sectorA3 = result.sectors[0];
+    expect(sectorA3.sector.codigo).toBe('NAV-A3');
+    expect(sectorA3.totalDrums).toBe(12);
+
+    // Agrupación alfanumérica: deben haber 11 tambores en el grupo ENT-VDE-ALOR-121/140-PRI
+    const group11 = sectorA3.groups.find((g) => g.codigo_descriptivo === 'ENT-VDE-ALOR-121/140-PRI');
+    expect(group11).toBeDefined();
+    expect(group11.count).toBe(11);
+    expect(group11.drumIds).toHaveLength(11);
+    expect(group11.drumIds).toContain('T000001');
+    expect(group11.drumIds).toContain('T000011');
+    expect(group11.totalKg).toBe(11 * 180);
+
+    // Reubicación detectada: T000012 estaba en ubi-inactiva y ahora está en NAV-A3
+    expect(result.relocationsCount).toBe(1);
+    expect(result.relocations[0].tambor_id).toBe('T000012');
+    expect(result.relocations[0].newSectorId).toBe('ubi-1');
+
+    // Discrepancia de faltantes: T000015 estaba registrado en NAV-A3 pero no fue escaneado
+    expect(sectorA3.missingCount).toBe(1);
+    expect(sectorA3.missingDrums[0].tambor_id).toBe('T000015');
+  });
+
+  // Test 17: Volcado de tabla desde memoria del escáner con múltiples columnas (índice, código, timestamp)
+  it('17. parseInventoryScanStream procesa volcados de tablas con columnas de timestamp e índice sin crear tambores fantasma', () => {
+    const tableDump = [
+      'N°\tCódigo\tFecha\tHora',
+      '1\tNAV-A1\t2026-09-25\t09:15:00',
+      '2\tENT-VDE-ALOR-121/140-PRI-T000001\t2026-09-25\t09:15:10',
+      '3\tENT-VDE-ALOR-121/140-PRI-T000002\t2026-09-25\t09:15:18',
+      '4\tENT-VDE-ALOR-121/140-PRI-T000003\t2026-09-25\t09:15:25',
+    ].join('\n');
+
+    const result = parseInventoryScanStream(tableDump, {
+      catalogos: [{ id: 'cat-ubi-1', codigo: 'NAV-A1', nombre: 'Nave A - Fila 1', tipo: 'ubicacion' }],
+      tambores: [],
+    });
+
+    expect(result.sectorsCount).toBe(1);
+    expect(result.validDrumsCount).toBe(3);
+    expect(result.duplicatesCount).toBe(0);
+    expect(result.sectors[0].sector.codigo).toBe('NAV-A1');
+    expect(result.sectors[0].totalDrums).toBe(3);
+  });
+
+  // Test 18: Seguridad contra falsos duplicados en tambores sin ID embebido
+  it('18. extractDrumIdAndCode no inventa tambor_id arbitrario y parseInventoryScanStream contabiliza tambores múltiples sin ID', () => {
+    const mockDrums = [
+      { id: 'tb-1', tambor_id: 'T000001', codigo_descriptivo: 'ENT-VDE-ALOR-121/140-PRI', ubicacion: 'sec-1' },
+      { id: 'tb-2', tambor_id: 'T000002', codigo_descriptivo: 'ENT-VDE-ALOR-121/140-PRI', ubicacion: 'sec-1' },
+    ];
+
+    // Lectura de código descriptivo solo
+    const parsed = extractDrumIdAndCode('ENT-VDE-ALOR-121/140-PRI', mockDrums);
+    expect(parsed.tamborId).toBeNull();
+    expect(parsed.descriptiveCode).toBe('ENT-VDE-ALOR-121/140-PRI');
+
+    // Flujo con 3 tambores escaneados por código descriptivo
+    const stream = ['SEC-1', 'ENT-VDE-ALOR-121/140-PRI', 'ENT-VDE-ALOR-121/140-PRI', 'ENT-VDE-ALOR-121/140-PRI'];
+    const result = parseInventoryScanStream(stream, {
+      catalogos: [{ id: 'sec-1', codigo: 'SEC-1', nombre: 'Sector 1', tipo: 'ubicacion' }],
+      tambores: mockDrums,
+    });
+
+    // Deben contabilizarse los 3 sin descartar falsamente como duplicados
+    expect(result.validDrumsCount).toBe(3);
+    expect(result.duplicatesCount).toBe(0);
+    expect(result.sectors[0].groups[0].count).toBe(3);
+  });
+
+  // Test 19: Reconocimiento tolerante de códigos de sector envueltos en asteriscos
+  it('19. isSectorCode reconoce códigos con asteriscos (*NAV-A1* y * NAV-A1 *) generados por etiquetas físicas', () => {
+    const catalogs = [{ id: 'cat-ubi-1', codigo: 'NAV-A1', nombre: 'Nave A - Fila 1', tipo: 'ubicacion' }];
+
+    const res1 = isSectorCode('*NAV-A1*', catalogs);
+    expect(res1.isSector).toBe(true);
+    expect(res1.sectorCode).toBe('NAV-A1');
+
+    const res2 = isSectorCode('* NAV-A1 *', catalogs);
+    expect(res2.isSector).toBe(true);
+    expect(res2.sectorCode).toBe('NAV-A1');
+  });
 });
+
+

@@ -10,6 +10,7 @@ import {
   Download,
   Eye,
   SlidersHorizontal,
+  Building2,
 } from 'lucide-react';
 import { loadDatabase } from '../api/repository.js';
 import { searchDrums, calculateInventoryTotals, resolveCatalogName } from '../lib/domain.js';
@@ -169,6 +170,17 @@ export function InventoryPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Link to="/inventario/toma">
+            <Button
+              variant="outline"
+              size="default"
+              className="text-xs border-olive-400 bg-olive-50/60 text-olive-900 hover:bg-olive-100 font-semibold"
+            >
+              <Building2 className="w-4 h-4 mr-1.5 text-olive-800" />
+              Toma por Sectores
+            </Button>
+          </Link>
+
           <Button
             variant="outline"
             size="default"

@@ -515,3 +515,124 @@ export async function toggleCatalogActive(id) {
   saveDatabase(state);
   return item;
 }
+
+/**
+ * Aplica los resultados de una toma de inventario físico por sectores.
+ * Actualiza las ubicaciones de los tambores que cambiaron de sector,
+ * crea los movimientos de trazabilidad correspondientes y registra los eventos en el historial.
+ *
+ * @param {Object} auditResult - Resultado de parseInventoryScanStream (contiene relocations, etc.)
+ * @param {Object} currentUser - Usuario que ejecuta la auditoría
+ * @returns {Promise<Object>} Resumen del resultado aplicado
+ */
+export async function applyInventoryAudit(auditResult = {}, currentUser = null) {
+  const state = loadDatabase();
+  const now = new Date().toISOString();
+  const relocations = auditResult.relocations || [];
+  let updatedCount = 0;
+  const createdMovements = [];
+
+  // 1. Obtener ID de tipo de movimiento para traslado interno (o fallback al primer tipo registrado)
+  const defaultMoveType =
+    state.catalogos.find((c) => c.tipo === 'tipo_movimiento' && (c.id === 'cat-mov-1' || c.codigo === 'TRAS'))?.id ||
+    state.catalogos.find((c) => c.tipo === 'tipo_movimiento')?.id ||
+    'cat-mov-1';
+
+  for (const item of relocations) {
+    const drumIndex = state.tambores.findIndex(
+      (d) => d.id === item.drumId || (item.tambor_id && d.tambor_id?.toUpperCase() === item.tambor_id.toUpperCase())
+    );
+    if (drumIndex === -1) continue;
+
+    const drum = state.tambores[drumIndex];
+    const oldUbiId = drum.ubicacion;
+    const newUbiId = item.newSectorId;
+
+    if (oldUbiId === newUbiId) continue;
+
+    const oldName = resolveCatalogName(state.catalogos, oldUbiId, 'ubicacion');
+    const newName = resolveCatalogName(state.catalogos, newUbiId, 'ubicacion');
+
+    // 1. Crear entidad Movimiento
+    const movement = {
+      id: `mov-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tambor_id: drum.tambor_id,
+      tambor_ref: drum.id,
+      tipo: defaultMoveType,
+      ubicacion_anterior: oldUbiId,
+      ubicacion_nueva: newUbiId,
+      estado_anterior: drum.estado,
+      estado_nuevo: drum.estado,
+      observaciones: `Ajuste por toma de inventario físico en sector "${newName}"`,
+      created_date: now,
+    };
+    state.movimientos.unshift(movement);
+    createdMovements.push(movement);
+
+    // 2. Historial: Evento de Movimiento
+    state.historial.unshift({
+      id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tambor_id: drum.tambor_id,
+      tambor_ref: drum.id,
+      tipo: 'Movimiento',
+      descripcion: `Movimiento por toma de inventario: "${oldName}" → "${newName}"`,
+      observaciones: `Escaneo de sector durante inventario físico`,
+      actor: currentUser?.nombre || 'Operario Planta',
+      created_date: now,
+    });
+
+    // 3. Historial: Evento de Edición de Ubicación
+    state.historial.unshift({
+      id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tambor_id: drum.tambor_id,
+      tambor_ref: drum.id,
+      tipo: 'Edición',
+      campo: 'ubicacion',
+      valor_anterior: oldName,
+      valor_nuevo: newName,
+      descripcion: `Ubicación actualizada por inventario: "${oldName}" → "${newName}"`,
+      actor: currentUser?.nombre || 'Operario Planta',
+      created_date: now,
+    });
+
+    drum.ubicacion = newUbiId;
+    drum.updated_date = now;
+    state.tambores[drumIndex] = drum;
+    updatedCount++;
+  }
+
+  // 4. Actualizar timestamp de última auditoría para todos los tambores verificados
+  const allAuditedDrumIds = new Set();
+  (auditResult.sectors || []).forEach((sec) => {
+    (sec.drums || []).forEach((d) => {
+      if (d.tambor_id) allAuditedDrumIds.add(d.tambor_id.toUpperCase());
+    });
+  });
+
+  for (const drum of state.tambores) {
+    if (allAuditedDrumIds.has(drum.tambor_id?.toUpperCase())) {
+      drum.ultima_auditoria = now;
+      drum.updated_date = now;
+    }
+  }
+
+  // 5. Registrar evento de toma de inventario global en Historial
+  state.historial.unshift({
+    id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    tipo: 'Inventario',
+    descripcion: `Toma de inventario físico completada: ${auditResult.validDrumsCount || allAuditedDrumIds.size || 0} tambores auditados en ${auditResult.sectorsCount || 0} sectores (${updatedCount} reubicaciones).`,
+    observaciones: `Auditoría física por sectores de planta`,
+    actor: currentUser?.nombre || 'Operario Planta',
+    created_date: now,
+  });
+
+  saveDatabase(state);
+
+  return {
+    success: true,
+    relocationsApplied: updatedCount,
+    movementsCreated: createdMovements.length,
+    auditedCount: allAuditedDrumIds.size,
+    timestamp: now,
+  };
+}

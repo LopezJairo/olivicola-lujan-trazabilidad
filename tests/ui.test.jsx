@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { CardDescription } from '../src/components/ui/card.jsx';
-import { PhysicalLabel } from '../src/components/Barcode.jsx';
+import { PhysicalLabel, SectorLabel } from '../src/components/Barcode.jsx';
 
 describe('Pruebas de Componentes UI y Etiquetado', () => {
   it('1. CardDescription se exporta correctamente y es un componente funcional', () => {
@@ -87,6 +87,7 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
       () => import('../src/pages/HistoryPage.jsx'),
       () => import('../src/pages/ConfigurationPage.jsx'),
       () => import('../src/pages/HelpPage.jsx'),
+      () => import('../src/pages/InventoryAuditPage.jsx'),
     ];
 
     for (const loadPage of pages) {
@@ -95,5 +96,64 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
       expect(typeof component).toBe('function');
     }
   });
+
+  it('6. SectorLabel genera etiqueta física de sector con nombre, código y CODE 128', () => {
+    const mockSector = {
+      id: 'cat-ubi-1',
+      codigo: 'NAV-A1',
+      nombre: 'Nave A - Fila 1',
+    };
+
+    const element = SectorLabel({ sector: mockSector, widthMm: 100, heightMm: 50 });
+    expect(element).toBeDefined();
+
+    const jsonStr = JSON.stringify(element);
+    expect(jsonStr).toContain('OLIVÍCOLA LUJÁN');
+    expect(jsonStr).toContain('Nave A - Fila 1');
+    expect(jsonStr).toContain('NAV-A1');
+    expect(jsonStr).toContain('printable-label-page');
+  });
+
+  it('7. PhysicalLabel horizontal térmica incorpora el identificador único Tambor T000001 junto al código descriptivo y OLIVÍCOLA LUJÁN', () => {
+    const mockDrum = {
+      id: 'tb-001',
+      tambor_id: 'T000001',
+      codigo_descriptivo: 'ENT-VDE-ALOR-161/200-PRI',
+      codigo_compacto: 'ENTVDEALOR161200PRI',
+      codigo: 'ENT-VDE-ALOR-161/200-PRI-T000001',
+      lote: 'LOTE-TEST',
+      peso: 220.5,
+      fecha_ingreso: '2026-09-25',
+      ubicacion_nombre: 'Nave A - Fila 1',
+    };
+
+    // Formato horizontal como en la foto (100mm × 50mm por defecto)
+    const element = PhysicalLabel({ drum: mockDrum });
+    const jsonStr = JSON.stringify(element);
+
+    expect(jsonStr).toContain('OLIVÍCOLA LUJÁN');
+    expect(jsonStr).toContain('ENT-VDE-ALOR-161/200-PRI');
+    expect(jsonStr).toContain('Tambor T000001');
+    expect(jsonStr).toContain('ENT-VDE-ALOR-161/200-PRI-T000001');
+    expect(jsonStr).toContain('ENTVDEALOR161200PRI');
+  });
+
+  it('8. PhysicalLabel utiliza el código único con ID como valor de BarcodeSvg para permitir escaneo individual y deduplicación', () => {
+    const mockDrum = {
+      id: 'tb-011',
+      tambor_id: 'T000011',
+      codigo_descriptivo: 'ENT-VDE-ALOR-121/140-PRI',
+      codigo_compacto: 'ENTVDEALOR121140PRI',
+      codigo: 'ENT-VDE-ALOR-121/140-PRI-T000011',
+      peso: 180,
+    };
+
+    const element = PhysicalLabel({ drum: mockDrum });
+    // Encontrar BarcodeSvg dentro de los hijos del elemento
+    const jsonStr = JSON.stringify(element);
+    // El barcode value debe ser el código único ENT-VDE-ALOR-121/140-PRI-T000011
+    expect(jsonStr).toContain('"value":"ENT-VDE-ALOR-121/140-PRI-T000011"');
+  });
 });
+
 
