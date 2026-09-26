@@ -17,6 +17,8 @@ import {
   Tag,
   Copy,
   Check,
+  Download,
+  FileCode,
 } from 'lucide-react';
 import {
   loadDatabase,
@@ -25,6 +27,7 @@ import {
 } from '../api/repository.js';
 import { resolveCatalogName } from '../lib/domain.js';
 import { formatDate, formatDateTime } from '../lib/utils.js';
+import { generateDrumZPL, downloadZplFile, copyZplToClipboard } from '../lib/zpl.js';
 import { useAuth } from '../components/Auth.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Badge } from '../components/ui/badge.jsx';
@@ -83,6 +86,32 @@ export function DrumDetailPage() {
 
   const handleDirectPrint = () => {
     window.print();
+  };
+
+  const [copiedZpl, setCopiedZpl] = useState(false);
+
+  const handleCopyZpl = async () => {
+    if (!drum) return;
+    const enrichedDrum = {
+      ...drum,
+      ubicacion_nombre: resolveCatalogName(catalogos, drum.ubicacion, 'ubicacion'),
+    };
+    const zpl = generateDrumZPL(enrichedDrum);
+    const ok = await copyZplToClipboard(zpl);
+    if (ok) {
+      setCopiedZpl(true);
+      setTimeout(() => setCopiedZpl(false), 2000);
+    }
+  };
+
+  const handleDownloadZpl = () => {
+    if (!drum) return;
+    const enrichedDrum = {
+      ...drum,
+      ubicacion_nombre: resolveCatalogName(catalogos, drum.ubicacion, 'ubicacion'),
+    };
+    const zpl = generateDrumZPL(enrichedDrum);
+    downloadZplFile(zpl, `tambor-${drum.tambor_id}-zebra-gc420t.zpl`);
   };
 
   useEffect(() => {
@@ -345,15 +374,49 @@ export function DrumDetailPage() {
             Registrar Movimiento
           </Button>
 
-          <Button
-            variant="outline"
-            size="default"
-            onClick={handleDirectPrint}
-            className="text-xs"
-          >
-            <Printer className="w-4 h-4 mr-1.5" />
-            Imprimir Etiqueta
-          </Button>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleDirectPrint}
+              className="text-xs"
+              title="Imprimir directamente en Zebra GC420t (100×50 mm)"
+            >
+              <Printer className="w-4 h-4 mr-1.5" />
+              Imprimir Etiqueta
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="default"
+              onClick={handleDownloadZpl}
+              className="text-xs font-mono"
+              title="Descargar archivo .zpl para envío directo a Zebra GC420t"
+            >
+              <Download className="w-4 h-4 mr-1.5" />
+              Descargar .ZPL
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="default"
+              onClick={handleCopyZpl}
+              className="text-xs font-mono text-bone-600 hover:text-obsidian"
+              title="Copiar comando nativo ZPL II al portapapeles"
+            >
+              {copiedZpl ? (
+                <>
+                  <Check className="w-4 h-4 mr-1 text-emerald-600" />
+                  <span className="text-emerald-700">¡ZPL Copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-1" />
+                  Copiar ZPL
+                </>
+              )}
+            </Button>
+          </div>
 
           <Link to={`/tambores/${drum.tambor_id}/editar`}>
             <Button variant="secondary" size="default" className="text-xs">
@@ -792,8 +855,8 @@ export function DrumDetailPage() {
           ...drum,
           ubicacion_nombre: resolveCatalogName(catalogos, drum.ubicacion, 'ubicacion'),
         }}
-        widthMm={50}
-        heightMm={100}
+        widthMm={100}
+        heightMm={50}
         showBorder={false}
       />
     </div>

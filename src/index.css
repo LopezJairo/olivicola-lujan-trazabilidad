@@ -95,17 +95,27 @@ kbd {
   display: none !important;
 }
 
-/* Print Styles for Labels */
+/* Print Styles for Labels - Zebra GC420t Calibrated (100mm × 50mm @ 203 dpi) */
 @media print {
+  @page {
+    size: 100mm 50mm;
+    margin: 0;
+  }
+
+  *, *:before, *:after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   html, body, #root, #root > div, main, main > div {
     background: transparent !important;
     color: #000000 !important;
     padding: 0 !important;
     margin: 0 !important;
-    width: auto !important;
+    width: 100mm !important;
+    max-width: 100mm !important;
     height: auto !important;
     min-height: 0 !important;
-    max-width: none !important;
     display: block !important;
     overflow: visible !important;
   }
@@ -116,24 +126,32 @@ kbd {
 
   .print-only {
     display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100mm !important;
   }
 
   .printable-label-page {
+    width: 100mm !important;
+    height: 50mm !important;
+    max-width: 100mm !important;
+    max-height: 50mm !important;
+    min-height: 50mm !important;
     page-break-after: always !important;
     break-after: page !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
     margin: 0 !important;
-    padding: 2mm !important;
+    padding: 2.2mm 3.2mm !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
+    background: #FFFFFF !important;
+    color: #000000 !important;
   }
 
   .printable-label-page:last-child {
     page-break-after: auto !important;
     break-after: auto !important;
   }
-
-  @page {
-    margin: 0;
-    size: auto;
-  }
 }
+

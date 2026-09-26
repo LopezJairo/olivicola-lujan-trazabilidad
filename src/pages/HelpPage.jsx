@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   HelpCircle,
@@ -10,10 +10,18 @@ import {
   ArrowRight,
   Keyboard,
   CheckCircle2,
+  Zap,
+  Cpu,
+  Radio,
+  ExternalLink,
+  Download,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Badge } from '../components/ui/badge.jsx';
+import { BarcodeSvg } from '../components/Barcode.jsx';
+import { HPRT_N130BT_COMMANDS } from '../lib/scannerBurst.js';
+import { generateBatchZPL, downloadZplFile } from '../lib/zpl.js';
 
 export function HelpPage() {
   const steps = [
@@ -79,9 +87,15 @@ export function HelpPage() {
     },
   ];
 
+  const handleDownloadCalibrationZpl = () => {
+    const zpl = generateBatchZPL(HPRT_N130BT_COMMANDS, 'calibration');
+    downloadZplFile(zpl, 'calibracion-escaner-hprt-n130bt-zebra-gc420t.zpl');
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 max-w-5xl mx-auto">
-      {/* Cabecera */}
+    <>
+      <div className="no-print space-y-8 animate-in fade-in duration-300 max-w-5xl mx-auto">
+        {/* Cabecera */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-bone-200">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -181,7 +195,192 @@ export function HelpPage() {
         })}
       </div>
 
-      {/* ---------------- TABLA DE RESOLUCIÓN DE PROBLEMAS ---------------- */}
+      {/* ---------------- HARDWARE DE PLANTA: ESCÁNER HPRT N130BT ---------------- */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-bone-200">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-widest font-mono text-olive-800 bg-olive-100/70 px-2 py-0.5 rounded font-semibold">
+                Hardware de Captura
+              </span>
+              <span className="text-xs font-mono text-bone-500">· HPRT N130BT Handheld</span>
+            </div>
+            <h3 className="font-serif text-2xl font-bold text-obsidian mt-1">
+              Escáner HPRT N130BT: Códigos de Calibración
+            </h3>
+            <p className="text-xs text-bone-600 mt-0.5">
+              Apunta el lector directamente a los códigos de barras de la pantalla (a 10-15 cm) o imprime esta hoja para la cartelera de planta.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="text-xs font-mono"
+              title="Imprimir 8 etiquetas térmicas (100×50 mm) para colocar en planta"
+            >
+              <Printer className="w-3.5 h-3.5 mr-1.5" />
+              Imprimir Etiquetas (Zebra 100×50)
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleDownloadCalibrationZpl}
+              className="text-xs font-mono"
+              title="Descargar archivo .zpl con los 8 comandos para envío directo"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Descargar .ZPL
+            </Button>
+          </div>
+        </div>
+
+        {/* Rejilla de códigos de configuración del HPRT N130BT */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {HPRT_N130BT_COMMANDS.map((cmd) => (
+            <Card key={cmd.id} className="flex flex-col justify-between border-bone-200 hover:border-olive-500/60 transition-all bg-white">
+              <CardHeader className="p-4 pb-2">
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <Badge variant="outline" className="font-mono text-[9px]">
+                    {cmd.category}
+                  </Badge>
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-olive-100/70 text-olive-900 font-bold">
+                    {cmd.badge}
+                  </span>
+                </div>
+                <CardTitle className="text-xs font-bold text-obsidian leading-snug">
+                  {cmd.title}
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="p-4 pt-1 flex flex-col items-center justify-between flex-1 space-y-3">
+                {/* Código de Barras CODE 128 escaneable */}
+                <div className="w-full bg-bone-50/60 p-3 rounded-xl border border-bone-200 flex flex-col items-center justify-center">
+                  <BarcodeSvg
+                    value={cmd.code}
+                    width={1.6}
+                    height={46}
+                    displayValue={false}
+                    className="max-w-full"
+                  />
+                  <div className="text-[10px] font-mono font-bold text-obsidian tracking-wider mt-1">
+                    {cmd.code}
+                  </div>
+                  <div className="text-[8px] font-mono text-bone-500 tracking-tighter">
+                    {cmd.altCode}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 text-left w-full text-[11px] text-bone-700">
+                  <p className="leading-tight">{cmd.description}</p>
+                  <div className="p-1.5 rounded bg-bone-100/70 text-bone-900 text-[10px] font-mono">
+                    {cmd.instructions}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* ---------------- HARDWARE DE PLANTA: IMPRESORA ZEBRA GC420t ---------------- */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-bone-200">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-widest font-mono text-olive-800 bg-olive-100/70 px-2 py-0.5 rounded font-semibold">
+                Hardware de Etiquetado
+              </span>
+              <span className="text-xs font-mono text-bone-500">· Zebra GC420t Thermal Desktop</span>
+            </div>
+            <h3 className="font-serif text-2xl font-bold text-obsidian mt-1">
+              Impresora Zebra GC420t: Especificaciones y Calibración
+            </h3>
+            <p className="text-xs text-bone-600 mt-0.5">
+              Ajustes calibrados para rollo térmico de 100 mm × 50 mm con sensor de separación (Gap).
+            </p>
+          </div>
+
+          <Link to="/etiquetas">
+            <Button variant="primary" size="sm" className="text-xs font-mono">
+              <Printer className="w-3.5 h-3.5 mr-1.5" />
+              Centro de Impresión ZPL
+            </Button>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="p-4 pb-2">
+              <Badge variant="outline" className="font-mono text-[9px] w-fit mb-1">
+                Resolución y Geometría
+              </Badge>
+              <CardTitle className="text-sm font-bold">
+                Medidas de Etiqueta (203 dpi)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 text-xs space-y-2 text-bone-700">
+              <ul className="space-y-1.5 font-mono text-[11px]">
+                <li>• <strong>Ancho:</strong> 100 mm = 800 dots (^PW800)</li>
+                <li>• <strong>Alto:</strong> 50 mm = 400 dots (^LL400)</li>
+                <li>• <strong>Orientación:</strong> Horizontal (apaisada)</li>
+                <li>• <strong>Sensor:</strong> Gap / Muesca transductor</li>
+                <li>• <strong>Lenguaje:</strong> ZPL II nativo con UTF-8 (^CI28)</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="p-4 pb-2">
+              <Badge variant="outline" className="font-mono text-[9px] w-fit mb-1">
+                Sensor de Gap
+              </Badge>
+              <CardTitle className="text-sm font-bold">
+                Calibración del Sensor de Separación
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 text-xs space-y-2 text-bone-700">
+              <p className="leading-relaxed">
+                Si la impresora expulsa etiquetas en blanco o no frena en el corte:
+              </p>
+              <ol className="list-decimal pl-4 space-y-1 text-[11px] leading-tight font-sans">
+                <li>Enciende la impresora con el rollo cargado.</li>
+                <li>Mantén pulsado el botón <strong>FEED</strong> (luz verde).</li>
+                <li>Espera a que la luz parpadee: 1 destello y luego <strong>2 destellos seguidos</strong>.</li>
+                <li>Suelta el botón: la impresora avanzará 2 etiquetas y calibrará el sensor.</li>
+              </ol>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="p-4 pb-2">
+              <Badge variant="outline" className="font-mono text-[9px] w-fit mb-1">
+                Conectividad ZPL
+              </Badge>
+              <CardTitle className="text-sm font-bold">
+                Opciones de Envío Directo ZPL II
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 text-xs space-y-2 text-bone-700">
+              <ul className="space-y-1.5 text-[11px] leading-tight">
+                <li>
+                  • <strong>Zebra Setup Utilities:</strong> Abre "Open Communication with Printer", pega el ZPL y pulsa Send.
+                </li>
+                <li>
+                  • <strong>Archivo .zpl:</strong> Descarga el archivo desde el sistema y envíalo mediante el driver en modo RAW.
+                </li>
+                <li>
+                  • <strong>Impresión Web:</strong> La app incluye reglas <code>@page &#123; size: 100mm 50mm; margin: 0; &#125;</code> para imprimir a sangre sin páginas en blanco.
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -217,5 +416,47 @@ export function HelpPage() {
         </CardContent>
       </Card>
     </div>
+
+    {/* Contenedor de impresión directa para Zebra GC420t (8 etiquetas térmicas 100mm × 50mm) */}
+    <div className="print-only">
+      {HPRT_N130BT_COMMANDS.map((cmd) => (
+        <div
+          key={cmd.id}
+          className="printable-label-page bg-white text-black font-sans flex flex-col justify-between p-2.5 select-none"
+        >
+          <div className="flex items-center justify-between border-b border-black pb-1">
+            <span className="font-bold text-[11px] uppercase tracking-wider font-mono">
+              HPRT N130BT · CALIBRACIÓN
+            </span>
+            <span className="font-mono text-[9px] bg-black text-white px-1.5 py-0.5 rounded font-bold">
+              {cmd.badge}
+            </span>
+          </div>
+
+          <div className="text-center font-bold text-[11px] leading-tight pt-1">
+            {cmd.title}
+          </div>
+
+          <div className="flex flex-col items-center justify-center my-1 bg-white">
+            <BarcodeSvg
+              value={cmd.code}
+              width={1.6}
+              height={40}
+              displayValue={false}
+              className="max-w-full"
+            />
+            <div className="font-mono font-bold text-[10px] mt-0.5 text-black">
+              {cmd.code}
+            </div>
+          </div>
+
+          <div className="border-t border-black pt-1 flex items-center justify-between text-[8px] font-mono text-gray-800">
+            <span className="truncate pr-2">{cmd.instructions}</span>
+            <span className="shrink-0 font-bold text-black">OLIVÍCOLA LUJÁN</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </>
   );
 }

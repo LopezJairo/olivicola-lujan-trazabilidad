@@ -13,9 +13,12 @@ import {
   Volume2,
   VolumeX,
   Building2,
+  Zap,
+  UploadCloud,
 } from 'lucide-react';
 import { loadDatabase } from '../api/repository.js';
 import { resolveCatalogName, isSectorCode } from '../lib/domain.js';
+import { parseScannerStream, HPRT_N130BT_COMMANDS } from '../lib/scannerBurst.js';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Button } from '../components/ui/button.jsx';
@@ -67,23 +70,142 @@ export function ScanPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [scanHistory, setScanHistory] = useState([]);
 
-  const inputRef = useRef(null);
+  // Estado para ráfagas masivas (HPRT N130BT Upload Data) y comandos de hardware
+  const [burstResult, setBurstResult] = useState(null);
+  const [hprtCommandDetected, setHprtCommandDetected] = useState(null);
 
-  // Mantener foco automático para el lector USB
+  const inputRef = useRef(null);
+  const redirectTimerRef = useRef(null);
+  const burstQueueRef = useRef([]);
+  const burstTimerRef = useRef(null);
+
+  // Mantener foco automático para el lector USB / Bluetooth
   useEffect(() => {
     inputRef.current?.focus();
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
+    };
+  }, []);
+
+  // Captura global para escáner inalámbrico HPRT N130BT si el cursor perdió el foco
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (
+        document.activeElement &&
+        (document.activeElement.tagName === 'INPUT' ||
+          document.activeElement.tagName === 'TEXTAREA' ||
+          document.activeElement.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        inputRef.current?.focus();
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        inputRef.current?.focus();
+        setScanInput((prev) => prev + e.key);
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
   const handleContainerClick = () => {
     inputRef.current?.focus();
   };
 
-  const processQuery = (rawQuery) => {
-    const query = (rawQuery || '').trim();
-    if (!query) return;
+  const executeBurstQuery = (tokens, delimitersDetected = ['Ráfaga HID (HPRT N130BT)']) => {
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+    if (soundEnabled) playChime(true);
+    setErrorMessage('');
+    setDeletedTamborId(null);
+    setDetectedSector(null);
+    setMultipleMatches([]);
+    setHprtCommandDetected(null);
 
+    const foundDrums = [];
+    const foundSectors = [];
+    const unknownTokens = [];
+
+    tokens.forEach((token) => {
+      const norm = token.toUpperCase();
+      const cleanNorm = norm.replace(/[-/\s]/g, '');
+
+      const drum = tambores.find(
+        (t) =>
+          t.tambor_id?.toUpperCase() === norm ||
+          t.codigo?.toUpperCase() === norm ||
+          t.id?.toUpperCase() === norm ||
+          (t.codigo_compacto && `${t.codigo_compacto}${t.tambor_id}`.toUpperCase() === norm) ||
+          (t.codigo_compacto && `${t.codigo_compacto}-${t.tambor_id}`.toUpperCase() === norm) ||
+          t.codigo_compacto?.toUpperCase() === norm ||
+          t.codigo_descriptivo?.toUpperCase() === norm ||
+          (t.codigo_compacto && t.codigo_compacto.replace(/[-/\s]/g, '').toUpperCase() === cleanNorm) ||
+          (t.codigo_descriptivo && t.codigo_descriptivo.replace(/[-/\s]/g, '').toUpperCase() === cleanNorm)
+      );
+
+      if (drum) {
+        foundDrums.push(drum);
+        return;
+      }
+
+      const sectorCheck = isSectorCode(token, catalogos);
+      if (sectorCheck.isSector) {
+        foundSectors.push(sectorCheck.sector);
+        return;
+      }
+
+      unknownTokens.push(token);
+    });
+
+    if (foundDrums.length > 0) {
+      setLastScanned(foundDrums[foundDrums.length - 1]);
+      setScanHistory((prev) => [
+        ...foundDrums.map((drum) => ({ drum, timestamp: new Date(), query: drum.tambor_id })),
+        ...prev,
+      ].slice(0, 25));
+    }
+
+    setBurstResult({
+      total: tokens.length,
+      foundDrums,
+      foundSectors,
+      unknownTokens,
+      rawTokens: tokens,
+      delimitersDetected,
+    });
+
+    setScanInput('');
+  };
+
+  const executeSingleQuery = (query) => {
     const norm = query.toUpperCase();
     const cleanNorm = norm.replace(/[-/\s]/g, '');
+
+    // Verificar si es un código de configuración del escáner HPRT N130BT
+    const hprtCmd = HPRT_N130BT_COMMANDS.find(
+      (c) => c.code.toUpperCase() === norm || c.altCode.toUpperCase() === norm
+    );
+    if (hprtCmd) {
+      if (soundEnabled) playChime(true);
+      setHprtCommandDetected(hprtCmd);
+      setErrorMessage('');
+      setBurstResult(null);
+      setScanInput('');
+      return;
+    }
+    setHprtCommandDetected(null);
+    setBurstResult(null);
 
     // 1. Coincidencia exacta única por identificador de tambor
     const exactUnique = tambores.find(
@@ -108,7 +230,9 @@ export function ScanPage() {
       ]);
       setScanInput('');
       if (autoRedirect) {
-        navigate(`/tambores/${exactUnique.tambor_id}`);
+        redirectTimerRef.current = setTimeout(() => {
+          navigate(`/tambores/${exactUnique.tambor_id}`);
+        }, 150);
       }
       return;
     }
@@ -136,10 +260,11 @@ export function ScanPage() {
       ]);
       setScanInput('');
       if (autoRedirect) {
-        navigate(`/tambores/${match.tambor_id}`);
+        redirectTimerRef.current = setTimeout(() => {
+          navigate(`/tambores/${match.tambor_id}`);
+        }, 150);
       }
     } else if (matches.length > 1) {
-      // Múltiples tambores comparten este código de producto (ej: ENTVDEALOR121140PRI)
       if (soundEnabled) playChime(true);
       setErrorMessage('');
       setDeletedTamborId(null);
@@ -183,10 +308,74 @@ export function ScanPage() {
     }
   };
 
+  const processQuery = (rawQuery) => {
+    if (!rawQuery) return;
+
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+
+    const { tokens, delimitersDetected } = parseScannerStream(rawQuery);
+    if (tokens.length === 0) return;
+
+    // Si ya vienen múltiples tokens (ej: texto pegado de golpe o delimitado por comas)
+    if (tokens.length > 1) {
+      clearTimeout(burstTimerRef.current);
+      burstQueueRef.current = [];
+      executeBurstQuery(tokens, delimitersDetected);
+      return;
+    }
+
+    // Token individual: agregar a la cola de ráfaga y esperar breve ventana (180ms)
+    // para detectar si es una ráfaga continua de Upload Data del HPRT N130BT
+    burstQueueRef.current.push(tokens[0]);
+    clearTimeout(burstTimerRef.current);
+
+    burstTimerRef.current = setTimeout(() => {
+      const queue = [...burstQueueRef.current];
+      burstQueueRef.current = [];
+      if (queue.length > 1) {
+        executeBurstQuery(queue, ['Ráfaga HID (HPRT N130BT)']);
+      } else if (queue.length === 1) {
+        executeSingleQuery(queue[0]);
+      }
+    }, 180);
+  };
+
   const handleScanSubmit = (e) => {
     e.preventDefault();
+    if (!scanInput.trim()) return;
     processQuery(scanInput);
+    setScanInput('');
     inputRef.current?.focus();
+  };
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (scanInput.trim()) {
+        processQuery(scanInput);
+        setScanInput('');
+      }
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    // Si contiene delimitadores de ráfaga (nuevas líneas, comas, punto y coma o tabs del HPRT N130BT)
+    if (
+      val.includes('\n') ||
+      val.includes('\r') ||
+      val.includes('\t') ||
+      val.includes(',') ||
+      val.includes(';')
+    ) {
+      processQuery(val);
+      setScanInput('');
+    } else {
+      setScanInput(val);
+    }
   };
 
   // Ayudante para probar escaneo rápido con un clic
@@ -302,7 +491,8 @@ export function ScanPage() {
                 autoComplete="off"
                 placeholder="Escanea o tipea el número (ej: T000001)..."
                 value={scanInput}
-                onChange={(e) => setScanInput(e.target.value)}
+                onChange={handleInputChange}
+                onKeyDown={handleInputKeyDown}
                 className="w-full pl-13 pr-32 py-4 text-lg sm:text-xl font-mono tracking-wider rounded-2xl border-2 border-bone-300 focus:border-olive-700 focus:ring-4 focus:ring-olive-700/10 transition-all bg-bone-50/40 text-obsidian placeholder:text-bone-400"
               />
               <div className="absolute inset-y-0 right-2 flex items-center">
@@ -316,6 +506,103 @@ export function ScanPage() {
                 </Button>
               </div>
             </div>
+
+            {/* Banner de Ráfaga Masiva detectada (HPRT N130BT Upload Data) */}
+            {burstResult && (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-3 animate-in fade-in duration-200">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <Zap className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-sm">
+                        Ráfaga de Escáner HPRT N130BT Procesada
+                      </h4>
+                      <p className="text-xs text-emerald-800 mt-0.5">
+                        Se recibieron <strong className="font-mono">{burstResult.total}</strong> lecturas en memoria.
+                        Delimitadores detectados: {burstResult.delimitersDetected.join(', ') || 'Retorno de Carro (Enter)'}.
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-emerald-100 text-emerald-900 border-emerald-300 font-mono text-[10px]">
+                    Modo Ráfaga HID
+                  </Badge>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs font-mono">
+                  <span className="bg-white/80 px-2.5 py-1 rounded border border-emerald-200 text-emerald-900">
+                    Tambores activos: <strong>{burstResult.foundDrums.length}</strong>
+                  </span>
+                  {burstResult.foundSectors.length > 0 && (
+                    <span className="bg-white/80 px-2.5 py-1 rounded border border-emerald-200 text-olive-900">
+                      Sectores: <strong>{burstResult.foundSectors.length}</strong>
+                    </span>
+                  )}
+                  {burstResult.unknownTokens.length > 0 && (
+                    <span className="bg-amber-100 px-2.5 py-1 rounded border border-amber-300 text-amber-900">
+                      Desconocidos: <strong>{burstResult.unknownTokens.length}</strong>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() =>
+                      navigate('/inventario/toma', {
+                        state: { initialText: burstResult.rawTokens.join('\n') },
+                      })
+                    }
+                    className="text-xs font-mono bg-emerald-800 hover:bg-emerald-900"
+                  >
+                    <UploadCloud className="w-4 h-4 mr-1.5" />
+                    Enviar este lote ({burstResult.total}) a Toma de Inventario por Sectores →
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBurstResult(null)}
+                    className="text-xs text-emerald-800 hover:text-emerald-950"
+                  >
+                    Descartar aviso
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Aviso si se escaneó un código de configuración HPRT */}
+            {hprtCommandDetected && (
+              <div className="p-4 rounded-xl bg-blue-50 border border-blue-300 text-blue-950 space-y-2 animate-in fade-in duration-200">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-sm">
+                        Comando de Calibración HPRT N130BT Detectado
+                      </h4>
+                      <p className="text-xs font-mono text-blue-800 font-semibold">
+                        {hprtCommandDetected.title} ({hprtCommandDetected.code})
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-blue-100 text-blue-900 border-blue-300 font-mono text-[10px]">
+                    {hprtCommandDetected.badge}
+                  </Badge>
+                </div>
+                <p className="text-xs text-blue-800">
+                  {hprtCommandDetected.description}
+                </p>
+                <div className="pt-1">
+                  <Link to="/ayuda">
+                    <Button variant="outline" size="sm" className="text-xs bg-white text-blue-900 border-blue-300">
+                      Ver manual completo de calibración del HPRT N130BT →
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {/* Mensaje de Error si el código no existe o fue eliminado */}
             {errorMessage && (
@@ -599,8 +886,8 @@ export function ScanPage() {
             ...lastScanned,
             ubicacion_nombre: resolveCatalogName(catalogos, lastScanned.ubicacion, 'ubicacion'),
           }}
-          widthMm={50}
-          heightMm={100}
+          widthMm={100}
+          heightMm={50}
           showBorder={false}
         />
       </div>

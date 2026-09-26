@@ -11,10 +11,12 @@ import {
   Eye,
   SlidersHorizontal,
   Building2,
+  FileCode,
 } from 'lucide-react';
 import { loadDatabase } from '../api/repository.js';
 import { searchDrums, calculateInventoryTotals, resolveCatalogName } from '../lib/domain.js';
 import { formatKg, formatDate } from '../lib/utils.js';
+import { generateDrumZPL, generateBatchZPL, downloadZplFile } from '../lib/zpl.js';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Badge } from '../components/ui/badge.jsx';
@@ -149,6 +151,28 @@ export function InventoryPage() {
     navigate('/etiquetas', { state: { drumIds: idsToPrint } });
   };
 
+  const handleBatchZplDownload = () => {
+    const drumsToExport = (selectedDrumIds.size > 0
+      ? tambores.filter((d) => selectedDrumIds.has(d.tambor_id))
+      : filteredDrums
+    ).map((d) => ({
+      ...d,
+      ubicacion_nombre: resolveCatalogName(catalogos, d.ubicacion, 'ubicacion'),
+    }));
+    if (drumsToExport.length === 0) return;
+    const zpl = generateBatchZPL(drumsToExport, 'drum');
+    downloadZplFile(zpl, `lote-${drumsToExport.length}-tambores-zebra-gc420t.zpl`);
+  };
+
+  const handleSingleDrumZpl = (drum) => {
+    const enriched = {
+      ...drum,
+      ubicacion_nombre: resolveCatalogName(catalogos, drum.ubicacion, 'ubicacion'),
+    };
+    const zpl = generateDrumZPL(enriched);
+    downloadZplFile(zpl, `tambor-${drum.tambor_id}-zebra-gc420t.zpl`);
+  };
+
   return (
     <>
       <div className="no-print space-y-6 animate-in fade-in duration-300">
@@ -191,6 +215,17 @@ export function InventoryPage() {
             {selectedDrumIds.size > 0
               ? `Imprimir selección (${selectedDrumIds.size})`
               : 'Imprimir listado'}
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="default"
+            onClick={handleBatchZplDownload}
+            className="text-xs font-mono"
+            title="Descargar archivo ZPL para Zebra GC420t (203 dpi · 100×50 mm)"
+          >
+            <Download className="w-4 h-4 mr-1.5" />
+            ZPL ({selectedDrumIds.size > 0 ? selectedDrumIds.size : filteredDrums.length})
           </Button>
 
           <Link to="/tambores/nuevo">
@@ -512,9 +547,17 @@ export function InventoryPage() {
                             type="button"
                             onClick={() => handlePrintSingleDrum(drum)}
                             className="p-1.5 rounded-lg text-bone-600 hover:text-obsidian hover:bg-bone-100 transition-colors cursor-pointer"
-                            title="Imprimir etiqueta"
+                            title="Imprimir etiqueta térmica"
                           >
                             <Printer className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSingleDrumZpl(drum)}
+                            className="p-1.5 rounded-lg text-bone-600 hover:text-obsidian hover:bg-bone-100 transition-colors cursor-pointer font-mono"
+                            title="Descargar ZPL (Zebra GC420t)"
+                          >
+                            <FileCode className="w-4 h-4 text-olive-800" />
                           </button>
                           <Link
                             to={`/tambores/${drum.tambor_id}`}
@@ -543,8 +586,8 @@ export function InventoryPage() {
             ...singleDrumToPrint,
             ubicacion_nombre: resolveCatalogName(catalogos, singleDrumToPrint.ubicacion, 'ubicacion'),
           }}
-          widthMm={50}
-          heightMm={100}
+          widthMm={100}
+          heightMm={50}
           showBorder={false}
         />
       </div>

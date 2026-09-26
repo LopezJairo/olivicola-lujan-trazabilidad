@@ -1,11 +1,32 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { ArrowLeft, Printer, CheckSquare, Square, Building2, Layers, Barcode as BarcodeIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Printer,
+  CheckSquare,
+  Square,
+  Building2,
+  Layers,
+  Barcode as BarcodeIcon,
+  Download,
+  Copy,
+  Check,
+  FileCode,
+} from 'lucide-react';
 import { loadDatabase } from '../api/repository.js';
 import { resolveCatalogName } from '../lib/domain.js';
 import { PhysicalLabel, SectorLabel, BarcodeSvg } from '../components/Barcode.jsx';
+import { generateBatchZPL, downloadZplFile, copyZplToClipboard } from '../lib/zpl.js';
 import { Button } from '../components/ui/button.jsx';
 import { Badge } from '../components/ui/badge.jsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../components/ui/dialog.jsx';
 
 export function BatchLabelsPage() {
   const location = useLocation();
@@ -81,6 +102,38 @@ export function BatchLabelsPage() {
     window.print();
   };
 
+  // Generación de comandos ZPL II para Zebra GC420t
+  const [copiedZpl, setCopiedZpl] = useState(false);
+  const [zplModalOpen, setZplModalOpen] = useState(false);
+
+  const currentBatchZpl = useMemo(() => {
+    const options = {
+      widthDots: Math.round(widthMm * 8),
+      heightDots: Math.round(heightMm * 8),
+    };
+    return printMode === 'tambores'
+      ? generateBatchZPL(selectedDrums, 'drum', options)
+      : generateBatchZPL(selectedSectors, 'sector', options);
+  }, [printMode, selectedDrums, selectedSectors, widthMm, heightMm]);
+
+  const handleDownloadZpl = () => {
+    if (!currentBatchZpl) return;
+    const filename =
+      printMode === 'tambores'
+        ? `lote-${selectedDrums.length}-tambores-zebra-gc420t.zpl`
+        : `lote-${selectedSectors.length}-sectores-zebra-gc420t.zpl`;
+    downloadZplFile(currentBatchZpl, filename);
+  };
+
+  const handleCopyZpl = async () => {
+    if (!currentBatchZpl) return;
+    const ok = await copyZplToClipboard(currentBatchZpl);
+    if (ok) {
+      setCopiedZpl(true);
+      setTimeout(() => setCopiedZpl(false), 2000);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* ---------------- BARRA DE CONTROLES NO IMPRIMIBLE ---------------- */}
@@ -99,12 +152,12 @@ export function BatchLabelsPage() {
                   Centro de Impresión de Etiquetas Térmicas
                 </h2>
                 <p className="text-xs text-bone-600 mt-0.5">
-                  Formato apaisado para etiquetadoras térmicas Zebra/Brother (100 × 50 mm).
+                  Calibrado para Zebra GC420t (203 dpi · 100 × 50 mm apaisada · ZPL II).
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 variant="primary"
                 size="default"
@@ -114,8 +167,53 @@ export function BatchLabelsPage() {
               >
                 <Printer className="w-4 h-4 mr-1.5" />
                 {printMode === 'tambores'
-                  ? `Imprimir ${selectedDrums.length} Etiquetas de Tambores`
-                  : `Imprimir ${selectedSectors.length} Etiquetas de Sectores`}
+                  ? `Imprimir ${selectedDrums.length} Etiquetas`
+                  : `Imprimir ${selectedSectors.length} Etiquetas`}
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="default"
+                disabled={printMode === 'tambores' ? selectedDrums.length === 0 : selectedSectors.length === 0}
+                onClick={handleDownloadZpl}
+                className="text-xs font-mono"
+                title="Descargar archivo .zpl para Zebra GC420t"
+              >
+                <Download className="w-4 h-4 mr-1.5" />
+                Descargar .ZPL
+              </Button>
+
+              <Button
+                variant="outline"
+                size="default"
+                disabled={printMode === 'tambores' ? selectedDrums.length === 0 : selectedSectors.length === 0}
+                onClick={handleCopyZpl}
+                className="text-xs font-mono"
+                title="Copiar comandos ZPL II"
+              >
+                {copiedZpl ? (
+                  <>
+                    <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                    <span className="text-emerald-700">¡Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 mr-1.5" />
+                    Copiar ZPL
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="default"
+                disabled={printMode === 'tambores' ? selectedDrums.length === 0 : selectedSectors.length === 0}
+                onClick={() => setZplModalOpen(true)}
+                className="text-xs font-mono text-bone-600 hover:text-obsidian"
+                title="Ver comandos ZPL II"
+              >
+                <FileCode className="w-4 h-4 mr-1.5" />
+                Ver Código
               </Button>
             </div>
           </div>
@@ -355,6 +453,54 @@ export function BatchLabelsPage() {
               />
             ))}
       </div>
+
+      {/* Modal para previsualizar y exportar comandos nativos ZPL II */}
+      <Dialog open={zplModalOpen} onOpenChange={setZplModalOpen}>
+        <DialogContent className="max-w-2xl bg-white max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-lg font-bold flex items-center gap-2">
+              <FileCode className="w-5 h-5 text-olive-800" />
+              <span>Código ZPL II - Zebra GC420t (203 dpi)</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-bone-600">
+              Formato de etiqueta: 100mm × 50mm (800 × 400 dots con sensor de gap).
+              Compatible con Zebra Setup Utilities, Zebra Browser Print o socket RAW (puerto 9100 / USB).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 my-3 overflow-hidden rounded-xl border border-bone-300 bg-obsidian text-emerald-400 p-4 font-mono text-xs overflow-y-auto max-h-72 select-all">
+            <pre className="whitespace-pre-wrap">{currentBatchZpl}</pre>
+          </div>
+
+          <DialogFooter className="flex items-center justify-between sm:justify-between w-full pt-2">
+            <span className="text-[11px] font-mono text-bone-500">
+              {printMode === 'tambores' ? selectedDrums.length : selectedSectors.length} etiquetas preparadas
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleCopyZpl}
+                className="text-xs font-mono"
+              >
+                {copiedZpl ? <Check className="w-4 h-4 mr-1 text-emerald-600" /> : <Copy className="w-4 h-4 mr-1" />}
+                {copiedZpl ? 'Copiado' : 'Copiar ZPL'}
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={handleDownloadZpl}
+                className="text-xs font-mono"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                Descargar .zpl
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

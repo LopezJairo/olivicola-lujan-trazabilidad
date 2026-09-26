@@ -16,9 +16,12 @@ import {
   Building2,
   Boxes,
   HelpCircle,
+  Zap,
 } from 'lucide-react';
 import { loadDatabase, applyInventoryAudit } from '../api/repository.js';
 import { parseInventoryScanStream, resolveCatalogName } from '../lib/domain.js';
+import { parseScannerStream, HPRT_N130BT_COMMANDS, isHprtCommand } from '../lib/scannerBurst.js';
+import { BarcodeSvg } from '../components/Barcode.jsx';
 import { formatKg } from '../lib/utils.js';
 import { useAuth } from '../components/Auth.jsx';
 import { Button } from '../components/ui/button.jsx';
@@ -34,11 +37,13 @@ export function InventoryAuditPage() {
 
   const [activeTab, setActiveTab] = useState('batch'); // 'batch' | 'live'
   const [batchText, setBatchText] = useState(
-    location.state?.initialSector ? `${location.state.initialSector}\n` : ''
+    location.state?.initialText ||
+      (location.state?.initialSector ? `${location.state.initialSector}\n` : '')
   );
   const [liveScans, setLiveScans] = useState([]);
   const [liveInput, setLiveInput] = useState('');
   const [currentLiveSector, setCurrentLiveSector] = useState(null);
+  const [hprtCommandAlert, setHprtCommandAlert] = useState(null);
 
   const [auditResult, setAuditResult] = useState(null);
   const [appliedSummary, setAppliedSummary] = useState(null);
@@ -46,11 +51,47 @@ export function InventoryAuditPage() {
 
   const liveInputRef = useRef(null);
 
+  // Análisis en tiempo real del stream de escáner (delimitadores, conteo de tambores)
+  const parsedBatchInfo = useMemo(() => {
+    return parseScannerStream(batchText);
+  }, [batchText]);
+
   // Mantener foco en modo en vivo
   useEffect(() => {
     if (activeTab === 'live') {
       liveInputRef.current?.focus();
     }
+  }, [activeTab]);
+
+  // Captura global de teclado para escáner inalámbrico HPRT N130BT en modo en vivo
+  useEffect(() => {
+    if (activeTab !== 'live') return;
+
+    const handleGlobalLiveKeyDown = (e) => {
+      if (
+        document.activeElement &&
+        (document.activeElement.tagName === 'INPUT' ||
+          document.activeElement.tagName === 'TEXTAREA' ||
+          document.activeElement.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        liveInputRef.current?.focus();
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        liveInputRef.current?.focus();
+        setLiveInput((prev) => prev + e.key);
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalLiveKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalLiveKeyDown);
   }, [activeTab]);
 
   // Datos de ejemplo para demostración de planta
@@ -73,34 +114,94 @@ export function InventoryAuditPage() {
     setAppliedSummary(null);
   };
 
+  const handleNormalizeBatch = () => {
+    if (!batchText.trim()) return;
+    const { tokens } = parseScannerStream(batchText);
+    const validTokens = tokens.filter((t) => !isHprtCommand(t));
+    setBatchText(validTokens.join('\n'));
+  };
+
   const handleProcessBatch = () => {
     if (!batchText.trim()) return;
-    // Filtrar líneas de comentarios si el operador pegó notas
-    const cleaned = batchText
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l && !l.startsWith('//') && !l.startsWith('#'))
-      .join('\n');
-
+    const { tokens } = parseScannerStream(batchText);
+    const validTokens = tokens.filter((t) => !isHprtCommand(t));
+    const hprtCommands = tokens.filter((t) => isHprtCommand(t));
+    if (hprtCommands.length > 0) {
+      setHprtCommandAlert(isHprtCommand(hprtCommands[0]));
+    }
+    const cleaned = validTokens.join('\n');
     const result = parseInventoryScanStream(cleaned, { catalogos, tambores });
     setAuditResult(result);
     setAppliedSummary(null);
   };
 
-  const handleLiveSubmit = (e) => {
-    e.preventDefault();
-    const token = liveInput.trim();
-    if (!token) return;
+  const handleTextareaKeyDown = (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      setBatchText((prev) => (prev ? `${prev}\n` : ''));
+    }
+  };
 
-    // Detectar si es cambio de sector
-    const parsedLine = parseInventoryScanStream(token, { catalogos, tambores });
-    if (parsedLine.sectorsCount > 0 && parsedLine.sectors[0]?.sector.id !== 'unassigned') {
-      setCurrentLiveSector(parsedLine.sectors[0].sector);
+  // Procesamiento tolerante a ráfagas de teclado HID del HPRT N130BT
+  const addLiveTokens = (rawInput) => {
+    const { tokens } = parseScannerStream(rawInput);
+    if (tokens.length === 0) return;
+
+    const detectedCommands = [];
+    const validTokens = [];
+
+    tokens.forEach((token) => {
+      const cmd = isHprtCommand(token);
+      if (cmd) {
+        detectedCommands.push(cmd);
+      } else {
+        validTokens.push(token);
+      }
+    });
+
+    if (detectedCommands.length > 0) {
+      setHprtCommandAlert(detectedCommands[0]);
     }
 
-    setLiveScans((prev) => [...prev, token]);
+    if (validTokens.length === 0) return;
+
+    validTokens.forEach((token) => {
+      const parsedLine = parseInventoryScanStream(token, { catalogos, tambores });
+      if (parsedLine.sectorsCount > 0 && parsedLine.sectors[0]?.sector.id !== 'unassigned') {
+        setCurrentLiveSector(parsedLine.sectors[0].sector);
+      }
+    });
+
+    setLiveScans((prev) => [...prev, ...validTokens]);
+  };
+
+  const handleLiveSubmit = (e) => {
+    e.preventDefault();
+    if (!liveInput.trim()) return;
+    addLiveTokens(liveInput);
     setLiveInput('');
     liveInputRef.current?.focus();
+  };
+
+  const handleLiveKeyDown = (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (liveInput.trim()) {
+        addLiveTokens(liveInput);
+        setLiveInput('');
+      }
+    }
+  };
+
+  const handleLiveInputChange = (e) => {
+    const val = e.target.value;
+    // Si la pistola envió saltos de línea, tabs o comas en ráfaga
+    if (val.includes('\n') || val.includes('\r') || val.includes('\t') || val.includes(',')) {
+      addLiveTokens(val);
+      setLiveInput('');
+    } else {
+      setLiveInput(val);
+    }
   };
 
   const handleProcessLiveScans = () => {
@@ -167,22 +268,65 @@ export function InventoryAuditPage() {
         </div>
       </div>
 
-      {/* ---------------- TARJETA EXPLICATIVA DEL PROCEDIMIENTO ---------------- */}
+      {/* ---------------- TARJETA EXPLICATIVA Y GUÍA RÁPIDA HPRT N130BT ---------------- */}
       <div className="bezel-shell">
-        <div className="bezel-core p-4 sm:p-5 bg-olive-50/40 border border-olive-200/70">
-          <div className="flex items-start gap-3.5">
-            <div className="p-2 rounded-xl bg-olive-900 text-bone-50 shrink-0">
-              <Building2 className="w-5 h-5" />
+        <div className="bezel-core p-4 sm:p-5 bg-olive-50/40 border border-olive-200/70 space-y-3">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2 rounded-xl bg-olive-900 text-bone-50 shrink-0">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div className="space-y-1 text-xs">
+                <h4 className="font-serif font-bold text-obsidian text-sm">
+                  Procedimiento Operativo de Planta
+                </h4>
+                <p className="text-bone-700 leading-relaxed">
+                  <strong>1. Código de Sector:</strong> Lee primero el código del sector (ej: <code>NAV-A1</code>).{' '}
+                  <strong>2. Escaneo en memoria:</strong> Con el HPRT N130BT en Modo Almacenamiento, recorre los tambores.{' '}
+                  <strong>3. Volcado masivo:</strong> Apunta al código "Subir Datos" abajo para descargar toda la memoria en ráfaga sin perder ningún carácter.
+                </p>
+              </div>
             </div>
-            <div className="space-y-1 text-xs">
-              <h4 className="font-serif font-bold text-obsidian text-sm">
-                Procedimiento Operativo de Planta
-              </h4>
-              <p className="text-bone-700 leading-relaxed">
-                <strong>1. Código de Sector:</strong> Cada sector de la planta (ej: <code>NAV-A1</code>, <code>NAV-A2</code>) tiene su código de barra en columna/poste.{' '}
-                <strong>2. Lectura secuencial:</strong> El operario lee primero el código del sector y luego todos los tambores de dicho sector.{' '}
-                <strong>3. Volcado y deduplicación:</strong> Los datos se almacenan en la memoria interna del escáner y se vuelcan aquí. La app identifica el sector, contabiliza tambores con igual contenido agrupándolos y desambigua con el ID único para evitar duplicaciones.
-              </p>
+
+            <Link to="/ayuda">
+              <Button variant="outline" size="sm" className="text-xs bg-white text-olive-900 border-olive-300">
+                <QrCode className="w-3.5 h-3.5 mr-1.5" />
+                Hoja de Calibración HPRT N130BT
+              </Button>
+            </Link>
+          </div>
+
+          {/* Barra de Códigos Rápidos de Configuración en Pantalla */}
+          <div className="pt-2 border-t border-olive-200/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-2.5 rounded-xl bg-white border border-olive-200 flex flex-col items-center justify-between text-center">
+              <span className="text-[10px] font-mono font-bold uppercase text-bone-600 mb-1">
+                1. Activar Modo Memoria
+              </span>
+              <div className="bg-white p-1 rounded">
+                <BarcodeSvg value="%0101D01%" width={1.2} height={26} displayValue={false} />
+              </div>
+              <span className="text-[9px] font-mono text-bone-500 mt-0.5">SET-STORAGE-MODE</span>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-white border-2 border-olive-700/60 flex flex-col items-center justify-between text-center shadow-soft-sm">
+              <span className="text-[10px] font-mono font-bold uppercase text-olive-900 mb-1 flex items-center gap-1">
+                <Zap className="w-3 h-3 text-emerald-600" />
+                2. Subir Datos (Upload Data)
+              </span>
+              <div className="bg-white p-1 rounded">
+                <BarcodeSvg value="%0101D02%" width={1.2} height={26} displayValue={false} />
+              </div>
+              <span className="text-[9px] font-mono text-emerald-800 font-bold mt-0.5">UPLOAD-STORED-DATA</span>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-white border border-bone-300 flex flex-col items-center justify-between text-center">
+              <span className="text-[10px] font-mono font-bold uppercase text-bone-600 mb-1">
+                3. Limpiar Memoria Tras Aplicar
+              </span>
+              <div className="bg-white p-1 rounded">
+                <BarcodeSvg value="%0101D04%" width={1.2} height={26} displayValue={false} />
+              </div>
+              <span className="text-[9px] font-mono text-bone-500 mt-0.5">CLEAR-ALL-DATA</span>
             </div>
           </div>
         </div>
@@ -230,6 +374,27 @@ export function InventoryAuditPage() {
             </div>
           </div>
 
+          {/* Alerta de comando de configuración HPRT detectado */}
+          {hprtCommandAlert && (
+            <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 flex items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                <div>
+                  <span className="font-bold">Comando de configuración HPRT detectado: </span>
+                  <span className="font-mono text-blue-900 font-semibold">{hprtCommandAlert.title} ({hprtCommandAlert.code})</span>
+                  <span className="text-bone-600 ml-2">· Filtrado para no alterar el inventario</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHprtCommandAlert(null)}
+                className="text-blue-700 hover:text-blue-900 font-mono text-[11px] underline cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
+
           {/* TAB 1: VOLCADO MASIVO */}
           {activeTab === 'batch' && (
             <div className="space-y-4 animate-in fade-in duration-200">
@@ -249,25 +414,42 @@ export function InventoryAuditPage() {
               <textarea
                 value={batchText}
                 onChange={(e) => setBatchText(e.target.value)}
+                onKeyDown={handleTextareaKeyDown}
                 placeholder="NAV-A1&#10;ENT-VDE-ALOR-121/140-PRI-T000001&#10;ENT-VDE-ALOR-121/140-PRI-T000002&#10;ENT-VDE-ALOR-121/140-PRI-T000003&#10;NAV-A2&#10;ENT-VDE-ARA-121/140-PRI-T000004"
                 rows={8}
                 className="w-full p-4 font-mono text-xs rounded-xl border border-bone-300 focus:border-olive-700 focus:ring-2 focus:ring-olive-700/10 bg-bone-50/50 text-obsidian placeholder:text-bone-400"
               />
 
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs font-mono text-bone-500">
-                  {batchText.trim() ? `${batchText.trim().split('\n').length} líneas cargadas` : 'Sin datos'}
-                </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                <div className="flex items-center gap-2 flex-wrap text-xs font-mono text-bone-600">
+                  <span className="font-bold text-obsidian">
+                    {parsedBatchInfo.count > 0 ? `${parsedBatchInfo.count} lecturas detectadas` : 'Sin datos'}
+                  </span>
+                  {parsedBatchInfo.delimitersDetected.length > 0 && (
+                    <span className="text-[11px] bg-bone-100 text-bone-700 px-2 py-0.5 rounded border border-bone-200">
+                      Delimitadores: {parsedBatchInfo.delimitersDetected.join(', ')}
+                    </span>
+                  )}
+                  {parsedBatchInfo.count > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleNormalizeBatch}
+                      className="text-xs text-olive-800 hover:underline cursor-pointer ml-1"
+                    >
+                      Normalizar a 1 código por línea
+                    </button>
+                  )}
+                </div>
                 <Button
                   type="button"
                   variant="primary"
                   size="default"
                   onClick={handleProcessBatch}
-                  disabled={!batchText.trim()}
+                  disabled={parsedBatchInfo.count === 0}
                   className="text-xs font-mono"
                 >
                   <FileText className="w-4 h-4 mr-1.5" />
-                  Procesar Lecturas del Escáner
+                  Procesar Lecturas del Escáner ({parsedBatchInfo.count})
                 </Button>
               </div>
             </div>
@@ -296,8 +478,9 @@ export function InventoryAuditPage() {
                   ref={liveInputRef}
                   type="text"
                   value={liveInput}
-                  onChange={(e) => setLiveInput(e.target.value)}
-                  placeholder="Apunta la pistola y lee sector o tambor (Enter automático)..."
+                  onChange={handleLiveInputChange}
+                  onKeyDown={handleLiveKeyDown}
+                  placeholder="Apunta la pistola y lee sector o tambor (Enter, Tab o ráfaga continua)..."
                   className="flex-1 px-4 py-3 text-sm font-mono rounded-xl border border-bone-300 focus:border-olive-700 bg-white"
                 />
                 <Button type="submit" variant="secondary" className="text-xs font-mono">

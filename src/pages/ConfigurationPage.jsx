@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Settings,
   Plus,
@@ -13,6 +14,9 @@ import {
   Layers,
   Sparkles,
   AlertCircle,
+  Printer,
+  QrCode,
+  Zap,
 } from 'lucide-react';
 import {
   loadDatabase,
@@ -300,6 +304,81 @@ export function ConfigurationPage() {
           </table>
         </div>
       </div>
+
+      {/* ---------------- HARDWARE OFICIAL DE PLANTA ---------------- */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Printer className="w-5 h-5 text-olive-800" />
+              <CardTitle className="text-base font-bold">
+                Hardware Oficial de Planta (Zebra GC420t & HPRT N130BT)
+              </CardTitle>
+            </div>
+            <Link to="/ayuda">
+              <Button variant="outline" size="sm" className="text-xs">
+                Ver Guía y Códigos de Calibración →
+              </Button>
+            </Link>
+          </div>
+          <p className="text-xs text-bone-600">
+            Parámetros de calibración y compatibilidad verificada para la operación en Luján de Cuyo.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl border border-bone-200 bg-bone-50/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-obsidian flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-olive-800" />
+                  Impresora Térmica Zebra GC420t
+                </span>
+                <Badge variant="paleGreen" className="text-[10px] font-mono">
+                  203 DPI / 8 dots/mm
+                </Badge>
+              </div>
+              <ul className="text-bone-600 space-y-1 font-mono text-[11px]">
+                <li>• Formato de etiqueta: <strong>100 mm × 50 mm</strong> (800 × 400 dots)</li>
+                <li>• Sensor de separación: <strong>Gap transductor</strong></li>
+                <li>• Lenguaje de comandos: <strong>ZPL II nativo (^XA ... ^XZ)</strong></li>
+                <li>• Driver Web: <strong>CSS @page &#123; size: 100mm 50mm; margin: 0; &#125;</strong></li>
+              </ul>
+              <div className="pt-1">
+                <Link to="/etiquetas">
+                  <Button variant="secondary" size="sm" className="w-full text-xs font-mono">
+                    Ir al Centro de Impresión ZPL
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border border-bone-200 bg-bone-50/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-obsidian flex items-center gap-2">
+                  <QrCode className="w-4 h-4 text-olive-800" />
+                  Lector Inalámbrico HPRT N130BT
+                </span>
+                <Badge variant="paleGreen" className="text-[10px] font-mono">
+                  Memoria Flash HID
+                </Badge>
+              </div>
+              <ul className="text-bone-600 space-y-1 font-mono text-[11px]">
+                <li>• Modos soportados: <strong>Normal (Directo) & Almacenamiento</strong></li>
+                <li>• Transmisión: <strong>Ráfaga HID rápida por comando Upload Data</strong></li>
+                <li>• Delimitadores tolerados: <strong>Enter (\r\n, \n, \r), Tab (\t), Coma</strong></li>
+                <li>• Deduplicación: <strong>ID único de tambor para evitar doble conteo</strong></li>
+              </ul>
+              <div className="pt-1">
+                <Link to="/ayuda">
+                  <Button variant="secondary" size="sm" className="w-full text-xs font-mono">
+                    Abrir Códigos de Calibración
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ---------------- GESTIÓN DE DATOS Y COPIAS DE SEGURIDAD ---------------- */}
       <Card>
