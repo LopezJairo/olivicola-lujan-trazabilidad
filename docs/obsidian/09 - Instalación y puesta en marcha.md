@@ -43,6 +43,16 @@ Además, el sistema incluye funciones de exportación e importación de copias d
 
 ## Autenticación implementada
 
-`AuthProvider` gestiona la sesión local del usuario y permite alternar entre roles operativos (`Operario` y `Administrador`). `ProtectedRoute` protege las pantallas operativas y redirige a `/login` si no existe una sesión activa.
+## Manual de Instalación y Actualización en Planta
+
+Para el despliegue de escritorio en red local (Windows y macOS), consultar el manual técnico completo en:
+- [[MANUAL_DE_INSTALACION_Y_ACTUALIZACION.md|Manual de Instalación, Configuración de Red Local y Actualizaciones]]
+
+Cubre:
+1. Arquitectura Host (Servidor SQLite en PC Principal) / Terminales (Puestos de Balanza, Zebra, Escáner, Gerencia).
+2. Configuración de puertos de red privada y Firewall de Windows.
+3. Jerarquías de perfiles: Operador de Planta vs Gerente/Administrador.
+4. Procedimiento de actualización sin riesgo de pérdida de datos.
+5. Planes de contingencia y respaldos.
 
 Relacionado: [[Olivícola Luján/06 - Arquitectura y mapa del código|06 - Arquitectura y mapa del código]], [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]], [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]].
