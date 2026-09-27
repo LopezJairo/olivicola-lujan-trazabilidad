@@ -102,10 +102,18 @@ function createWindow() {
     },
   });
 
-  // En desarrollo carga Vite Dev Server, en producción carga dist/index.html
-  const startUrl = process.env.ELECTRON_START_URL || `file://${path.join(__dirname, '..', 'dist', 'index.html')}`;
+  // En desarrollo carga Vite Dev Server, en producción carga dist/index.html con loadFile
+  const distIndexPath = path.join(__dirname, '..', 'dist', 'index.html');
+  if (process.env.ELECTRON_START_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_START_URL);
+  } else {
+    mainWindow.loadFile(distIndexPath);
+  }
 
-  mainWindow.loadURL(startUrl);
+  // Depuración de errores en carga de UI
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.error(`[Electron] Error al cargar interfaz (${errorCode}): ${errorDescription}`);
+  });
 
   // Evitar navegación externa
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -219,7 +227,11 @@ function setupMenu() {
         {
           label: 'Manual de Usuario y Hardware',
           click: () => {
-            mainWindow?.loadURL(`${process.env.ELECTRON_START_URL || `file://${path.join(__dirname, '..', 'dist', 'index.html')}`}#/ayuda`);
+            if (process.env.ELECTRON_START_URL) {
+              mainWindow?.loadURL(`${process.env.ELECTRON_START_URL}#/ayuda`);
+            } else {
+              mainWindow?.loadFile(path.join(__dirname, '..', 'dist', 'index.html'), { hash: '/ayuda' });
+            }
           },
         },
         {
