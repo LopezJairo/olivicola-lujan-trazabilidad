@@ -15,7 +15,7 @@
     "electron:dev": "ELECTRON_START_URL=http://localhost:5173 electron electron/main.cjs",
     "electron:build": "vite build && electron-builder",
     "electron:build:win": "vite build && electron-builder --win --x64",
-    "electron:build:mac": "vite build && electron-builder --mac",
+    "electron:build:mac": "vite build && node scripts/build-mac.cjs",
     "electron:pack": "electron-builder --dir"
   },
   "dependencies": {
@@ -49,7 +49,8 @@
   },
   "build": {
     "appId": "com.olivicolalujan.trazabilidad",
-    "productName": "Olivícola Luján - Trazabilidad",
+    "productName": "Olivicola Lujan Trazabilidad",
+    "afterPack": "./scripts/afterPack.cjs",
     "directories": {
       "output": "dist-electron"
     },
@@ -72,7 +73,10 @@
         "zip"
       ],
       "icon": "public/icon.icns",
-      "category": "public.app-category.business"
+      "category": "public.app-category.business",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "nsis": {
       "oneClick": false,
