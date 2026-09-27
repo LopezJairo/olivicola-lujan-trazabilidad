@@ -92,6 +92,7 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
       () => import('../src/pages/ConfigurationPage.jsx'),
       () => import('../src/pages/HelpPage.jsx'),
       () => import('../src/pages/InventoryAuditPage.jsx'),
+      () => import('../src/pages/QualityPage.jsx'),
     ];
 
     for (const loadPage of pages) {

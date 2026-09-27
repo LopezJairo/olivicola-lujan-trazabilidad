@@ -17,6 +17,13 @@ import {
   Printer,
   QrCode,
   Zap,
+  Server,
+  Wifi,
+  WifiOff,
+  Users,
+  ShieldCheck,
+  RefreshCw,
+  Cpu,
 } from 'lucide-react';
 import {
   loadDatabase,
@@ -27,7 +34,13 @@ import {
   resetDemoDatabase,
   getCurrentWorkspaceMode,
   setCurrentWorkspaceMode,
+  getNetworkConfig,
+  setNetworkConfig,
+  testHostConnection,
+  syncWithHostServer,
+  NETWORK_MODES,
 } from '../api/repository.js';
+import { useAuth, ROLES, ROLE_PERMISSIONS, PERMISOS } from '../components/Auth.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Badge } from '../components/ui/badge.jsx';
@@ -69,6 +82,105 @@ export function ConfigurationPage() {
   const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Perfiles y permisos
+  const { user, role, switchRole, can } = useAuth();
+  const canManageCatalogs = can(PERMISOS.GESTION_CATALOGOS);
+  const canManageBackups = can(PERMISOS.GESTION_BACKUPS);
+  const canConfigRed = can(PERMISOS.CONFIG_RED);
+
+  // Arquitectura de Red y Modos
+  const [netConfig, setNetConfigState] = useState(getNetworkConfig());
+  const [hostUrlInput, setHostUrlInput] = useState(netConfig.hostUrl || 'http://localhost:4000');
+  const [testResult, setTestResult] = useState(null);
+  const [isTestingNet, setIsTestingNet] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Detección y control de entorno de escritorio Electron
+  const [electronState, setElectronState] = useState({
+    isElectron: false,
+    serverRunning: false,
+    serverPort: 4000,
+    ips: [],
+  });
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.getServerStatus?.().then((st) => {
+        setElectronState({
+          isElectron: true,
+          serverRunning: Boolean(st?.isRunning),
+          serverPort: st?.port || 4000,
+          ips: st?.ips || [],
+        });
+      }).catch(() => {});
+    } else {
+      // En navegador, consulta información de red del host si está en localhost
+      fetch('http://localhost:4000/api/network-info').then(r => r.json()).then(data => {
+        if (data?.interfaces) {
+          setElectronState(prev => ({
+            ...prev,
+            ips: data.interfaces,
+            serverRunning: true,
+          }));
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  const handleStartElectronServer = async () => {
+    if (window.electronAPI?.startServer) {
+      const res = await window.electronAPI.startServer(4000);
+      setElectronState(prev => ({ ...prev, serverRunning: true, serverPort: res?.port || 4000 }));
+      setSuccessMessage('Servidor embebido iniciado correctamente en el puerto 4000.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    }
+  };
+
+  const handleStopElectronServer = async () => {
+    if (window.electronAPI?.stopServer) {
+      await window.electronAPI.stopServer();
+      setElectronState(prev => ({ ...prev, serverRunning: false }));
+      setSuccessMessage('Servidor embebido detenido.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    }
+  };
+
+  const handleSwitchNetworkMode = (newMode) => {
+    if (!canConfigRed) {
+      alert('Permiso denegado: Se requiere perfil de Administrador para modificar el modo de red');
+      return;
+    }
+    const updated = setNetworkConfig({ mode: newMode });
+    setNetConfigState(updated);
+    setSuccessMessage(`Modo cambiado a: ${newMode === 'host' ? 'Servidor Host LAN' : newMode === 'client' ? 'Terminal Cliente LAN' : 'Modo Autónomo Local'}`);
+    setTimeout(() => setSuccessMessage(''), 4000);
+  };
+
+  const handleTestConnection = async () => {
+    setIsTestingNet(true);
+    setTestResult(null);
+    const res = await testHostConnection(hostUrlInput);
+    setIsTestingNet(false);
+    setTestResult(res);
+    if (res.success) {
+      setNetworkConfig({ hostUrl: hostUrlInput, status: 'connected' });
+      setNetConfigState(getNetworkConfig());
+    }
+  };
+
+  const handleSyncWithHost = async () => {
+    setIsSyncing(true);
+    const success = await syncWithHostServer();
+    setIsSyncing(false);
+    if (success) {
+      setDb(loadDatabase());
+      setSuccessMessage('Base de datos sincronizada con éxito desde el Servidor Host.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } else {
+      alert('No se pudo establecer sincronización con el Servidor Host.');
+    }
+  };
+
   const currentTypeMeta = CATALOG_TYPES.find((t) => t.key === activeTab);
 
   const currentItems = useMemo(() => {
@@ -78,6 +190,10 @@ export function ConfigurationPage() {
   }, [catalogos, activeTab]);
 
   const handleOpenNew = () => {
+    if (!canManageCatalogs) {
+      alert('Permiso denegado: Se requiere perfil de Administrador para agregar opciones de catálogo.');
+      return;
+    }
     setEditingItem(null);
     setItemForm({
       nombre: '',
@@ -90,6 +206,10 @@ export function ConfigurationPage() {
   };
 
   const handleOpenEdit = (item) => {
+    if (!canManageCatalogs) {
+      alert('Permiso denegado: Se requiere perfil de Administrador para editar opciones de catálogo.');
+      return;
+    }
     setEditingItem(item);
     setItemForm({
       nombre: item.nombre,
@@ -105,12 +225,17 @@ export function ConfigurationPage() {
     e.preventDefault();
     setFormError('');
 
+    if (!canManageCatalogs) {
+      setFormError('Permiso denegado: Se requiere perfil de Administrador para guardar opciones de catálogo.');
+      return;
+    }
+
     try {
       await saveCatalogItem({
         id: editingItem?.id,
         tipo: activeTab,
         ...itemForm,
-      });
+      }, user);
       setDb(loadDatabase());
       setModalOpen(false);
       setSuccessMessage('Opción de catálogo guardada con éxito.');
@@ -121,8 +246,12 @@ export function ConfigurationPage() {
   };
 
   const handleToggleActive = async (id) => {
+    if (!canManageCatalogs) {
+      alert('Permiso denegado: Se requiere perfil de Administrador para modificar catálogos.');
+      return;
+    }
     try {
-      await toggleCatalogActive(id);
+      await toggleCatalogActive(id, user);
       setDb(loadDatabase());
     } catch (err) {
       alert(err.message);
@@ -143,6 +272,10 @@ export function ConfigurationPage() {
 
   // Importar Copia de Seguridad JSON
   const handleImportJSON = (e) => {
+    if (!canManageBackups) {
+      alert('Permiso denegado: Se requiere perfil de Administrador para restaurar copias de seguridad.');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -178,6 +311,10 @@ export function ConfigurationPage() {
 
   // Resetear demostración
   const handleResetDemo = () => {
+    if (!canManageBackups) {
+      alert('Permiso denegado: Se requiere perfil de Administrador para restablecer la base de datos.');
+      return;
+    }
     if (confirm('¿Restablecer el inventario de demostración a sus 12 tambores originales?')) {
       resetDemoDatabase();
       setDb(loadDatabase());
@@ -479,6 +616,240 @@ export function ConfigurationPage() {
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                 Restablecer Demo
               </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ---------------- ARQUITECTURA DE RED Y SERVIDOR EMBEBIDO ---------------- */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <Server className="w-4 h-4 text-olive-800" />
+            <span>Arquitectura de Red y Servidor Local Embebido</span>
+          </CardTitle>
+          <p className="text-xs text-bone-600">
+            Configura el modo de operación para trabajar en red local (LAN) o de forma autónoma.
+          </p>
+        </CardHeader>
+
+        <CardContent className="space-y-6 text-xs">
+          {/* Selector de Modos de Red */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* 1. Modo Autónomo */}
+            <div
+              onClick={() => handleSwitchNetworkMode(NETWORK_MODES.OFFLINE)}
+              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+                netConfig.mode === NETWORK_MODES.OFFLINE
+                  ? 'border-obsidian bg-bone-100 shadow-soft-sm ring-1 ring-obsidian'
+                  : 'border-bone-200 bg-white hover:border-bone-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-obsidian flex items-center gap-1.5">
+                  <WifiOff className="w-4 h-4 text-bone-600" />
+                  Modo Autónomo
+                </span>
+                {netConfig.mode === NETWORK_MODES.OFFLINE && <Badge variant="default">Activo</Badge>}
+              </div>
+              <p className="text-bone-600 text-[11px] leading-relaxed">
+                Opera de forma 100% local en este equipo sin requerir red Wi-Fi ni servidor central. Ideal para contingencias.
+              </p>
+            </div>
+
+            {/* 2. Modo Servidor Host */}
+            <div
+              onClick={() => handleSwitchNetworkMode(NETWORK_MODES.HOST)}
+              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+                netConfig.mode === NETWORK_MODES.HOST
+                  ? 'border-emerald-600 bg-emerald-50 shadow-soft-sm ring-1 ring-emerald-600'
+                  : 'border-bone-200 bg-white hover:border-emerald-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-obsidian flex items-center gap-1.5">
+                  <Server className="w-4 h-4 text-emerald-700" />
+                  Servidor Host (LAN)
+                </span>
+                {netConfig.mode === NETWORK_MODES.HOST && <Badge variant="paleGreen">Activo</Badge>}
+              </div>
+              <p className="text-bone-600 text-[11px] leading-relaxed">
+                Este equipo aloja la base de datos centralizada SQLite y expone la API en el puerto 4000 para toda la planta.
+              </p>
+            </div>
+
+            {/* 3. Modo Terminal Cliente */}
+            <div
+              onClick={() => handleSwitchNetworkMode(NETWORK_MODES.CLIENT)}
+              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+                netConfig.mode === NETWORK_MODES.CLIENT
+                  ? 'border-blue-600 bg-blue-50 shadow-soft-sm ring-1 ring-blue-600'
+                  : 'border-bone-200 bg-white hover:border-blue-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-obsidian flex items-center gap-1.5">
+                  <Wifi className="w-4 h-4 text-blue-700" />
+                  Terminal Cliente (LAN)
+                </span>
+                {netConfig.mode === NETWORK_MODES.CLIENT && <Badge variant="paleBlue">Activo</Badge>}
+              </div>
+              <p className="text-bone-600 text-[11px] leading-relaxed">
+                Se conecta a través de la red Wi-Fi/LAN al equipo Servidor Host mediante su dirección IP local.
+              </p>
+            </div>
+          </div>
+
+          {/* Configuración específica según el modo activo */}
+          {netConfig.mode === NETWORK_MODES.HOST && (
+            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+              <span className="font-bold text-emerald-950 block text-xs">
+                Información de Conectividad para Terminales y Balanzas
+              </span>
+              <p className="text-emerald-800 text-[11px]">
+                Para conectar otros puestos de trabajo, ingresa en cada terminal cliente la dirección de este Host:
+              </p>
+              <div className="flex items-center gap-2 pt-1 font-mono text-xs">
+                <code className="bg-white px-3 py-1.5 rounded-lg border border-emerald-300 font-bold text-emerald-950">
+                  http://[IP-LOCAL-DE-ESTE-EQUIPO]:4000
+                </code>
+                <span className="text-bone-500 text-[10px]">
+                  (Ejecutar <code>npm run server</code> o iniciar desde la app de escritorio)
+                </span>
+              </div>
+            </div>
+          )}
+
+          {netConfig.mode === NETWORK_MODES.CLIENT && (
+            <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-3">
+              <span className="font-bold text-blue-950 block text-xs">
+                Conexión con el Servidor Host de Planta
+              </span>
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <Input
+                  value={hostUrlInput}
+                  onChange={(e) => setHostUrlInput(e.target.value)}
+                  placeholder="ej: http://192.168.1.50:4000"
+                  className="font-mono text-xs"
+                />
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestConnection}
+                    disabled={isTestingNet}
+                    className="text-xs whitespace-nowrap"
+                  >
+                    {isTestingNet ? 'Probando...' : 'Probar Enlace'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={handleSyncWithHost}
+                    disabled={isSyncing}
+                    className="text-xs whitespace-nowrap bg-blue-800 hover:bg-blue-900"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                    Sincronizar
+                  </Button>
+                </div>
+              </div>
+
+              {testResult && (
+                <div
+                  className={`p-2.5 rounded-lg text-xs font-mono ${
+                    testResult.success
+                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                      : 'bg-red-100 text-red-900 border border-red-300'
+                  }`}
+                >
+                  {testResult.success
+                    ? `✓ Servidor Host en línea · Conexión establecida con éxito (${testResult.data?.stats?.tambores || 0} tambores sincronizados).`
+                    : `✗ No se pudo conectar: ${testResult.error}`}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ---------------- JERARQUÍA DE PERFILES Y MATRIZ DE PERMISOS ---------------- */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-olive-800" />
+            <span>Jerarquía de Perfiles y Control de Permisos</span>
+          </CardTitle>
+          <p className="text-xs text-bone-600">
+            Niveles de seguridad operacional configurados para el personal de Olivícola Luján.
+          </p>
+        </CardHeader>
+
+        <CardContent className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Operario de Planta */}
+            <div
+              onClick={() => switchRole('operario')}
+              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+                role === ROLES.OPERARIO
+                  ? 'border-olive-800 bg-olive-50 ring-1 ring-olive-800'
+                  : 'border-bone-200 bg-white hover:border-bone-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-obsidian text-sm">Operador de Planta</span>
+                {role === ROLES.OPERARIO && <Badge variant="paleGreen">Sesión Activa</Badge>}
+              </div>
+              <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
+                <li>Pesaje y registro de tambores</li>
+                <li>Escaneo continuo con HPRT N130BT</li>
+                <li>Toma física de inventario por sectores</li>
+                <li>Impresión térmica Zebra GC420t</li>
+              </ul>
+            </div>
+
+            {/* Responsable de Calidad */}
+            <div
+              onClick={() => switchRole('calidad')}
+              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+                role === ROLES.CALIDAD
+                  ? 'border-emerald-700 bg-emerald-50 ring-1 ring-emerald-700'
+                  : 'border-bone-200 bg-white hover:border-bone-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-obsidian text-sm">Responsable de Calidad</span>
+                {role === ROLES.CALIDAD && <Badge variant="paleGreen">Sesión Activa</Badge>}
+              </div>
+              <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
+                <li>Autorización y liberación de lotes</li>
+                <li>Muestreos de laboratorio (pH, salinidad)</li>
+                <li>Retención de lotes observados</li>
+                <li>Consulta de trazabilidad e historial</li>
+              </ul>
+            </div>
+
+            {/* Gerente / Administrador */}
+            <div
+              onClick={() => switchRole('admin')}
+              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+                role === ROLES.ADMINISTRADOR
+                  ? 'border-obsidian bg-bone-100 ring-1 ring-obsidian'
+                  : 'border-bone-200 bg-white hover:border-bone-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-obsidian text-sm">Gerente / Administrador</span>
+                {role === ROLES.ADMINISTRADOR && <Badge variant="default">Sesión Activa</Badge>}
+              </div>
+              <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
+                <li>Auditoría en tiempo real por operador</li>
+                <li>Gestión de catálogos oficiales</li>
+                <li>Copias de seguridad y restauración</li>
+                <li>Configuración de red y eliminación</li>
+              </ul>
             </div>
           </div>
         </CardContent>

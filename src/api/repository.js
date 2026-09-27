@@ -21,6 +21,7 @@ import {
   diffDrumFields,
   resolveCatalogName,
 } from '../lib/domain.js';
+import { checkPermission, PERMISOS } from '../components/Auth.jsx';
 
 const STORAGE_KEY_PREFIX = 'olivicola-lujan-';
 const CURRENT_MODE_KEY = `${STORAGE_KEY_PREFIX}workspace-mode`; // 'demo' | 'empresa'
@@ -135,6 +136,12 @@ export function saveDatabase(data, specificMode = null) {
 export function resetDemoDatabase() {
   const initial = getInitialState('demo');
   saveDatabase(initial, 'demo');
+  try {
+    const config = getNetworkConfig();
+    if (config.mode !== NETWORK_MODES.OFFLINE) {
+      callServerApi('/api/reset-demo', { method: 'POST' }).catch(() => {});
+    }
+  } catch {}
   return initial;
 }
 
@@ -178,6 +185,139 @@ export function importDatabaseJSON(jsonStr) {
 }
 
 // -------------------------------------------------------------
+// ARQUITECTURA DE RED: MODOS OFFLINE, SERVIDOR HOST Y TERMINAL CLIENTE
+// -------------------------------------------------------------
+
+export const NETWORK_MODES = {
+  OFFLINE: 'offline', // Modo Autónomo: opera 100% local en localStorage
+  HOST: 'host',       // Modo Servidor Host: aloja base de datos y sirve a la red local
+  CLIENT: 'client',   // Modo Terminal Cliente: conecta a la IP local del Servidor Host
+};
+
+const NETWORK_CONFIG_KEY = `${STORAGE_KEY_PREFIX}network-config`;
+
+export function getNetworkConfig() {
+  try {
+    const raw = localStorage.getItem(NETWORK_CONFIG_KEY);
+    if (!raw) {
+      return {
+        mode: NETWORK_MODES.OFFLINE,
+        hostUrl: 'http://localhost:4000',
+        autoSync: true,
+        status: 'ready',
+        lastSync: null,
+      };
+    }
+    return JSON.parse(raw);
+  } catch {
+    return {
+      mode: NETWORK_MODES.OFFLINE,
+      hostUrl: 'http://localhost:4000',
+      autoSync: true,
+      status: 'ready',
+      lastSync: null,
+    };
+  }
+}
+
+export function setNetworkConfig(config) {
+  try {
+    const current = getNetworkConfig();
+    const updated = { ...current, ...config };
+    localStorage.setItem(NETWORK_CONFIG_KEY, JSON.stringify(updated));
+    return updated;
+  } catch (err) {
+    console.error('Error al guardar configuración de red:', err);
+    return getNetworkConfig();
+  }
+}
+
+/**
+ * Prueba la conectividad HTTP con el servidor host en la LAN
+ */
+export async function testHostConnection(targetUrl = null) {
+  const url = (targetUrl || getNetworkConfig().hostUrl || 'http://localhost:4000').replace(/\/+$/, '');
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(`${url}/api/status`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      return { success: true, data };
+    }
+    return { success: false, error: `El servidor respondió con código ${res.status}` };
+  } catch (err) {
+    return { success: false, error: err.name === 'AbortError' ? 'Tiempo de espera agotado' : err.message };
+  }
+}
+
+/**
+ * Sincroniza los datos locales con el Servidor Host
+ */
+export async function syncWithHostServer() {
+  const config = getNetworkConfig();
+  if (config.mode === NETWORK_MODES.OFFLINE) return false;
+
+  const url = (config.hostUrl || 'http://localhost:4000').replace(/\/+$/, '');
+  try {
+    const res = await fetch(`${url}/api/database`);
+    if (res.ok) {
+      const hostData = await res.json();
+      saveDatabase(hostData);
+      setNetworkConfig({ status: 'connected', lastSync: new Date().toISOString() });
+      return hostData;
+    }
+    setNetworkConfig({ status: 'error' });
+    return false;
+  } catch (err) {
+    console.warn('Fallo al sincronizar con Servidor Host:', err.message);
+    setNetworkConfig({ status: 'disconnected' });
+    return false;
+  }
+}
+
+/**
+ * Realiza llamadas HTTP al servidor local si estamos en Modo Host o Cliente LAN.
+ * Si la red falla o está en modo offline, retorna null para operar de modo local.
+ */
+export async function callServerApi(endpoint, options = {}) {
+  const config = getNetworkConfig();
+  if (config.mode === NETWORK_MODES.OFFLINE) return null;
+
+  const baseUrl = (config.hostUrl || 'http://localhost:4000').replace(/\/+$/, '');
+  const url = `${baseUrl}${endpoint}`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      setNetworkConfig({ status: 'connected' });
+      return await res.json();
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      console.warn(`[Servidor Host] Respuesta ${res.status}:`, errData.error || res.statusText);
+      return null;
+    }
+  } catch (err) {
+    console.warn(`[Servidor Host] No disponible en ${url} (${err.message}). Operando localmente.`);
+    setNetworkConfig({ status: 'disconnected' });
+    return null;
+  }
+}
+
+// -------------------------------------------------------------
 // OPERACIONES DE TAMBORES
 // -------------------------------------------------------------
 
@@ -194,7 +334,25 @@ export async function createDrum(rawInput, currentUser = null) {
     throw new Error(firstError || 'Datos del tambor inválidos');
   }
 
-  // Asignar ID secuencial único evitando reciclados
+  // 1. Sincronización con Servidor Host si estamos en modo Host o Cliente LAN
+  const config = getNetworkConfig();
+  if (config.mode !== NETWORK_MODES.OFFLINE) {
+    const serverResult = await callServerApi('/api/tambores', {
+      method: 'POST',
+      body: JSON.stringify({ drumData: rawInput, currentUser }),
+    });
+
+    if (serverResult && serverResult.tambor_id) {
+      const freshState = loadDatabase();
+      if (!freshState.tambores.some((d) => d.tambor_id === serverResult.tambor_id)) {
+        freshState.tambores.unshift(serverResult);
+        saveDatabase(freshState);
+      }
+      return serverResult;
+    }
+  }
+
+  // 2. Persistencia local autónoma u offline
   const nextId = nextTamborId(state.tambores, state.historial);
   const descCode = buildDescriptiveCode(normalized, state.catalogos);
   const compactCode = buildCompactCode(descCode);
@@ -251,6 +409,15 @@ export async function updateDrum(id, rawInput, currentUser = null) {
   if (!validation.valid) {
     const firstError = Object.values(validation.errors)[0];
     throw new Error(firstError || 'Datos del tambor inválidos');
+  }
+
+  // Sincronización con Servidor Host si estamos en modo Host o Cliente LAN
+  const config = getNetworkConfig();
+  if (config.mode !== NETWORK_MODES.OFFLINE) {
+    callServerApi(`/api/tambores/${encodeURIComponent(existingDrum.id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ drumData: rawInput, currentUser }),
+    }).catch(() => {});
   }
 
   // Recalcular códigos conservando tambor_id
@@ -409,6 +576,15 @@ export async function recordDrumMovement(drumId, movementInput, currentUser = nu
   state.movimientos.unshift(newMovement);
   state.tambores[drumIndex] = drum;
 
+  // Sincronización con Servidor Host si estamos en modo Host o Cliente LAN
+  const config = getNetworkConfig();
+  if (config.mode !== NETWORK_MODES.OFFLINE) {
+    callServerApi(`/api/tambores/${encodeURIComponent(drum.id)}/movimiento`, {
+      method: 'POST',
+      body: JSON.stringify({ movementInput, currentUser }),
+    }).catch(() => {});
+  }
+
   saveDatabase(state);
   return { drum, movement: newMovement };
 }
@@ -418,6 +594,10 @@ export async function recordDrumMovement(drumId, movementInput, currentUser = nu
  * El historial y movimientos se conservan permanentemente.
  */
 export async function deleteDrum(drumId, confirmationText, currentUser = null) {
+  if (currentUser?.rol && !checkPermission(currentUser.rol, PERMISOS.ELIMINAR_TAMBORES)) {
+    throw new Error('Permiso denegado: Se requiere perfil de Administrador para dar de baja tambores');
+  }
+
   const state = loadDatabase();
   const drumIndex = state.tambores.findIndex((d) => d.id === drumId || d.tambor_id?.toUpperCase() === drumId?.toUpperCase());
 
@@ -429,6 +609,15 @@ export async function deleteDrum(drumId, confirmationText, currentUser = null) {
 
   if (confirmationText?.trim().toUpperCase() !== drum.tambor_id.toUpperCase()) {
     throw new Error(`Para confirmar la eliminación debe escribir exactamente el número "${drum.tambor_id}"`);
+  }
+
+  // Sincronización con Servidor Host si estamos en modo Host o Cliente LAN
+  const netConfig = getNetworkConfig();
+  if (netConfig.mode !== NETWORK_MODES.OFFLINE) {
+    callServerApi(`/api/tambores/${encodeURIComponent(drum.id)}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ confirmationText, currentUser }),
+    }).catch(() => {});
   }
 
   // Registrar evento de eliminación en el historial
@@ -453,7 +642,11 @@ export async function deleteDrum(drumId, confirmationText, currentUser = null) {
 // OPERACIONES DE CATÁLOGOS
 // -------------------------------------------------------------
 
-export async function saveCatalogItem(catalogItem) {
+export async function saveCatalogItem(catalogItem, currentUser = null) {
+  if (currentUser?.rol && !checkPermission(currentUser.rol, PERMISOS.GESTION_CATALOGOS)) {
+    throw new Error('Permiso denegado: Se requiere perfil de Administrador para gestionar catálogos');
+  }
+
   const state = loadDatabase();
   const { id, tipo, nombre, codigo, activo = true, orden = 1 } = catalogItem;
 
@@ -475,6 +668,15 @@ export async function saveCatalogItem(catalogItem) {
 
   if (duplicate) {
     throw new Error(`Ya existe una opción con el código "${cleanCode}" para este catálogo`);
+  }
+
+  // Sincronización con Servidor Host si estamos en modo Host o Cliente LAN
+  const config = getNetworkConfig();
+  if (config.mode !== NETWORK_MODES.OFFLINE) {
+    callServerApi('/api/catalogos', {
+      method: 'POST',
+      body: JSON.stringify(catalogItem),
+    }).catch(() => {});
   }
 
   if (id) {
@@ -506,10 +708,22 @@ export async function saveCatalogItem(catalogItem) {
   return state.catalogos;
 }
 
-export async function toggleCatalogActive(id) {
+export async function toggleCatalogActive(id, currentUser = null) {
+  if (currentUser?.rol && !checkPermission(currentUser.rol, PERMISOS.GESTION_CATALOGOS)) {
+    throw new Error('Permiso denegado: Se requiere perfil de Administrador para gestionar catálogos');
+  }
+
   const state = loadDatabase();
   const item = state.catalogos.find((c) => c.id === id);
   if (!item) throw new Error('Opción de catálogo no encontrada');
+
+  // Sincronización con Servidor Host si estamos en modo Host o Cliente LAN
+  const config = getNetworkConfig();
+  if (config.mode !== NETWORK_MODES.OFFLINE) {
+    callServerApi(`/api/catalogos/${encodeURIComponent(id)}/toggle`, {
+      method: 'POST',
+    }).catch(() => {});
+  }
 
   item.activo = !item.activo;
   saveDatabase(state);
@@ -626,6 +840,15 @@ export async function applyInventoryAudit(auditResult = {}, currentUser = null) 
     created_date: now,
   });
 
+  // Sincronización con Servidor Host si estamos en modo Host o Cliente LAN
+  const config = getNetworkConfig();
+  if (config.mode !== NETWORK_MODES.OFFLINE) {
+    callServerApi('/api/inventario/auditoria', {
+      method: 'POST',
+      body: JSON.stringify({ auditResult, currentUser }),
+    }).catch(() => {});
+  }
+
   saveDatabase(state);
 
   return {
@@ -636,3 +859,138 @@ export async function applyInventoryAudit(auditResult = {}, currentUser = null) 
     timestamp: now,
   };
 }
+
+// -------------------------------------------------------------
+// CONTROL DE CALIDAD Y MUESTREO
+// -------------------------------------------------------------
+
+/**
+ * Autoriza o retiene un lote o conjunto de tambores tras la inspección de calidad.
+ * Registra parámetros de muestreo físico-químico, crea movimiento de control y actualiza historial.
+ */
+export async function authorizeQualityLot(params = {}, currentUser = null) {
+  if (currentUser?.rol && !checkPermission(currentUser.rol, PERMISOS.AUTORIZAR_CALIDAD)) {
+    throw new Error('Permiso denegado: Se requiere perfil de Control de Calidad o Administrador para autorizar o retener lotes');
+  }
+
+  const { drumIds = [], lot = '', estadoNuevo = 'cat-est-5', observaciones = '', muestreoData = null } = params;
+
+  if (!drumIds || drumIds.length === 0) {
+    throw new Error('Debe seleccionar al menos un tambor para registrar la inspección');
+  }
+
+  const networkConfig = getNetworkConfig();
+  if (networkConfig.mode !== NETWORK_MODES.OFFLINE) {
+    try {
+      const res = await fetch(`${networkConfig.hostUrl}/api/calidad/autorizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...params, currentUser }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        // Sincronizar copia local
+        await syncWithHostServer();
+        return result;
+      }
+    } catch (e) {
+      console.warn('Error comunicando con servidor host, aplicando localmente:', e);
+    }
+  }
+
+  const state = loadDatabase();
+  const now = new Date().toISOString();
+  const targetStatusItem = state.catalogos.find((c) => (c.id === estadoNuevo || c.codigo === estadoNuevo) && c.tipo === 'estado');
+  const statusName = targetStatusItem?.nombre || 'Aprobado calidad';
+  const qualityMoveType =
+    state.catalogos.find((c) => c.tipo === 'tipo_movimiento' && (c.id === 'cat-mov-3' || c.codigo === 'CTRL'))?.id ||
+    'cat-mov-3';
+
+  let updatedCount = 0;
+  const targetIdSet = new Set(drumIds.map(id => String(id).toUpperCase()));
+
+  for (const drum of state.tambores) {
+    if (targetIdSet.has(drum.id.toUpperCase()) || targetIdSet.has(drum.tambor_id?.toUpperCase())) {
+      const prevStatusName = resolveCatalogName(state.catalogos, drum.estado, 'estado');
+      const samplingNotes = muestreoData
+        ? ` [pH: ${muestreoData.ph || '-'} | Salinidad: ${muestreoData.salinidad || '-'}% | Acidez: ${muestreoData.acidez || '-'}%]`
+        : '';
+      const fullObs = `${observaciones || 'Inspección de control de calidad'}${samplingNotes}`.trim();
+
+      // 1. Movimiento de calidad
+      state.movimientos.unshift({
+        id: `mov-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tambor_id: drum.tambor_id,
+        tambor_ref: drum.id,
+        tipo: qualityMoveType,
+        ubicacion_anterior: drum.ubicacion,
+        ubicacion_nueva: drum.ubicacion,
+        estado_anterior: drum.estado,
+        estado_nuevo: targetStatusItem?.id || estadoNuevo,
+        observaciones: fullObs,
+        created_date: now,
+      });
+
+      // 2. Historial de Calidad
+      state.historial.unshift({
+        id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tambor_id: drum.tambor_id,
+        tambor_ref: drum.id,
+        tipo: 'Calidad',
+        descripcion: `Autorización de calidad: "${statusName}" (Lote: ${drum.lote || lot || 'N/A'})`,
+        observaciones: fullObs,
+        actor: currentUser?.nombre || 'Control de Calidad',
+        created_date: now,
+      });
+
+      // 3. Historial de Edición de estado
+      state.historial.unshift({
+        id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tambor_id: drum.tambor_id,
+        tambor_ref: drum.id,
+        tipo: 'Edición',
+        campo: 'estado',
+        valor_anterior: prevStatusName,
+        valor_nuevo: statusName,
+        descripcion: `Estado modificado por Calidad: "${prevStatusName}" → "${statusName}"`,
+        actor: currentUser?.nombre || 'Control de Calidad',
+        created_date: now,
+      });
+
+      drum.estado = targetStatusItem?.id || estadoNuevo;
+      drum.updated_date = now;
+      updatedCount++;
+    }
+  }
+
+  saveDatabase(state);
+  return { success: true, authorizedCount: updatedCount, estado: statusName, timestamp: now };
+}
+
+// -------------------------------------------------------------
+// AUDITORÍA Y CONSULTAS GERENCIALES
+// -------------------------------------------------------------
+
+/**
+ * Consulta de eventos de auditoría para el Gerente / Administrador
+ */
+export function getOperatorAuditEvents(filters = {}) {
+  const state = loadDatabase();
+  const { actor, tipo, search, dateFrom, dateTo } = filters;
+
+  return (state.historial || []).filter(item => {
+    if (actor && actor !== 'ALL' && item.actor !== actor) return false;
+    if (tipo && tipo !== 'ALL' && item.tipo !== tipo) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const matchTambor = item.tambor_id?.toLowerCase().includes(q);
+      const matchDesc = item.descripcion?.toLowerCase().includes(q);
+      const matchActor = item.actor?.toLowerCase().includes(q);
+      if (!matchTambor && !matchDesc && !matchActor) return false;
+    }
+    if (dateFrom && item.created_date < dateFrom) return false;
+    if (dateTo && item.created_date > dateTo) return false;
+    return true;
+  });
+}
+

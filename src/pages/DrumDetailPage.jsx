@@ -28,7 +28,7 @@ import {
 import { resolveCatalogName } from '../lib/domain.js';
 import { formatDate, formatDateTime } from '../lib/utils.js';
 import { generateDrumZPL, downloadZplFile, copyZplToClipboard } from '../lib/zpl.js';
-import { useAuth } from '../components/Auth.jsx';
+import { useAuth, PERMISOS, PermissionGate } from '../components/Auth.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Badge } from '../components/ui/badge.jsx';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.jsx';
@@ -425,19 +425,21 @@ export function DrumDetailPage() {
             </Button>
           </Link>
 
-          <Button
-            variant="softDestructive"
-            size="default"
-            onClick={() => {
-              setDeleteConfirmation('');
-              setDeleteError('');
-              setDeleteDialogOpen(true);
-            }}
-            className="text-xs"
-          >
-            <Trash2 className="w-4 h-4 mr-1.5" />
-            Eliminar
-          </Button>
+          <PermissionGate permission={PERMISOS.ELIMINAR_TAMBORES}>
+            <Button
+              variant="softDestructive"
+              size="default"
+              onClick={() => {
+                setDeleteConfirmation('');
+                setDeleteError('');
+                setDeleteDialogOpen(true);
+              }}
+              className="text-xs"
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              Eliminar
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 

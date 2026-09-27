@@ -14,6 +14,7 @@ import { HistoryPage } from './pages/HistoryPage.jsx';
 import { InventoryAuditPage } from './pages/InventoryAuditPage.jsx';
 import { ConfigurationPage } from './pages/ConfigurationPage.jsx';
 import { HelpPage } from './pages/HelpPage.jsx';
+import { QualityPage } from './pages/QualityPage.jsx';
 import { Button } from './components/ui/button.jsx';
 
 // Pantalla de acceso y autenticación local
@@ -70,6 +71,7 @@ export function App() {
                 <Route path="/inventario" element={<InventoryPage />} />
                 <Route path="/inventario/toma" element={<InventoryAuditPage />} />
                 <Route path="/tambores/nuevo" element={<NewDrumPage />} />
+                <Route path="/calidad" element={<QualityPage />} />
                 <Route path="/tambores/:id" element={<DrumDetailPage />} />
                 <Route path="/tambores/:id/editar" element={<EditDrumPage />} />
                 <Route path="/tambores/:id/etiqueta" element={<IndividualLabelPage />} />
