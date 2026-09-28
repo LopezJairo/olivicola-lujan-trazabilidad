@@ -569,10 +569,22 @@ export function ConfigurationPage() {
           </p>
         </div>
 
-        <Button variant="primary" size="default" onClick={handleOpenNew} className="text-xs">
-          <Plus className="w-4 h-4 mr-1.5" />
-          Agregar Opción a {currentTypeMeta?.label}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => document.getElementById('consola-logs')?.scrollIntoView({ behavior: 'smooth' })}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-obsidian text-bone-100 hover:bg-black text-xs font-semibold shadow-soft-sm transition-all active:scale-95"
+            title="Ir a la terminal de logs en tiempo real"
+          >
+            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Ver Logs y Diagnóstico</span>
+          </button>
+
+          <Button variant="primary" size="default" onClick={handleOpenNew} className="text-xs">
+            <Plus className="w-4 h-4 mr-1.5" />
+            Agregar Opción a {currentTypeMeta?.label}
+          </Button>
+        </div>
       </div>
 
       {successMessage && (
@@ -1105,7 +1117,7 @@ export function ConfigurationPage() {
       </Card>
 
       {/* ---------------- CONSOLA DE REGISTROS Y DIAGNÓSTICO EN VIVO ---------------- */}
-      <Card>
+      <Card id="consola-logs" className="scroll-mt-6 border-olive-300">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
