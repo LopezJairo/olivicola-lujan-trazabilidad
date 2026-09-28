@@ -3,7 +3,7 @@ import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/utils.js';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center font-medium transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 select-none group',
+  'inline-flex items-center justify-center whitespace-nowrap shrink-0 font-medium transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 select-none group',
   {
     variants: {
       variant: {
@@ -50,9 +50,11 @@ export function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
-      <span>{children}</span>
+      <span className="inline-flex items-center justify-center whitespace-nowrap leading-none">
+        {children}
+      </span>
       {trailingIcon && (
-        <span className="btn-trailing-icon">
+        <span className="btn-trailing-icon shrink-0">
           {trailingIcon}
         </span>
       )}

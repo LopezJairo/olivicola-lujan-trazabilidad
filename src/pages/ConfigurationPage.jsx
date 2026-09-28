@@ -24,13 +24,26 @@ import {
   ShieldCheck,
   RefreshCw,
   Cpu,
+  Key,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
+  Trash2,
+  UserPlus,
+  AlertTriangle,
+  Copy,
+  Terminal,
+  Activity,
 } from 'lucide-react';
+import { logger } from '../lib/logger.js';
 import {
   loadDatabase,
   saveCatalogItem,
   toggleCatalogActive,
   exportDatabaseJSON,
   importDatabaseJSON,
+  clearAllCompanyData,
   resetDemoDatabase,
   getCurrentWorkspaceMode,
   setCurrentWorkspaceMode,
@@ -40,7 +53,7 @@ import {
   syncWithHostServer,
   NETWORK_MODES,
 } from '../api/repository.js';
-import { useAuth, ROLES, ROLE_PERMISSIONS, PERMISOS } from '../components/Auth.jsx';
+import { useAuth, ROLES, ROLE_PERMISSIONS, PERMISOS, DEFAULT_ADMIN_KEY } from '../components/Auth.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Badge } from '../components/ui/badge.jsx';
@@ -82,11 +95,45 @@ export function ConfigurationPage() {
   const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Perfiles y permisos
-  const { user, role, switchRole, can } = useAuth();
+  // Perfiles, personal y permisos
+  const {
+    user,
+    role,
+    switchRole,
+    can,
+    usersList = [],
+    adminSecret,
+    adminCreateUser,
+    adminUpdateUser,
+    adminDeleteUser,
+    updateAdminSecret,
+  } = useAuth();
   const canManageCatalogs = can(PERMISOS.GESTION_CATALOGOS);
   const canManageBackups = can(PERMISOS.GESTION_BACKUPS);
   const canConfigRed = can(PERMISOS.CONFIG_RED);
+  const canManageUsers = can(PERMISOS.GESTION_USUARIOS);
+
+  // Estado para gestión de personal y clave de autorización
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [newUserForm, setNewUserForm] = useState({
+    nombre: '',
+    legajo: '',
+    password: '',
+    rol: ROLES.OPERARIO,
+    cargo: '',
+  });
+  const [userFormError, setUserFormError] = useState('');
+
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [userForPassword, setUserForPassword] = useState(null);
+  const [newPasswordVal, setNewPasswordVal] = useState('');
+
+  const [adminSecretInput, setAdminSecretInput] = useState(adminSecret || DEFAULT_ADMIN_KEY);
+  const [showAdminSecret, setShowAdminSecret] = useState(false);
+
+  React.useEffect(() => {
+    if (adminSecret) setAdminSecretInput(adminSecret);
+  }, [adminSecret]);
 
   // Arquitectura de Red y Modos
   const [netConfig, setNetConfigState] = useState(getNetworkConfig());
@@ -127,10 +174,63 @@ export function ConfigurationPage() {
     }
   }, []);
 
+  // Consola de Registros y Diagnóstico en Tiempo Real
+  const [systemLogs, setSystemLogs] = useState(() => logger.getLogs());
+  const [isRunningDiag, setIsRunningDiag] = useState(false);
+
+  React.useEffect(() => {
+    const unsubscribe = logger.subscribe((newLogs) => {
+      setSystemLogs(newLogs);
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleRunDiagnostics = async () => {
+    setIsRunningDiag(true);
+    logger.info('Diagnóstico', '=== INICIANDO AUTODIAGNÓSTICO DE RED Y SERVIDOR ===');
+
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      logger.info('Diagnóstico', 'Plataforma: Aplicación de Escritorio Electron detectada');
+      try {
+        const status = await window.electronAPI.getServerStatus?.();
+        if (status?.isRunning) {
+          logger.success('Diagnóstico', `Servidor local embebido en este equipo: ACTIVO (Puerto ${status.port})`);
+        } else {
+          logger.warn('Diagnóstico', 'Servidor local embebido en este equipo: DETENIDO');
+        }
+      } catch (err) {
+        logger.error('Diagnóstico', `Error al consultar estado del servidor: ${err.message}`);
+      }
+    } else {
+      logger.info('Diagnóstico', 'Plataforma: Ejecución en Navegador Web');
+    }
+
+    // Probar enlace con el host configurado
+    const target = hostUrlInput || netConfig.hostUrl || 'http://localhost:4000';
+    logger.info('Diagnóstico', `Probando conexión con Servidor: ${target}`);
+    const res = await testHostConnection(target);
+    if (res.success) {
+      logger.success('Diagnóstico', `✓ SERVIDOR EN LÍNEA: Respuesta recibida en ${res.elapsed || 0}ms`, {
+        url: res.normalizedUrl,
+        tambores: res.data?.stats?.tambores,
+      });
+    } else {
+      logger.error('Diagnóstico', `✗ NO RESPONDE: ${res.error}`);
+    }
+
+    logger.info('Diagnóstico', '=== AUTODIAGNÓSTICO FINALIZADO ===');
+    setIsRunningDiag(false);
+  };
+
   const handleStartElectronServer = async () => {
     if (window.electronAPI?.startServer) {
       const res = await window.electronAPI.startServer(4000);
-      setElectronState(prev => ({ ...prev, serverRunning: true, serverPort: res?.port || 4000 }));
+      setElectronState(prev => ({
+        ...prev,
+        serverRunning: res?.isRunning ?? true,
+        serverPort: res?.port || 4000,
+        ips: res?.ips || prev.ips,
+      }));
       setSuccessMessage('Servidor embebido iniciado correctamente en el puerto 4000.');
       setTimeout(() => setSuccessMessage(''), 4000);
     }
@@ -145,13 +245,29 @@ export function ConfigurationPage() {
     }
   };
 
-  const handleSwitchNetworkMode = (newMode) => {
-    if (!canConfigRed) {
-      alert('Permiso denegado: Se requiere perfil de Administrador para modificar el modo de red');
+  const handleSwitchNetworkMode = async (newMode) => {
+    // Permitir cambiar a Terminal Cliente sin requerir permiso de Administrador
+    if (newMode !== NETWORK_MODES.CLIENT && !canConfigRed) {
+      alert('Permiso denegado: Se requiere perfil de Administrador para modificar la configuración de red del Servidor');
       return;
     }
     const updated = setNetworkConfig({ mode: newMode });
     setNetConfigState(updated);
+
+    if (newMode === NETWORK_MODES.HOST && window.electronAPI?.startServer) {
+      try {
+        const res = await window.electronAPI.startServer(4000);
+        setElectronState(prev => ({
+          ...prev,
+          serverRunning: res?.isRunning ?? true,
+          serverPort: res?.port || 4000,
+          ips: res?.ips || prev.ips,
+        }));
+      } catch (err) {
+        console.warn('Error al auto-iniciar servidor:', err);
+      }
+    }
+
     setSuccessMessage(`Modo cambiado a: ${newMode === 'host' ? 'Servidor Host LAN' : newMode === 'client' ? 'Terminal Cliente LAN' : 'Modo Autónomo Local'}`);
     setTimeout(() => setSuccessMessage(''), 4000);
   };
@@ -163,7 +279,9 @@ export function ConfigurationPage() {
     setIsTestingNet(false);
     setTestResult(res);
     if (res.success) {
-      setNetworkConfig({ hostUrl: hostUrlInput, status: 'connected' });
+      const normalized = res.normalizedUrl || hostUrlInput;
+      setHostUrlInput(normalized);
+      setNetworkConfig({ hostUrl: normalized, status: 'connected' });
       setNetConfigState(getNetworkConfig());
     }
   };
@@ -309,16 +427,107 @@ export function ConfigurationPage() {
     }
   };
 
-  // Resetear demostración
-  const handleResetDemo = () => {
+  // Vaciar datos operativos (0 tambores para iniciar producción limpia)
+  const handleClearAllData = () => {
     if (!canManageBackups) {
-      alert('Permiso denegado: Se requiere perfil de Administrador para restablecer la base de datos.');
+      alert('Permiso denegado: Se requiere perfil de Administrador para vaciar la base de datos.');
       return;
     }
-    if (confirm('¿Restablecer el inventario de demostración a sus 12 tambores originales?')) {
-      resetDemoDatabase();
+    if (
+      confirm(
+        '¿ATENCIÓN: Deseas vaciar todos los tambores e historial de planta para iniciar en limpio?\n\nLos catálogos oficiales (productos, variedades, calibres, etc.) se conservarán intactos.'
+      )
+    ) {
+      clearAllCompanyData(user);
       setDb(loadDatabase());
-      window.location.reload();
+      setSuccessMessage('Base de datos vaciada: 0 tambores. Lista para operación oficial en planta.');
+      setTimeout(() => window.location.reload(), 1500);
+    }
+  };
+
+  // Handlers para administración de personal
+  const handleCreateUser = (e) => {
+    e.preventDefault();
+    setUserFormError('');
+    try {
+      adminCreateUser(newUserForm);
+      setSuccessMessage(`Personal registrado: ${newUserForm.nombre} (Legajo: ${newUserForm.legajo}).`);
+      setUserModalOpen(false);
+      setNewUserForm({
+        nombre: '',
+        legajo: '',
+        password: '',
+        rol: ROLES.OPERARIO,
+        cargo: '',
+      });
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      setUserFormError(err.message || 'Error al crear usuario.');
+    }
+  };
+
+  const handleToggleUserActive = (targetUser) => {
+    try {
+      adminUpdateUser(targetUser.id, { activo: !targetUser.activo });
+      setSuccessMessage(`Cuenta de ${targetUser.nombre} ${targetUser.activo ? 'desactivada' : 'activada'}.`);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleChangeUserRole = (targetUser, newRole) => {
+    try {
+      adminUpdateUser(targetUser.id, { rol: newRole });
+      setSuccessMessage(`Rol de ${targetUser.nombre} actualizado a ${newRole}.`);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleOpenPasswordModal = (targetUser) => {
+    setUserForPassword(targetUser);
+    setNewPasswordVal('');
+    setPasswordModalOpen(true);
+  };
+
+  const handleSaveNewPassword = (e) => {
+    e.preventDefault();
+    if (!newPasswordVal || newPasswordVal.length < 3) {
+      alert('La contraseña debe tener al menos 3 caracteres.');
+      return;
+    }
+    try {
+      adminUpdateUser(userForPassword.id, { newPassword: newPasswordVal });
+      setPasswordModalOpen(false);
+      setSuccessMessage(`Contraseña actualizada con éxito para ${userForPassword.nombre}.`);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteUser = (targetUser) => {
+    if (confirm(`¿Estás seguro de eliminar permanentemente a ${targetUser.nombre} (Legajo: ${targetUser.legajo})?`)) {
+      try {
+        adminDeleteUser(targetUser.id);
+        setSuccessMessage(`Usuario ${targetUser.nombre} eliminado.`);
+        setTimeout(() => setSuccessMessage(''), 4000);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  };
+
+  const handleUpdateAdminSecret = (e) => {
+    e.preventDefault();
+    try {
+      updateAdminSecret(adminSecretInput);
+      setSuccessMessage('Clave de Autorización de Gerencia actualizada con éxito.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -529,40 +738,25 @@ export function ConfigurationPage() {
           </p>
         </CardHeader>
         <CardContent className="space-y-6 text-xs">
-          {/* Alternar Entornos */}
+          {/* Estado de Base de Datos de Planta */}
           <div className="p-4 rounded-xl border border-bone-200 bg-bone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <span className="font-bold text-obsidian block text-sm">
-                Espacio de Trabajo Activo
+                Base de Datos Operativa de Planta
               </span>
               <p className="text-bone-600 text-xs mt-0.5">
-                {currentMode === 'demo'
-                  ? 'Modo Demostración (contiene los 12 tambores de prueba).'
-                  : 'Espacio Empresa (espacio limpio listo para registrar lotes reales sin mezclar ejemplos).'}
+                Olivícola Luján · Catálogos oficiales activos para variedades, calibres, productos y calidades.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant={currentMode === 'demo' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => handleSwitchWorkspace('demo')}
-                className="text-xs"
-              >
-                Espacio Demo
-              </Button>
-              <Button
-                variant={currentMode === 'empresa' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => handleSwitchWorkspace('empresa')}
-                className="text-xs"
-              >
-                Espacio Empresa
-              </Button>
+              <span className="text-xs font-mono bg-emerald-100 text-emerald-900 border border-emerald-300 font-semibold px-2.5 py-1 rounded-lg">
+                Producción Oficial
+              </span>
             </div>
           </div>
 
-          {/* Exportar / Importar / Resetear */}
+          {/* Exportar / Importar / Vaciar */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             {/* Exportar JSON */}
             <div className="p-4 rounded-xl border border-bone-200 bg-white space-y-2">
@@ -601,20 +795,20 @@ export function ConfigurationPage() {
               </label>
             </div>
 
-            {/* Restablecer Demo */}
+            {/* Vaciar Datos de Planta */}
             <div className="p-4 rounded-xl border border-bone-200 bg-white space-y-2">
-              <span className="font-bold text-obsidian block">Restablecer Ejemplos</span>
+              <span className="font-bold text-obsidian block">Vaciar Datos de Planta</span>
               <p className="text-bone-600 text-[11px]">
-                Vuelve a cargar los 12 tambores iniciales de demostración de Olivícola Luján.
+                Deja el inventario en 0 tambores y limpia movimientos para iniciar producción limpia, conservando catálogos.
               </p>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                onClick={handleResetDemo}
-                className="w-full text-xs"
+                onClick={handleClearAllData}
+                className="w-full text-xs text-rose-800 border-rose-200 hover:bg-rose-50"
               >
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                Restablecer Demo
+                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-rose-600" />
+                Vaciar Tambores (0)
               </Button>
             </div>
           </div>
@@ -702,20 +896,108 @@ export function ConfigurationPage() {
 
           {/* Configuración específica según el modo activo */}
           {netConfig.mode === NETWORK_MODES.HOST && (
-            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2">
-              <span className="font-bold text-emerald-950 block text-xs">
-                Información de Conectividad para Terminales y Balanzas
-              </span>
-              <p className="text-emerald-800 text-[11px]">
-                Para conectar otros puestos de trabajo, ingresa en cada terminal cliente la dirección de este Host:
-              </p>
-              <div className="flex items-center gap-2 pt-1 font-mono text-xs">
-                <code className="bg-white px-3 py-1.5 rounded-lg border border-emerald-300 font-bold text-emerald-950">
-                  http://[IP-LOCAL-DE-ESTE-EQUIPO]:4000
-                </code>
-                <span className="text-bone-500 text-[10px]">
-                  (Ejecutar <code>npm run server</code> o iniciar desde la app de escritorio)
+            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-300 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${electronState.serverRunning ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                    <span className="font-bold text-emerald-950 text-sm">
+                      {electronState.serverRunning ? 'Servidor Host LAN Activo' : 'Servidor Detenido'}
+                    </span>
+                    <span className="font-mono text-xs bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded border border-emerald-300 font-semibold">
+                      Puerto {electronState.serverPort || 4000}
+                    </span>
+                  </div>
+                  <p className="text-emerald-800 text-xs mt-1">
+                    {electronState.serverRunning
+                      ? 'El servidor central está escuchando en la red local. Los puestos clientes pueden conectarse.'
+                      : 'Presiona "Iniciar Servidor" para habilitar la conexión desde los demás equipos (Mac o Windows).'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {electronState.serverRunning ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleStopElectronServer}
+                      className="text-xs text-red-700 border-red-300 hover:bg-red-50"
+                    >
+                      Detener Servidor
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleStartElectronServer}
+                      className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white"
+                    >
+                      Iniciar Servidor Embebido
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Lista de Direcciones IP Detectadas */}
+              <div className="pt-3 border-t border-emerald-200/80 space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 block font-mono">
+                  Direcciones para conectar los puestos clientes (Mac o Windows):
                 </span>
+                
+                {electronState.ips && electronState.ips.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {electronState.ips.map((net) => {
+                      const hostUrl = `http://${net.ip}:${electronState.serverPort || 4000}`;
+                      return (
+                        <div
+                          key={net.ip}
+                          className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-lg border border-emerald-300 font-mono text-xs shadow-soft-sm"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[10px] text-bone-600 uppercase px-1.5 py-0.5 rounded bg-bone-100 font-semibold shrink-0">
+                              {net.iface}
+                            </span>
+                            <span className="font-bold text-emerald-950 truncate">{hostUrl}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(hostUrl);
+                              setSuccessMessage(`URL copiada al portapapeles: ${hostUrl}`);
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                            }}
+                            className="text-xs text-emerald-800 hover:text-emerald-950 hover:underline flex items-center gap-1 cursor-pointer shrink-0 font-sans font-medium"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            Copiar URL
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-white p-2.5 rounded-lg border border-emerald-300 font-mono text-xs flex items-center justify-between">
+                    <span className="font-bold text-emerald-950">http://localhost:4000</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('http://localhost:4000');
+                        setSuccessMessage('URL copiada');
+                        setTimeout(() => setSuccessMessage(''), 3000);
+                      }}
+                      className="text-xs text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer font-sans font-medium"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Copiar
+                    </button>
+                  </div>
+                )}
+                
+                <p className="text-[11px] text-bone-600 mt-1">
+                  💡 <strong>Instrucciones:</strong> En el otro equipo (Mac o Windows), abre la app, ve a <em>Configuración → Red Local</em>, selecciona <strong>"Terminal Cliente"</strong> y pega exactamente esta URL.
+                </p>
               </div>
             </div>
           )}
@@ -772,6 +1054,286 @@ export function ConfigurationPage() {
               )}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* ---------------- CONSOLA DE REGISTROS Y DIAGNÓSTICO EN VIVO ---------------- */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-olive-800" />
+                <span>Consola de Registros y Diagnóstico en Vivo (Logs)</span>
+              </CardTitle>
+              <p className="text-xs text-bone-600 mt-0.5">
+                Monitoriza en tiempo real peticiones HTTP de red, intentos de conexión, respuestas del servidor y posibles errores.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRunDiagnostics}
+                disabled={isRunningDiag}
+                className="text-xs"
+              >
+                <Activity className={`w-3.5 h-3.5 mr-1.5 text-blue-600 ${isRunningDiag ? 'animate-spin' : ''}`} />
+                {isRunningDiag ? 'Diagnosticando...' : 'Autodiagnóstico de Red'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  logger.copyToClipboard();
+                  setSuccessMessage('Registros copiados al portapapeles');
+                  setTimeout(() => setSuccessMessage(''), 3000);
+                }}
+                className="text-xs"
+              >
+                <Copy className="w-3.5 h-3.5 mr-1.5" />
+                Copiar Logs
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => logger.clear()}
+                className="text-xs text-bone-500 hover:text-red-700"
+              >
+                Limpiar
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-3 text-xs">
+          {/* Terminal Box */}
+          <div className="bg-obsidian text-bone-100 p-4 rounded-xl font-mono text-xs max-h-72 overflow-y-auto space-y-1.5 border border-bone-700 shadow-inner select-text">
+            {systemLogs.length === 0 ? (
+              <p className="text-bone-500 italic">No hay eventos registrados en esta sesión. Los eventos de red aparecerán aquí.</p>
+            ) : (
+              systemLogs.map((log) => {
+                const badgeColor =
+                  log.type === 'error'
+                    ? 'bg-red-900/80 text-red-200 border-red-700'
+                    : log.type === 'success'
+                    ? 'bg-emerald-900/80 text-emerald-200 border-emerald-700'
+                    : log.type === 'warn'
+                    ? 'bg-amber-900/80 text-amber-200 border-amber-700'
+                    : 'bg-blue-900/80 text-blue-200 border-blue-700';
+
+                return (
+                  <div key={log.id} className="flex items-start gap-2 leading-relaxed hover:bg-white/5 p-1 rounded transition-colors">
+                    <span className="text-bone-500 shrink-0 select-none">[{log.time}]</span>
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border uppercase shrink-0 ${badgeColor}`}>
+                      {log.type}
+                    </span>
+                    <span className="text-bone-400 shrink-0 font-semibold">[{log.source}]:</span>
+                    <span className={log.type === 'error' ? 'text-red-300 font-semibold' : log.type === 'success' ? 'text-emerald-300' : 'text-bone-200'}>
+                      {log.message}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-bone-500 pt-1">
+            <span>
+              💡 <strong>Acceso rápido a consola completa:</strong> Presiona <kbd className="px-1.5 py-0.5 rounded bg-bone-200 text-obsidian font-mono text-[10px]">Cmd + Opt + I</kbd> (Mac) o <kbd className="px-1.5 py-0.5 rounded bg-bone-200 text-obsidian font-mono text-[10px]">Ctrl + Shift + I / F12</kbd> (Windows) para ver la consola de desarrollo Chrome DevTools.
+            </span>
+            <span className="shrink-0 font-mono text-[10px]">{systemLogs.length} eventos en memoria</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ---------------- GESTIÓN DE PERSONAL Y CUENTAS DE USUARIO ---------------- */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Users className="w-5 h-5 text-olive-800" />
+                <span>Gestión de Personal y Cuentas de Acceso</span>
+              </CardTitle>
+              <p className="text-xs text-bone-600 mt-0.5">
+                Cuentas de operarios, supervisores de calidad y administradores autorizados para operar en la planta.
+              </p>
+            </div>
+            {canManageUsers && (
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setUserFormError('');
+                  setUserModalOpen(true);
+                }}
+                className="text-xs shrink-0"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Registrar Personal
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6 text-xs">
+          {/* Subsección: Clave de Autorización de Gerencia */}
+          {canManageUsers && (
+            <div className="p-4 rounded-xl bg-bone-100/70 border border-bone-300 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-olive-800 shrink-0" />
+                    <span className="font-bold text-obsidian text-sm">
+                      Clave Maestra de Autorización para Gerencia / Calidad
+                    </span>
+                  </div>
+                  <p className="text-bone-600 text-[11px] max-w-2xl leading-relaxed">
+                    Esta clave secreta impide que un operario de balanza se auto-asigne el rango de Administrador o Calidad al registrarse. Solo quien conozca esta clave podrá habilitar cuentas con privilegios jerárquicos.
+                  </p>
+                </div>
+
+                <form onSubmit={handleUpdateAdminSecret} className="flex items-center gap-2 shrink-0">
+                  <div className="relative">
+                    <input
+                      type={showAdminSecret ? 'text' : 'password'}
+                      value={adminSecretInput}
+                      onChange={(e) => setAdminSecretInput(e.target.value)}
+                      className="px-3 py-1.5 pr-8 font-mono text-xs rounded-lg border border-bone-300 bg-white focus:outline-none focus:ring-1 focus:ring-olive-700"
+                      placeholder="Clave de Gerencia"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminSecret(!showAdminSecret)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-bone-500 hover:text-obsidian"
+                      title={showAdminSecret ? 'Ocultar' : 'Mostrar'}
+                    >
+                      {showAdminSecret ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <Button type="submit" variant="secondary" size="sm" className="text-xs">
+                    Actualizar Clave
+                  </Button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Tabla de Usuarios Registrados */}
+          <div className="bezel-shell">
+            <div className="bezel-core p-0 overflow-x-auto bg-white">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-bone-200 bg-bone-50/70 font-mono text-[11px] text-bone-600 uppercase tracking-wider">
+                    <th className="p-3 font-semibold">Legajo</th>
+                    <th className="p-3 font-semibold">Nombre y Apellido</th>
+                    <th className="p-3 font-semibold">Rol Asignado</th>
+                    <th className="p-3 font-semibold">Estado</th>
+                    <th className="p-3 text-right">Acciones de Cuenta</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-bone-100 font-sans">
+                  {usersList.map((u) => {
+                    const isSelf = u.id === user?.id;
+                    return (
+                      <tr key={u.id} className="hover:bg-bone-50/60 transition-colors">
+                        <td className="p-3 font-mono font-bold text-obsidian whitespace-nowrap">
+                          {u.legajo || '—'}
+                        </td>
+                        <td className="p-3 font-semibold text-obsidian">
+                          <div className="flex items-center gap-1.5">
+                            <span>{u.nombre}</span>
+                            {isSelf && (
+                              <span className="text-[9px] bg-bone-200 text-bone-700 font-mono px-1.5 py-0.2 rounded">
+                                Tú
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-bone-500 block font-normal">{u.cargo || 'Personal de Planta'}</span>
+                        </td>
+                        <td className="p-3">
+                          {canManageUsers && !isSelf ? (
+                            <select
+                              value={u.rol}
+                              onChange={(e) => handleChangeUserRole(u, e.target.value)}
+                              className="text-xs font-medium py-1 px-2 rounded-lg border border-bone-300 bg-white"
+                            >
+                              <option value={ROLES.OPERARIO}>Operario</option>
+                              <option value={ROLES.CALIDAD}>Calidad</option>
+                              <option value={ROLES.ADMINISTRADOR}>Administrador</option>
+                            </select>
+                          ) : (
+                            <Badge
+                              variant={
+                                u.rol === ROLES.ADMINISTRADOR
+                                  ? 'default'
+                                  : u.rol === ROLES.CALIDAD
+                                  ? 'paleGreen'
+                                  : 'outline'
+                              }
+                            >
+                              {u.rol}
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <Badge variant={u.activo !== false ? 'paleGreen' : 'default'} dot={u.activo !== false}>
+                            {u.activo !== false ? 'Activo' : 'Desactivado'}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {canManageUsers && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleOpenPasswordModal(u)}
+                                  className="text-[11px] h-7 px-2.5"
+                                  title="Blanquear o cambiar contraseña"
+                                >
+                                  <Lock className="w-3 h-3 mr-1" />
+                                  Clave
+                                </Button>
+                                {!isSelf && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleToggleUserActive(u)}
+                                      className="text-[11px] h-7 px-2.5"
+                                    >
+                                      <Power className="w-3 h-3 mr-1" />
+                                      {u.activo !== false ? 'Desactivar' : 'Activar'}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteUser(u)}
+                                      className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                      title="Eliminar usuario"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -941,6 +1503,150 @@ export function ConfigurationPage() {
               </Button>
               <Button type="submit" variant="primary" size="sm">
                 Guardar Opción
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---------------- MODAL ALTA DE PERSONAL ---------------- */}
+      <Dialog open={userModalOpen} onOpenChange={setUserModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar Personal en Planta</DialogTitle>
+            <DialogDescription>
+              Crea una cuenta autorizada para que el operario o supervisor inicie sesión con su número de legajo y contraseña.
+            </DialogDescription>
+          </DialogHeader>
+
+          {userFormError && (
+            <div className="p-3 rounded-lg bg-red-50 text-red-800 text-xs mb-3">
+              {userFormError}
+            </div>
+          )}
+
+          <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+            <div>
+              <label className="font-semibold text-bone-800 block mb-1">
+                Nombre y Apellido *
+              </label>
+              <Input
+                placeholder="ej: Juan Pérez"
+                value={newUserForm.nombre}
+                onChange={(e) => setNewUserForm({ ...newUserForm, nombre: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-semibold text-bone-800 block mb-1">
+                  Número de Legajo *
+                </label>
+                <Input
+                  placeholder="ej: OP-05 o 1042"
+                  value={newUserForm.legajo}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, legajo: e.target.value.toUpperCase() })}
+                  mono
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-bone-800 block mb-1">
+                  Contraseña Inicial *
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Mínimo 3 caracteres"
+                  value={newUserForm.password}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-semibold text-bone-800 block mb-1">
+                  Rol y Jerarquía *
+                </label>
+                <select
+                  value={newUserForm.rol}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, rol: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl border border-bone-300 bg-white"
+                >
+                  <option value={ROLES.OPERARIO}>Operario (Pesaje, escáner, inventario)</option>
+                  <option value={ROLES.CALIDAD}>Calidad (Liberación de lotes, muestreos)</option>
+                  <option value={ROLES.ADMINISTRADOR}>Administrador (Control total)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-bone-800 block mb-1">
+                  Puesto o Sector (Opcional)
+                </label>
+                <Input
+                  placeholder="ej: Balanza Entrada, Nave A"
+                  value={newUserForm.cargo}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, cargo: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setUserModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" size="sm">
+                Dar de Alta
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---------------- MODAL BLANQUEO / CAMBIO DE CONTRASEÑA ---------------- */}
+      <Dialog open={passwordModalOpen} onOpenChange={setPasswordModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cambiar Contraseña de Usuario</DialogTitle>
+            <DialogDescription>
+              Establece una nueva clave de acceso para {userForPassword?.nombre} (Legajo: {userForPassword?.legajo}).
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveNewPassword} className="space-y-4 text-xs">
+            <div>
+              <label className="font-semibold text-bone-800 block mb-1">
+                Nueva Contraseña *
+              </label>
+              <Input
+                type="password"
+                placeholder="Ingresa la nueva clave (mín. 3 caracteres)"
+                value={newPasswordVal}
+                onChange={(e) => setNewPasswordVal(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPasswordModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" size="sm">
+                Guardar Contraseña
               </Button>
             </DialogFooter>
           </form>

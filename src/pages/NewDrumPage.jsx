@@ -474,7 +474,7 @@ export function NewDrumPage() {
                   <span className="text-[10px] uppercase font-mono text-bone-500 block">
                     Código Descriptivo
                   </span>
-                  <span className="font-mono text-xs font-bold text-obsidian block truncate mt-0.5">
+                  <span className="font-mono text-xs font-bold text-obsidian block break-all mt-0.5">
                     {liveDescriptiveCode || 'Completando clasificación...'}
                   </span>
                 </div>
@@ -484,11 +484,11 @@ export function NewDrumPage() {
                     <span className="text-[10px] uppercase font-mono text-bone-500 block">
                       Código Compacto (Base CODE 128)
                     </span>
-                    <span className="text-[9px] font-mono text-olive-800 bg-olive-100 px-1.5 py-0.2 rounded font-semibold">
+                    <span className="text-[9px] font-mono text-olive-800 bg-olive-100 px-1.5 py-0.2 rounded font-semibold shrink-0">
                       Sin guiones / barra
                     </span>
                   </div>
-                  <span className="font-mono text-xs font-bold text-olive-900 block truncate mt-0.5">
+                  <span className="font-mono text-xs font-bold text-olive-900 block break-all mt-0.5">
                     {liveCompactCode || 'Completando clasificación...'}
                   </span>
                 </div>

@@ -85,11 +85,11 @@ export function PhysicalLabel({
     >
       {/* 1. Código Descriptivo + Identificador Único de Tambor + Cabecera de Empresa */}
       <div className="text-center mb-1">
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          <span className="text-[14px] sm:text-[16px] font-black font-mono tracking-tight text-black uppercase leading-tight">
+        <div className="flex items-center justify-center gap-2 flex-wrap min-w-0">
+          <span className="text-[13px] sm:text-[14px] font-black font-mono tracking-tight text-black uppercase leading-tight break-all">
             {drum.codigo_descriptivo || '—'}
           </span>
-          <span className="text-[11px] sm:text-[12px] font-bold font-mono tracking-wider bg-black text-white px-2 py-0.5 rounded leading-none shrink-0">
+          <span className="text-[11px] font-bold font-mono tracking-wider bg-black text-white px-2 py-0.5 rounded leading-none shrink-0">
             {`Tambor ${drum.tambor_id}`}
           </span>
         </div>

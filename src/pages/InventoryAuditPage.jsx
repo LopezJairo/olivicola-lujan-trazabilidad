@@ -94,25 +94,7 @@ export function InventoryAuditPage() {
     return () => window.removeEventListener('keydown', handleGlobalLiveKeyDown);
   }, [activeTab]);
 
-  // Datos de ejemplo para demostración de planta
-  const handleLoadDemoBatch = () => {
-    const exampleDrums = tambores.slice(0, 11);
-    const demoLines = [
-      '// --- SECTOR 1: Nave A - Fila 1 ---',
-      'NAV-A1',
-      // Generar lote de tambores con mismo contenido descriptivo y distinto ID
-      ...exampleDrums.map((d) => d.codigo || `${d.codigo_descriptivo}-${d.tambor_id}`),
-      // Agregar un duplicado intencional para demostrar prevención de doble conteo
-      exampleDrums[0]?.codigo || 'ENT-VDE-ALOR-121/140-PRI-T000001',
-      '// --- SECTOR 2: Nave A - Fila 2 ---',
-      'NAV-A2',
-      'ENT-VDE-ARA-121/140-PRI-T000012',
-      'ENT-VDE-ARA-121/140-PRI-T000013',
-    ];
-    setBatchText(demoLines.join('\n'));
-    setAuditResult(null);
-    setAppliedSummary(null);
-  };
+
 
   const handleNormalizeBatch = () => {
     if (!batchText.trim()) return;
@@ -402,13 +384,19 @@ export function InventoryAuditPage() {
                 <label className="text-xs font-mono uppercase tracking-wider text-bone-600 font-bold">
                   Pega o descarga la memoria del escáner (un código por línea):
                 </label>
-                <button
-                  type="button"
-                  onClick={handleLoadDemoBatch}
-                  className="text-xs font-mono text-olive-800 hover:text-olive-950 underline cursor-pointer"
-                >
-                  + Cargar Lote de Ejemplo (11 tambores con mismo código y distinto ID)
-                </button>
+                {batchText && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBatchText('');
+                      setAuditResult(null);
+                      setAppliedSummary(null);
+                    }}
+                    className="text-xs font-mono text-bone-500 hover:text-bone-800 underline cursor-pointer"
+                  >
+                    Limpiar texto
+                  </button>
+                )}
               </div>
 
               <textarea
@@ -576,67 +564,67 @@ export function InventoryAuditPage() {
             </div>
           )}
           {/* Métricas KPI Globales */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="p-4 rounded-2xl bg-white border border-bone-200 space-y-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 min-w-0">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-bone-200 space-y-1 min-w-0 overflow-hidden">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block leading-tight truncate" title="Tambores Únicos">
                 Tambores Únicos
               </span>
-              <span className="font-serif text-2xl font-bold text-obsidian block">
+              <span className="font-serif text-2xl font-bold text-obsidian block truncate">
                 {auditResult.validDrumsCount}
               </span>
-              <span className="text-[10px] font-mono text-bone-500">
+              <span className="text-[10px] font-mono text-bone-500 truncate block">
                 {formatKg(auditResult.totalKg)}
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-bone-200 space-y-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-bone-200 space-y-1 min-w-0 overflow-hidden">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block leading-tight truncate" title="Sectores Leídos">
                 Sectores Leídos
               </span>
-              <span className="font-serif text-2xl font-bold text-olive-900 block">
+              <span className="font-serif text-2xl font-bold text-olive-900 block truncate">
                 {auditResult.sectorsCount}
               </span>
-              <span className="text-[10px] font-mono text-bone-500">Ubicaciones activas</span>
+              <span className="text-[10px] font-mono text-bone-500 truncate block">Ubicaciones</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-bone-200 space-y-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block">
-                Grupos Alfanuméricos
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-bone-200 space-y-1 min-w-0 overflow-hidden">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block leading-tight truncate" title="Grupos Alfanuméricos">
+                Grupos Códigos
               </span>
-              <span className="font-serif text-2xl font-bold text-obsidian block">
+              <span className="font-serif text-2xl font-bold text-obsidian block truncate">
                 {auditResult.sectors.reduce((acc, s) => acc + s.groups.length, 0)}
               </span>
-              <span className="text-[10px] font-mono text-bone-500">Por tipo de producto</span>
+              <span className="text-[10px] font-mono text-bone-500 truncate block">Por producto</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-bone-200 space-y-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-bone-200 space-y-1 min-w-0 overflow-hidden">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block leading-tight truncate" title="Duplicados Omitidos">
                 Duplicados Omitidos
               </span>
-              <span className="font-serif text-2xl font-bold text-emerald-700 block">
+              <span className="font-serif text-2xl font-bold text-emerald-700 block truncate">
                 {auditResult.duplicatesCount}
               </span>
-              <span className="text-[10px] font-mono text-emerald-600">Sin doble cómputo</span>
+              <span className="text-[10px] font-mono text-emerald-600 truncate block">Sin doble cómputo</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-bone-200 space-y-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-bone-200 space-y-1 min-w-0 overflow-hidden">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block leading-tight truncate" title="Reubicaciones">
                 Reubicaciones
               </span>
-              <span className={`font-serif text-2xl font-bold block ${auditResult.relocationsCount > 0 ? 'text-amber-700' : 'text-bone-600'}`}>
+              <span className={`font-serif text-2xl font-bold block truncate ${auditResult.relocationsCount > 0 ? 'text-amber-700' : 'text-bone-600'}`}>
                 {auditResult.relocationsCount}
               </span>
-              <span className="text-[10px] font-mono text-bone-500">Cambio de sector</span>
+              <span className="text-[10px] font-mono text-bone-500 truncate block">Cambio sector</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-bone-200 space-y-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block">
-                Faltantes en Sector
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-bone-200 space-y-1 min-w-0 overflow-hidden">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-bone-500 block leading-tight truncate" title="Faltantes en Sector">
+                Faltantes Sector
               </span>
-              <span className={`font-serif text-2xl font-bold block ${auditResult.missingCount > 0 ? 'text-rose-700' : 'text-bone-600'}`}>
+              <span className={`font-serif text-2xl font-bold block truncate ${auditResult.missingCount > 0 ? 'text-rose-700' : 'text-bone-600'}`}>
                 {auditResult.missingCount}
               </span>
-              <span className="text-[10px] font-mono text-bone-500">Registrados no leídos</span>
+              <span className="text-[10px] font-mono text-bone-500 truncate block">No detectados</span>
             </div>
           </div>
 
@@ -727,15 +715,15 @@ export function InventoryAuditPage() {
                         className="p-4 rounded-xl border border-bone-200 bg-bone-50/50 space-y-2.5"
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base font-black font-mono text-obsidian">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            <span className="text-base font-black font-mono text-obsidian shrink-0">
                               {group.count} {group.count === 1 ? 'tambor' : 'tambores'} de
                             </span>
-                            <span className="font-mono font-bold text-sm bg-white border border-bone-300 px-2 py-0.5 rounded text-olive-950">
+                            <span className="font-mono font-bold text-xs sm:text-sm bg-white border border-bone-300 px-2 py-0.5 rounded text-olive-950 break-all">
                               {group.codigo_descriptivo}
                             </span>
                           </div>
-                          <span className="font-mono text-xs text-bone-600 font-bold">
+                          <span className="font-mono text-xs text-bone-600 font-bold shrink-0">
                             Peso acumulado: {formatKg(group.totalKg)}
                           </span>
                         </div>

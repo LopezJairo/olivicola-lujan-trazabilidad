@@ -462,7 +462,7 @@ export function QualityPage() {
                         value={inspectionForm.ph}
                         onChange={(e) => setInspectionForm({ ...inspectionForm, ph: e.target.value })}
                         placeholder="3.8"
-                        mono
+                        className="text-center px-1.5 font-mono text-sm tracking-normal"
                       />
                     </div>
                     <div>
@@ -471,7 +471,7 @@ export function QualityPage() {
                         value={inspectionForm.salinidad}
                         onChange={(e) => setInspectionForm({ ...inspectionForm, salinidad: e.target.value })}
                         placeholder="8.5"
-                        mono
+                        className="text-center px-1.5 font-mono text-sm tracking-normal"
                       />
                     </div>
                     <div>
@@ -480,7 +480,7 @@ export function QualityPage() {
                         value={inspectionForm.acidez}
                         onChange={(e) => setInspectionForm({ ...inspectionForm, acidez: e.target.value })}
                         placeholder="0.4"
-                        mono
+                        className="text-center px-1.5 font-mono text-sm tracking-normal"
                       />
                     </div>
                   </div>

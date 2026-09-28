@@ -177,7 +177,7 @@ export function InventoryPage() {
     <>
       <div className="no-print space-y-6 animate-in fade-in duration-300">
       {/* ---------------- CABECERA ---------------- */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-bone-200">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-2 border-b border-bone-200">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-olive-800 bg-olive-100/70 px-2.5 py-0.5 rounded-full font-semibold">
@@ -193,7 +193,7 @@ export function InventoryPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
           <Link to="/inventario/toma">
             <Button
               variant="outline"
@@ -229,7 +229,7 @@ export function InventoryPage() {
           </Button>
 
           <Link to="/tambores/nuevo">
-            <Button variant="primary" size="default">
+            <Button variant="primary" size="default" className="text-xs">
               <PlusCircle className="w-4 h-4 mr-1.5" />
               Nuevo Tambor
             </Button>
@@ -422,10 +422,10 @@ export function InventoryPage() {
       {/* ---------------- TABLA DE TAMBORES ---------------- */}
       <div className="bezel-shell">
         <div className="bezel-core p-0 overflow-x-auto bg-white">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[980px]">
             <thead>
               <tr className="border-b border-bone-200 bg-bone-50/80 font-mono text-[11px] text-bone-600 uppercase tracking-wider">
-                <th className="p-3 w-10 text-center">
+                <th className="py-3 px-3 w-12 text-center whitespace-nowrap">
                   <input
                     type="checkbox"
                     checked={
@@ -436,22 +436,23 @@ export function InventoryPage() {
                     className="rounded text-olive-700 focus:ring-olive-700 cursor-pointer"
                   />
                 </th>
-                <th className="p-3 font-semibold">Identificación</th>
-                <th className="p-3 font-semibold">Producto y Variedad</th>
-                <th className="p-3 font-semibold">Calibre / Calidad</th>
-                <th className="p-3 font-semibold">Lote</th>
-                <th className="p-3 font-semibold text-right">Peso Neto</th>
-                <th className="p-3 font-semibold">Ubicación</th>
-                <th className="p-3 font-semibold">Estado</th>
-                <th className="p-3 font-semibold">Ingreso</th>
-                <th className="p-3 font-semibold text-center">Acciones</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap w-44">Identificación</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap min-w-[180px]">Producto y Variedad</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap min-w-[140px]">Calibre / Calidad</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap w-28">Lote</th>
+                <th className="py-3 px-3 font-semibold text-right whitespace-nowrap w-24">Peso Neto</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap w-36">Ubicación</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap w-32">Estado</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap w-28">Ingreso</th>
+                <th className="py-3 px-3 font-semibold text-center whitespace-nowrap w-28">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-bone-100">
               {filteredDrums.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-bone-500">
-                    No se encontraron tambores con los criterios especificados.
+                  <td colSpan={10} className="py-12 px-4 text-center text-bone-500">
+                    <p className="text-sm font-medium text-bone-600">No se encontraron tambores en el inventario.</p>
+                    <p className="text-xs text-bone-400 mt-1">Registra nuevos tambores desde "Registrar Tambor" o ajusta los filtros de búsqueda.</p>
                   </td>
                 </tr>
               ) : (
@@ -482,7 +483,10 @@ export function InventoryPage() {
                         <span className="font-mono font-bold text-xs text-obsidian bg-bone-100 px-2 py-0.5 rounded">
                           {drum.tambor_id}
                         </span>
-                        <span className="block font-mono text-[10px] text-bone-500 mt-0.5 truncate max-w-[140px]">
+                        <span
+                          className="block font-mono text-[10px] text-bone-500 mt-0.5 truncate max-w-[180px]"
+                          title={drum.codigo_descriptivo}
+                        >
                           {drum.codigo_descriptivo}
                         </span>
                       </td>

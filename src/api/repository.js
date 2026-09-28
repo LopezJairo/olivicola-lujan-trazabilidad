@@ -22,15 +22,16 @@ import {
   resolveCatalogName,
 } from '../lib/domain.js';
 import { checkPermission, PERMISOS } from '../components/Auth.jsx';
+import { logger } from '../lib/logger.js';
 
 const STORAGE_KEY_PREFIX = 'olivicola-lujan-';
 const CURRENT_MODE_KEY = `${STORAGE_KEY_PREFIX}workspace-mode`; // 'demo' | 'empresa'
 
 export function getCurrentWorkspaceMode() {
   try {
-    return localStorage.getItem(CURRENT_MODE_KEY) || 'demo';
+    return localStorage.getItem(CURRENT_MODE_KEY) || 'empresa';
   } catch {
-    return 'demo';
+    return 'empresa';
   }
 }
 
@@ -40,6 +41,17 @@ export function setCurrentWorkspaceMode(mode) {
   } catch (err) {
     console.error('Error al guardar modo de espacio de trabajo:', err);
   }
+}
+
+export function clearAllCompanyData(user = null) {
+  const emptyState = {
+    catalogos: JSON.parse(JSON.stringify(INITIAL_CATALOGOS)),
+    tambores: [],
+    historial: [],
+    movimientos: [],
+  };
+  saveDatabase(emptyState, 'empresa');
+  return emptyState;
 }
 
 function getStorageKeyForMode(mode) {
@@ -233,22 +245,64 @@ export function setNetworkConfig(config) {
 }
 
 /**
+ * Normaliza y limpia una URL de Servidor Host (agrega http:// y puerto 4000 si faltan)
+ */
+export function normalizeHostUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return 'http://localhost:4000';
+  let clean = rawUrl.trim().replace(/\/+$/, '');
+  if (!clean) return 'http://localhost:4000';
+
+  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+    clean = `http://${clean}`;
+  }
+
+  try {
+    const parsed = new URL(clean);
+    if (!parsed.port && parsed.protocol === 'http:') {
+      parsed.port = '4000';
+      clean = parsed.toString().replace(/\/+$/, '');
+    }
+  } catch {}
+
+  return clean;
+}
+
+/**
  * Prueba la conectividad HTTP con el servidor host en la LAN
  */
 export async function testHostConnection(targetUrl = null) {
-  const url = (targetUrl || getNetworkConfig().hostUrl || 'http://localhost:4000').replace(/\/+$/, '');
+  const url = normalizeHostUrl(targetUrl || getNetworkConfig().hostUrl);
+  logger.info('Red', `Enviando solicitud de sondeo a ${url}/api/status`);
+  const startTime = Date.now();
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     const res = await fetch(`${url}/api/status`, { signal: controller.signal });
     clearTimeout(timeoutId);
+    const elapsed = Date.now() - startTime;
     if (res.ok) {
       const data = await res.json();
-      return { success: true, data };
+      logger.success('Red', `Enlace confirmado con Servidor Host en ${elapsed}ms`, {
+        url,
+        version: data?.version,
+        tambores: data?.stats?.tambores,
+        catalogos: data?.stats?.catalogos,
+      });
+      return { success: true, data, normalizedUrl: url, elapsed };
     }
-    return { success: false, error: `El servidor respondió con código ${res.status}` };
+    const errText = `Servidor respondió con código HTTP ${res.status} (${res.statusText})`;
+    logger.error('Red', errText, { url, status: res.status });
+    return { success: false, error: errText };
   } catch (err) {
-    return { success: false, error: err.name === 'AbortError' ? 'Tiempo de espera agotado' : err.message };
+    const elapsed = Date.now() - startTime;
+    let errorMsg = '';
+    if (err.name === 'AbortError') {
+      errorMsg = `Tiempo de espera agotado tras ${elapsed}ms. La máquina ${url} no respondió. Verifica que el Servidor Host esté encendido y que el Firewall de Windows permita el puerto 4000.`;
+    } else {
+      errorMsg = `Error de conexión en ${elapsed}ms (${err.message}). Verifica que la IP sea correcta y ambos equipos estén en la misma red.`;
+    }
+    logger.error('Red', errorMsg, { url, error: err.message, elapsed });
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -259,19 +313,25 @@ export async function syncWithHostServer() {
   const config = getNetworkConfig();
   if (config.mode === NETWORK_MODES.OFFLINE) return false;
 
-  const url = (config.hostUrl || 'http://localhost:4000').replace(/\/+$/, '');
+  const url = normalizeHostUrl(config.hostUrl);
+  logger.info('Red', `Iniciando sincronización completa desde ${url}/api/database`);
   try {
     const res = await fetch(`${url}/api/database`);
     if (res.ok) {
       const hostData = await res.json();
       saveDatabase(hostData);
-      setNetworkConfig({ status: 'connected', lastSync: new Date().toISOString() });
+      setNetworkConfig({ hostUrl: url, status: 'connected', lastSync: new Date().toISOString() });
+      logger.success('Red', `Sincronización exitosa: ${hostData.tambores?.length || 0} tambores descargados`, {
+        tambores: hostData.tambores?.length,
+        catalogos: hostData.catalogos?.length,
+      });
       return hostData;
     }
+    logger.error('Red', `Error HTTP ${res.status} al sincronizar base de datos`, { url });
     setNetworkConfig({ status: 'error' });
     return false;
   } catch (err) {
-    console.warn('Fallo al sincronizar con Servidor Host:', err.message);
+    logger.error('Red', `Fallo al sincronizar con Servidor Host: ${err.message}`, { url, error: err.message });
     setNetworkConfig({ status: 'disconnected' });
     return false;
   }
@@ -285,7 +345,7 @@ export async function callServerApi(endpoint, options = {}) {
   const config = getNetworkConfig();
   if (config.mode === NETWORK_MODES.OFFLINE) return null;
 
-  const baseUrl = (config.hostUrl || 'http://localhost:4000').replace(/\/+$/, '');
+  const baseUrl = normalizeHostUrl(config.hostUrl);
   const url = `${baseUrl}${endpoint}`;
 
   try {
@@ -307,11 +367,11 @@ export async function callServerApi(endpoint, options = {}) {
       return await res.json();
     } else {
       const errData = await res.json().catch(() => ({}));
-      console.warn(`[Servidor Host] Respuesta ${res.status}:`, errData.error || res.statusText);
+      logger.warn('API', `Respuesta HTTP ${res.status} en ${endpoint}: ${errData.error || res.statusText}`);
       return null;
     }
   } catch (err) {
-    console.warn(`[Servidor Host] No disponible en ${url} (${err.message}). Operando localmente.`);
+    logger.warn('API', `Servidor Host no disponible en ${url} (${err.message}). Operando localmente.`);
     setNetworkConfig({ status: 'disconnected' });
     return null;
   }

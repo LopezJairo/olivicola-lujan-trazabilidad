@@ -10,7 +10,7 @@ const os = require('node:os');
 const { spawn } = require('node:child_process');
 
 let mainWindow = null;
-let serverProcess = null;
+let httpServerInstance = null;
 let serverPort = 4000;
 let isServerRunning = false;
 
@@ -28,60 +28,46 @@ function getLocalIps() {
   return results;
 }
 
-// Iniciar servidor local embebido en segundo plano
-function startEmbeddedServer(port = 4000) {
-  if (serverProcess) return;
-
-  const serverScript = path.join(__dirname, '..', 'server', 'index.js');
-  // ELECTRON_RUN_AS_NODE permite que el ejecutable de Electron ejecute scripts Node.js sin abrir otra ventana GUI
-  const env = {
-    ...process.env,
-    PORT: String(port),
-    HOST: '0.0.0.0',
-    ELECTRON_RUN_AS_NODE: '1',
-  };
+// Iniciar servidor local embebido directamente en el proceso principal de Electron
+async function startEmbeddedServer(port = 4000) {
+  if (httpServerInstance) {
+    return { isRunning: true, port: serverPort, ips: getLocalIps() };
+  }
 
   try {
-    serverProcess = spawn(process.execPath, [serverScript], {
-      env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+    const serverModule = await import('../server/index.js');
+    const dbPath = path.join(app.getPath('userData'), 'olivicola-lujan.db.json');
+    httpServerInstance = serverModule.createServer({ dbPath });
+
+    await new Promise((resolve, reject) => {
+      httpServerInstance.listen(port, '0.0.0.0', () => {
+        console.log(`[Host Server] Servidor LAN escuchando en http://0.0.0.0:${port}`);
+        isServerRunning = true;
+        serverPort = port;
+        resolve();
+      });
+      httpServerInstance.once('error', (err) => {
+        console.error('[Host Server Listen Error]', err);
+        reject(err);
+      });
     });
 
-    serverProcess.stdout?.on('data', (data) => {
-      console.log(`[Host Server] ${data.toString().trim()}`);
-      isServerRunning = true;
-    });
-
-    serverProcess.stderr?.on('data', (data) => {
-      console.error(`[Host Server Error] ${data.toString().trim()}`);
-    });
-
-    serverProcess.on('error', (err) => {
-      console.error(`[Host Server Error de Proceso] ${err.message}`);
-      serverProcess = null;
-      isServerRunning = false;
-    });
-
-    serverProcess.on('close', (code) => {
-      console.log(`[Host Server] Finalizado con código ${code}`);
-      serverProcess = null;
-      isServerRunning = false;
-    });
-
-    serverPort = port;
-    isServerRunning = true;
+    return { isRunning: true, port: serverPort, ips: getLocalIps() };
   } catch (err) {
-    console.error('[Host Server Spawn Exception]', err);
-    serverProcess = null;
+    console.error('[Host Server Exception]', err);
+    httpServerInstance = null;
     isServerRunning = false;
+    return { isRunning: false, error: err.message, ips: getLocalIps() };
   }
 }
 
 // Detener servidor local
 function stopEmbeddedServer() {
-  if (serverProcess) {
-    serverProcess.kill('SIGTERM');
-    serverProcess = null;
+  if (httpServerInstance) {
+    try {
+      httpServerInstance.close();
+    } catch {}
+    httpServerInstance = null;
     isServerRunning = false;
   }
 }
@@ -189,12 +175,14 @@ function setupMenu() {
         },
         {
           label: 'Iniciar Servidor Host LAN (Puerto 4000)',
-          click: () => {
-            startEmbeddedServer(4000);
+          click: async () => {
+            const res = await startEmbeddedServer(4000);
             dialog.showMessageBox(mainWindow, {
-              type: 'info',
+              type: res.isRunning ? 'info' : 'error',
               title: 'Servidor Host LAN',
-              message: 'Servidor iniciado correctamente en el puerto 4000.',
+              message: res.isRunning
+                ? 'Servidor iniciado correctamente en el puerto 4000.'
+                : `No se pudo iniciar el servidor: ${res.error || 'Error desconocido'}`,
             });
           },
         },
@@ -277,14 +265,13 @@ ipcMain.handle('get-server-status', () => {
   };
 });
 
-ipcMain.handle('start-server', (_event, port = 4000) => {
-  startEmbeddedServer(port);
-  return { isRunning: isServerRunning, port };
+ipcMain.handle('start-server', async (_event, port = 4000) => {
+  return await startEmbeddedServer(port);
 });
 
 ipcMain.handle('stop-server', () => {
   stopEmbeddedServer();
-  return { isRunning: false };
+  return { isRunning: false, port: serverPort, ips: getLocalIps() };
 });
 
 ipcMain.handle('print-zebra-zpl', async (_event, zplContent) => {

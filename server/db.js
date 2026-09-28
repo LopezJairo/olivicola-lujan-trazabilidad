@@ -12,9 +12,9 @@ const require = createRequire(import.meta.url);
 let DatabaseSync;
 try {
   const sqliteMod = require('node:sqlite');
-  DatabaseSync = sqliteMod.DatabaseSync;
+  DatabaseSync = sqliteMod?.DatabaseSync;
 } catch (err) {
-  console.warn('node:sqlite no disponible:', err.message);
+  // node:sqlite no está disponible en Node <22 ni en Electron 33 (basado en Node 20)
 }
 import {
   INITIAL_CATALOGOS,
@@ -33,8 +33,533 @@ import {
   resolveCatalogName,
 } from '../src/lib/domain.js';
 
+/**
+ * Motor de persistencia JSON de alta compatibilidad para Electron / Node.js
+ * Se activa automáticamente cuando node:sqlite nativo no está disponible.
+ */
+export class JSONFileDatabase {
+  constructor(dbPath = null) {
+    let p = dbPath || process.env.DATABASE_PATH || path.resolve(process.cwd(), 'data', 'trazabilidad.json');
+    if (p.endsWith('.sqlite')) {
+      p = p.replace(/\.sqlite$/, '.json');
+    }
+    this.dbPath = p;
+    this.state = {
+      catalogos: [],
+      tambores: [],
+      historial: [],
+      movimientos: [],
+    };
+    this.init();
+  }
+
+  init() {
+    if (this.dbPath !== ':memory:') {
+      const dir = path.dirname(this.dbPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      if (fs.existsSync(this.dbPath)) {
+        try {
+          const raw = fs.readFileSync(this.dbPath, 'utf8');
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.catalogos)) {
+            this.state = {
+              catalogos: parsed.catalogos || [],
+              tambores: parsed.tambores || [],
+              historial: parsed.historial || [],
+              movimientos: parsed.movimientos || [],
+            };
+            return;
+          }
+        } catch (err) {
+          console.warn('[JSONStore] Error al cargar archivo:', err.message);
+        }
+      }
+    }
+    this.seedIfEmpty();
+  }
+
+  save() {
+    if (this.dbPath === ':memory:') return;
+    try {
+      fs.writeFileSync(this.dbPath, JSON.stringify(this.state, null, 2), 'utf8');
+    } catch (err) {
+      console.error('[JSONStore] Error al guardar en disco:', err.message);
+    }
+  }
+
+  seedIfEmpty(includeDemoDrums = (this.dbPath === ':memory:')) {
+    if (this.state.catalogos.length === 0) {
+      this.resetToInitialState(includeDemoDrums);
+    }
+  }
+
+  resetToInitialState(includeDemoDrums = true) {
+    this.state = {
+      catalogos: (INITIAL_CATALOGOS || []).map(c => ({ ...c, activo: Boolean(c.activo), orden: c.orden || 1 })),
+      tambores: includeDemoDrums ? (INITIAL_TAMBORES || []).map(t => ({ ...t, peso: Number(t.peso) })) : [],
+      historial: includeDemoDrums ? [...(INITIAL_HISTORIAL || [])] : [],
+      movimientos: includeDemoDrums ? [...(INITIAL_MOVIMIENTOS || [])] : [],
+    };
+    this.save();
+  }
+
+  getFullState() {
+    return {
+      catalogos: [...this.state.catalogos].sort((a, b) => (a.orden || 1) - (b.orden || 1) || a.nombre.localeCompare(b.nombre)),
+      tambores: [...this.state.tambores].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)),
+      historial: [...this.state.historial].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)),
+      movimientos: [...this.state.movimientos].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)),
+    };
+  }
+
+  saveFullState(newState) {
+    this.state = {
+      catalogos: Array.isArray(newState.catalogos) ? newState.catalogos : this.state.catalogos,
+      tambores: Array.isArray(newState.tambores) ? newState.tambores : this.state.tambores,
+      historial: Array.isArray(newState.historial) ? newState.historial : this.state.historial,
+      movimientos: Array.isArray(newState.movimientos) ? newState.movimientos : this.state.movimientos,
+    };
+    this.save();
+    return true;
+  }
+
+  getTambores() {
+    return [...this.state.tambores].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+  }
+
+  getTamborById(id) {
+    if (!id) return null;
+    const cleanId = String(id).trim().toUpperCase();
+    const drum = this.state.tambores.find(
+      t => (t.id && t.id.toUpperCase() === cleanId) || (t.tambor_id && t.tambor_id.toUpperCase() === cleanId)
+    );
+    if (!drum) return null;
+
+    const historial = this.state.historial
+      .filter(h => (h.tambor_id && h.tambor_id.toUpperCase() === drum.tambor_id.toUpperCase()) || h.tambor_ref === drum.id)
+      .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+    const movimientos = this.state.movimientos
+      .filter(m => (m.tambor_id && m.tambor_id.toUpperCase() === drum.tambor_id.toUpperCase()) || m.tambor_ref === drum.id)
+      .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+    return { ...drum, historial, movimientos };
+  }
+
+  createTambor(rawInput, currentUser = null) {
+    const state = this.getFullState();
+    const normalized = normalizeDrumInput(rawInput);
+    const validation = validateDrum(normalized, state.catalogos, { isEdit: false });
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      throw new Error(firstError || 'Datos del tambor inválidos');
+    }
+
+    const nextId = nextTamborId(state.tambores, state.historial);
+    const descCode = buildDescriptiveCode(normalized, state.catalogos);
+    const compactCode = buildCompactCode(descCode);
+    const fullCode = buildFullCode(descCode, nextId);
+    const now = new Date().toISOString();
+
+    const drum = {
+      ...normalized,
+      id: `tb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tambor_id: nextId,
+      codigo_descriptivo: descCode,
+      codigo_compacto: compactCode,
+      codigo: fullCode,
+      created_date: now,
+    };
+
+    const historyEvent = {
+      id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tambor_id: drum.tambor_id,
+      tambor_ref: drum.id,
+      tipo: 'Creación',
+      descripcion: `Tambor creado en el sistema con peso neto ${drum.peso} kg`,
+      actor: currentUser?.nombre || 'Operario Planta',
+      created_date: now,
+    };
+
+    this.state.tambores.unshift(drum);
+    this.state.historial.unshift(historyEvent);
+    this.save();
+    return drum;
+  }
+
+  updateTambor(id, rawInput, currentUser = null) {
+    const existing = this.getTamborById(id);
+    if (!existing) throw new Error(`No se encontró el tambor solicitado (${id})`);
+
+    const state = this.getFullState();
+    const mergedInput = { ...existing, ...rawInput };
+    const normalized = normalizeDrumInput(mergedInput);
+
+    const validation = validateDrum(normalized, state.catalogos, { isEdit: true, currentDrum: existing });
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      throw new Error(firstError || 'Datos del tambor inválidos');
+    }
+
+    const descCode = buildDescriptiveCode(normalized, state.catalogos);
+    const compactCode = buildCompactCode(descCode);
+    const fullCode = buildFullCode(descCode, existing.tambor_id);
+    const now = new Date().toISOString();
+
+    const updatedDrum = {
+      ...existing,
+      ...normalized,
+      id: existing.id,
+      tambor_id: existing.tambor_id,
+      codigo_descriptivo: descCode,
+      codigo_compacto: compactCode,
+      codigo: fullCode,
+      updated_date: now,
+    };
+
+    const diffs = diffDrumFields(existing, updatedDrum, state.catalogos);
+    const idx = this.state.tambores.findIndex(t => t.id === existing.id);
+    if (idx !== -1) {
+      this.state.tambores[idx] = updatedDrum;
+    }
+
+    for (const diff of diffs) {
+      this.state.historial.unshift({
+        id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tambor_id: existing.tambor_id,
+        tambor_ref: existing.id,
+        tipo: 'Edición',
+        campo: diff.campo,
+        valor_anterior: diff.valor_anterior,
+        valor_nuevo: diff.valor_nuevo,
+        descripcion: diff.descripcion,
+        actor: currentUser?.nombre || 'Operario Planta',
+        created_date: now,
+      });
+    }
+
+    this.save();
+    return updatedDrum;
+  }
+
+  recordMovimiento(drumId, movementInput, currentUser = null) {
+    const drum = this.getTamborById(drumId);
+    if (!drum) throw new Error(`No se encontró el tambor solicitado (${drumId})`);
+
+    const state = this.getFullState();
+    const { tipo, ubicacion_nueva, estado_nuevo, observaciones } = movementInput;
+    if (!tipo) throw new Error('Debe seleccionar el tipo de movimiento');
+    if (!ubicacion_nueva) throw new Error('Debe indicar la nueva ubicación');
+
+    const tipoItem = state.catalogos.find((c) => (c.id === tipo || c.codigo === tipo) && c.tipo === 'tipo_movimiento');
+    if (!tipoItem) throw new Error('El tipo de movimiento seleccionado no es válido');
+
+    const ubiItem = state.catalogos.find((c) => (c.id === ubicacion_nueva || c.codigo === ubicacion_nueva) && c.tipo === 'ubicacion');
+    if (!ubiItem) throw new Error('La ubicación de destino seleccionada no es válida');
+
+    const ubiAntId = drum.ubicacion;
+    const ubiNuevaId = ubiItem.id;
+    const estAntId = drum.estado;
+    const estNuevoId = estado_nuevo || drum.estado;
+    const now = new Date().toISOString();
+
+    const movement = {
+      id: `mov-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tambor_id: drum.tambor_id,
+      tambor_ref: drum.id,
+      tipo,
+      ubicacion_anterior: ubiAntId,
+      ubicacion_nueva: ubiNuevaId,
+      estado_anterior: estAntId,
+      estado_nuevo: estNuevoId,
+      observaciones: observaciones?.trim() || '',
+      created_date: now,
+    };
+
+    this.state.movimientos.unshift(movement);
+
+    this.state.historial.unshift({
+      id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tambor_id: drum.tambor_id,
+      tambor_ref: drum.id,
+      tipo: 'Movimiento',
+      descripcion: `Movimiento: ${tipoItem.nombre || 'Registrado'}`,
+      observaciones: observaciones?.trim() || '',
+      actor: currentUser?.nombre || 'Operario Planta',
+      created_date: now,
+    });
+
+    if (ubiAntId !== ubiNuevaId) {
+      const nomAnt = resolveCatalogName(state.catalogos, ubiAntId, 'ubicacion');
+      const nomNue = resolveCatalogName(state.catalogos, ubiNuevaId, 'ubicacion');
+      this.state.historial.unshift({
+        id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tambor_id: drum.tambor_id,
+        tambor_ref: drum.id,
+        tipo: 'Edición',
+        campo: 'ubicacion',
+        valor_anterior: nomAnt,
+        valor_nuevo: nomNue,
+        descripcion: `Ubicación modificada: "${nomAnt}" → "${nomNue}"`,
+        actor: currentUser?.nombre || 'Operario Planta',
+        created_date: now,
+      });
+    }
+
+    const drumIdx = this.state.tambores.findIndex(t => t.id === drum.id);
+    if (drumIdx !== -1) {
+      this.state.tambores[drumIdx] = {
+        ...this.state.tambores[drumIdx],
+        ubicacion: ubiNuevaId,
+        estado: estNuevoId,
+        updated_date: now,
+      };
+    }
+
+    this.save();
+    return { drum: { ...drum, ubicacion: ubiNuevaId, estado: estNuevoId, updated_date: now }, movement };
+  }
+
+  deleteTambor(drumId, confirmationText, currentUser = null) {
+    const drum = this.getTamborById(drumId);
+    if (!drum) throw new Error(`No se encontró el tambor solicitado (${drumId})`);
+
+    if (confirmationText?.trim().toUpperCase() !== drum.tambor_id.toUpperCase()) {
+      throw new Error(`Para confirmar la eliminación debe escribir exactamente el número "${drum.tambor_id}"`);
+    }
+
+    const now = new Date().toISOString();
+    this.state.historial.unshift({
+      id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tambor_id: drum.tambor_id,
+      tambor_ref: drum.id,
+      tipo: 'Eliminación',
+      descripcion: `Tambor ${drum.tambor_id} eliminado del inventario activo`,
+      actor: currentUser?.nombre || 'Administrador',
+      created_date: now,
+    });
+
+    this.state.tambores = this.state.tambores.filter(t => t.id !== drum.id);
+    this.save();
+    return { success: true, deletedTamborId: drum.tambor_id };
+  }
+
+  applyInventarioAuditoria(auditResult = {}, currentUser = null) {
+    const state = this.getFullState();
+    const now = new Date().toISOString();
+    const relocations = auditResult.relocations || [];
+    let updatedCount = 0;
+    const createdMovements = [];
+
+    const defaultMoveType =
+      state.catalogos.find((c) => c.tipo === 'tipo_movimiento' && (c.id === 'cat-mov-1' || c.codigo === 'TRAS'))?.id ||
+      state.catalogos.find((c) => c.tipo === 'tipo_movimiento')?.id ||
+      'cat-mov-1';
+
+    for (const item of relocations) {
+      const drum = state.tambores.find(
+        (d) => d.id === item.drumId || (item.tambor_id && d.tambor_id?.toUpperCase() === item.tambor_id.toUpperCase())
+      );
+      if (!drum) continue;
+
+      const oldUbiId = drum.ubicacion;
+      const newUbiId = item.newSectorId;
+      if (oldUbiId === newUbiId) continue;
+
+      const oldName = resolveCatalogName(state.catalogos, oldUbiId, 'ubicacion');
+      const newName = resolveCatalogName(state.catalogos, newUbiId, 'ubicacion');
+      const movId = `mov-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+
+      this.state.movimientos.unshift({
+        id: movId,
+        tambor_id: drum.tambor_id,
+        tambor_ref: drum.id,
+        tipo: defaultMoveType,
+        ubicacion_anterior: oldUbiId,
+        ubicacion_nueva: newUbiId,
+        estado_anterior: drum.estado,
+        estado_nuevo: drum.estado,
+        observaciones: `Ajuste por toma de inventario físico en sector "${newName}"`,
+        created_date: now,
+      });
+
+      this.state.historial.unshift({
+        id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tambor_id: drum.tambor_id,
+        tambor_ref: drum.id,
+        tipo: 'Movimiento',
+        descripcion: `Movimiento por toma de inventario: "${oldName}" → "${newName}"`,
+        observaciones: 'Escaneo de sector durante inventario físico',
+        actor: currentUser?.nombre || 'Operario Planta',
+        created_date: now,
+      });
+
+      const dIdx = this.state.tambores.findIndex(t => t.id === drum.id);
+      if (dIdx !== -1) {
+        this.state.tambores[dIdx].ubicacion = newUbiId;
+        this.state.tambores[dIdx].updated_date = now;
+      }
+      updatedCount++;
+      createdMovements.push(movId);
+    }
+
+    const allAuditedDrumIds = new Set();
+    (auditResult.sectors || []).forEach((sec) => {
+      (sec.drums || []).forEach((d) => {
+        if (d.tambor_id) allAuditedDrumIds.add(d.tambor_id.toUpperCase());
+      });
+    });
+
+    for (const tId of allAuditedDrumIds) {
+      const idx = this.state.tambores.findIndex(t => t.tambor_id?.toUpperCase() === tId);
+      if (idx !== -1) {
+        this.state.tambores[idx].ultima_auditoria = now;
+        this.state.tambores[idx].updated_date = now;
+      }
+    }
+
+    this.state.historial.unshift({
+      id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tipo: 'Inventario',
+      descripcion: `Toma de inventario físico completada: ${auditResult.validDrumsCount || allAuditedDrumIds.size || 0} tambores auditados en ${auditResult.sectorsCount || 0} sectores (${updatedCount} reubicaciones).`,
+      observaciones: 'Auditoría física por sectores de planta',
+      actor: currentUser?.nombre || 'Operario Planta',
+      created_date: now,
+    });
+
+    this.save();
+    return {
+      success: true,
+      relocationsApplied: updatedCount,
+      movementsCreated: createdMovements.length,
+      auditedCount: allAuditedDrumIds.size,
+      timestamp: now,
+    };
+  }
+
+  authorizeQualityLot({ drumIds = [], lot = '', estadoNuevo = 'cat-est-5', observaciones = '', muestreoData = null }, currentUser = null) {
+    if (!drumIds || drumIds.length === 0) {
+      throw new Error('Debe especificar al menos un tambor para autorizar');
+    }
+    const state = this.getFullState();
+    const now = new Date().toISOString();
+    const targetStatusItem = state.catalogos.find((c) => (c.id === estadoNuevo || c.codigo === estadoNuevo) && c.tipo === 'estado');
+    const statusName = targetStatusItem?.nombre || 'Aprobado calidad';
+    const qualityMoveType =
+      state.catalogos.find((c) => c.tipo === 'tipo_movimiento' && (c.id === 'cat-mov-3' || c.codigo === 'CTRL'))?.id ||
+      'cat-mov-3';
+
+    let updatedCount = 0;
+    for (const id of drumIds) {
+      const drum = state.tambores.find((d) => d.id === id || d.tambor_id?.toUpperCase() === id?.toUpperCase());
+      if (!drum) continue;
+
+      const prevStatusName = resolveCatalogName(state.catalogos, drum.estado, 'estado');
+      const samplingNotes = muestreoData
+        ? ` [pH: ${muestreoData.ph || '-'} | Salinidad: ${muestreoData.salinidad || '-'}% | Acidez: ${muestreoData.acidez || '-'}%]`
+        : '';
+      const fullObs = `${observaciones || 'Inspección de control de calidad'}${samplingNotes}`.trim();
+
+      this.state.movimientos.unshift({
+        id: `mov-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tambor_id: drum.tambor_id,
+        tambor_ref: drum.id,
+        tipo: qualityMoveType,
+        ubicacion_anterior: drum.ubicacion,
+        ubicacion_nueva: drum.ubicacion,
+        estado_anterior: drum.estado,
+        estado_nuevo: targetStatusItem?.id || estadoNuevo,
+        observaciones: fullObs,
+        created_date: now,
+      });
+
+      this.state.historial.unshift({
+        id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tambor_id: drum.tambor_id,
+        tambor_ref: drum.id,
+        tipo: 'Calidad',
+        descripcion: `Autorización de calidad: "${statusName}" (Lote: ${drum.lote || lot || 'N/A'})`,
+        observaciones: fullObs,
+        actor: currentUser?.nombre || 'Control de Calidad',
+        created_date: now,
+      });
+
+      const dIdx = this.state.tambores.findIndex(t => t.id === drum.id);
+      if (dIdx !== -1) {
+        this.state.tambores[dIdx].estado = targetStatusItem?.id || estadoNuevo;
+        this.state.tambores[dIdx].updated_date = now;
+      }
+      updatedCount++;
+    }
+
+    this.save();
+    return { success: true, authorizedCount: updatedCount, estado: statusName, timestamp: now };
+  }
+
+  saveCatalogItem(catalogItem) {
+    const { id, tipo, nombre, codigo, activo = true, orden = 1 } = catalogItem;
+    if (!tipo || !nombre || !codigo) throw new Error('Tipo, nombre y código son obligatorios');
+
+    const cleanCode = String(codigo).trim().toUpperCase();
+    if (!/^[A-Z0-9]+([ /\\-][A-Z0-9]+)*$/.test(cleanCode)) {
+      throw new Error('El código solo puede contener letras mayúsculas, números, / y guiones');
+    }
+
+    const existing = this.state.catalogos.find(c => c.tipo === tipo && c.codigo?.toUpperCase() === cleanCode && c.id !== id);
+    if (existing) {
+      throw new Error(`Ya existe una opción con el código "${cleanCode}" para este catálogo`);
+    }
+
+    if (id) {
+      const idx = this.state.catalogos.findIndex(c => c.id === id);
+      if (idx !== -1) {
+        this.state.catalogos[idx] = {
+          ...this.state.catalogos[idx],
+          nombre: String(nombre).trim(),
+          codigo: cleanCode,
+          activo: Boolean(activo),
+          orden: Number(orden) || 1,
+        };
+      }
+    } else {
+      const newId = `cat-${tipo.substring(0, 3)}-${Date.now()}`;
+      this.state.catalogos.push({
+        id: newId,
+        tipo,
+        nombre: String(nombre).trim(),
+        codigo: cleanCode,
+        activo: Boolean(activo),
+        orden: Number(orden) || 1,
+        created_date: new Date().toISOString(),
+      });
+    }
+
+    this.save();
+    return this.getCatalogos();
+  }
+
+  getCatalogos() {
+    return [...this.state.catalogos].sort((a, b) => (a.orden || 1) - (b.orden || 1) || a.nombre.localeCompare(b.nombre));
+  }
+
+  toggleCatalogActive(id) {
+    const item = this.state.catalogos.find(c => c.id === id);
+    if (!item) throw new Error('Opción de catálogo no encontrada');
+    item.activo = !item.activo;
+    this.save();
+    return { ...item };
+  }
+
+  close() {}
+}
+
 export class SQLiteDatabase {
   constructor(dbPath = null) {
+    if (!DatabaseSync) {
+      return new JSONFileDatabase(dbPath);
+    }
     this.dbPath = dbPath || process.env.DATABASE_PATH || path.resolve(process.cwd(), 'data', 'trazabilidad.sqlite');
     this.db = null;
     this.init();
@@ -127,10 +652,10 @@ export class SQLiteDatabase {
     `);
   }
 
-  seedIfEmpty() {
+  seedIfEmpty(includeDemoDrums = (this.dbPath === ':memory:')) {
     const row = this.db.prepare('SELECT COUNT(*) as count FROM catalogos').get();
     if (row && row.count === 0) {
-      this.resetToInitialState(true);
+      this.resetToInitialState(includeDemoDrums);
     }
   }
 

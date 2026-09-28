@@ -14,9 +14,12 @@
     "electron:start": "electron electron/main.cjs",
     "electron:dev": "ELECTRON_START_URL=http://localhost:5173 electron electron/main.cjs",
     "electron:build": "vite build && electron-builder",
-    "electron:build:win": "vite build && electron-builder --win --x64",
+    "electron:build:win": "vite build && node scripts/build-win.cjs",
     "electron:build:mac": "vite build && node scripts/build-mac.cjs",
-    "electron:pack": "electron-builder --dir"
+    "electron:pack": "electron-builder --dir",
+    "portal:dev": "vite portal --config portal/vite.config.js",
+    "portal:build": "vite build --config portal/vite.config.js",
+    "portal:preview": "vite preview --config portal/vite.config.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",

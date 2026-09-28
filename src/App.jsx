@@ -17,38 +17,7 @@ import { HelpPage } from './pages/HelpPage.jsx';
 import { QualityPage } from './pages/QualityPage.jsx';
 import { Button } from './components/ui/button.jsx';
 
-// Pantalla de acceso y autenticación local
-function LoginPage() {
-  return (
-    <div className="min-h-screen bg-bone-50 flex items-center justify-center p-4">
-      <div className="bezel-shell max-w-md w-full">
-        <div className="bezel-core p-8 bg-white text-center space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-olive-900 text-bone-50 flex items-center justify-center mx-auto font-serif text-2xl font-bold">
-            O
-          </div>
-          <div>
-            <h2 className="font-serif text-2xl font-bold text-obsidian">
-              OLIVÍCOLA LUJÁN
-            </h2>
-            <p className="text-xs font-mono text-olive-700 uppercase tracking-wider mt-0.5">
-              Acceso al Sistema de Trazabilidad
-            </p>
-          </div>
-          <p className="text-xs text-bone-600">
-            Puedes ingresar directamente con cualquiera de los roles disponibles para operar el sistema.
-          </p>
-          <div className="pt-2">
-            <Link to="/">
-              <Button variant="primary" className="w-full">
-                Entrar al Sistema
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { LoginPage } from './pages/LoginPage.jsx';
 
 export function App() {
   return (

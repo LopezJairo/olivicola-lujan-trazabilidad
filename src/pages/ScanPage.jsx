@@ -378,14 +378,6 @@ export function ScanPage() {
     }
   };
 
-  // Ayudante para probar escaneo rápido con un clic
-  const handleQuickTestScan = (targetCode) => {
-    setScanInput(targetCode);
-    setTimeout(() => {
-      processQuery(targetCode);
-      inputRef.current?.focus();
-    }, 50);
-  };
 
   const handleDirectPrintLastScanned = () => {
     window.print();
@@ -493,7 +485,7 @@ export function ScanPage() {
                 value={scanInput}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}
-                className="w-full pl-13 pr-32 py-4 text-lg sm:text-xl font-mono tracking-wider rounded-2xl border-2 border-bone-300 focus:border-olive-700 focus:ring-4 focus:ring-olive-700/10 transition-all bg-bone-50/40 text-obsidian placeholder:text-bone-400"
+                className="w-full pl-14 sm:pl-16 pr-32 py-4 text-lg sm:text-xl font-mono tracking-wider rounded-2xl border-2 border-bone-300 focus:border-olive-700 focus:ring-4 focus:ring-olive-700/10 transition-all bg-bone-50/40 text-obsidian placeholder:text-bone-400"
               />
               <div className="absolute inset-y-0 right-2 flex items-center">
                 <Button
@@ -640,34 +632,6 @@ export function ScanPage() {
             )}
           </form>
 
-          {/* Accesos rápidos para probar en entorno de desarrollo */}
-          <div className="mt-6 pt-5 border-t border-bone-100">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-bone-500 block mb-2 font-semibold">
-              Tambores de prueba para simular lectura con un clic:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {tambores.slice(0, 5).map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => handleQuickTestScan(t.tambor_id)}
-                  className="px-2.5 py-1 text-xs font-mono font-medium rounded-lg bg-bone-100 hover:bg-bone-200 text-bone-800 border border-bone-300 transition-colors"
-                >
-                  {t.tambor_id} ({t.codigo_descriptivo?.split('-')[0] || 'Tambor'})
-                </button>
-              ))}
-              {tambores[0]?.codigo_compacto && (
-                <button
-                  type="button"
-                  onClick={() => handleQuickTestScan(tambores[0].codigo_compacto)}
-                  className="px-2.5 py-1 text-xs font-mono font-bold rounded-lg bg-olive-100 hover:bg-olive-200 text-olive-900 border border-olive-300 transition-colors"
-                  title="Simular escaneo de código de barras CODE 128 (Código Compacto)"
-                >
-                  CODE 128: {tambores[0].codigo_compacto}
-                </button>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 

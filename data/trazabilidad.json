@@ -1,0 +1,447 @@
+{
+  "catalogos": [
+    {
+      "id": "cat-prod-1",
+      "tipo": "producto",
+      "nombre": "Entera",
+      "codigo": "ENT",
+      "activo": true,
+      "orden": 1
+    },
+    {
+      "id": "cat-prod-2",
+      "tipo": "producto",
+      "nombre": "Descarozada",
+      "codigo": "DES",
+      "activo": true,
+      "orden": 2
+    },
+    {
+      "id": "cat-prod-3",
+      "tipo": "producto",
+      "nombre": "Rodajas",
+      "codigo": "FET",
+      "activo": true,
+      "orden": 3
+    },
+    {
+      "id": "cat-prod-4",
+      "tipo": "producto",
+      "nombre": "Griegas",
+      "codigo": "GRI",
+      "activo": true,
+      "orden": 4
+    },
+    {
+      "id": "cat-prod-5",
+      "tipo": "producto",
+      "nombre": "Rellenas",
+      "codigo": "RELL",
+      "activo": true,
+      "orden": 5
+    },
+    {
+      "id": "cat-prod-6",
+      "tipo": "producto",
+      "nombre": "Rotas",
+      "codigo": "ROTA",
+      "activo": true,
+      "orden": 6
+    },
+    {
+      "id": "cat-pres-1",
+      "tipo": "presentacion",
+      "nombre": "Verde",
+      "codigo": "VDE",
+      "activo": true,
+      "orden": 1
+    },
+    {
+      "id": "cat-pres-2",
+      "tipo": "presentacion",
+      "nombre": "Negra",
+      "codigo": "NN",
+      "activo": true,
+      "orden": 2
+    },
+    {
+      "id": "cat-pres-3",
+      "tipo": "presentacion",
+      "nombre": "Base",
+      "codigo": "BAS",
+      "activo": true,
+      "orden": 3
+    },
+    {
+      "id": "cat-pres-4",
+      "tipo": "presentacion",
+      "nombre": "Californiana",
+      "codigo": "CALIF",
+      "activo": true,
+      "orden": 4
+    },
+    {
+      "id": "cat-pres-5",
+      "tipo": "presentacion",
+      "nombre": "Clara",
+      "codigo": "CL",
+      "activo": true,
+      "orden": 5
+    },
+    {
+      "id": "cat-pres-6",
+      "tipo": "presentacion",
+      "nombre": "Para Griega",
+      "codigo": "P/GR",
+      "activo": true,
+      "orden": 6
+    },
+    {
+      "id": "cat-pres-7",
+      "tipo": "presentacion",
+      "nombre": "Sin Carozo",
+      "codigo": "S/C",
+      "activo": true,
+      "orden": 7
+    },
+    {
+      "id": "cat-pres-8",
+      "tipo": "presentacion",
+      "nombre": "Con Pasta",
+      "codigo": "C/P",
+      "activo": true,
+      "orden": 8
+    },
+    {
+      "id": "cat-pres-9",
+      "tipo": "presentacion",
+      "nombre": "Aceite",
+      "codigo": "ACEITE",
+      "activo": true,
+      "orden": 9
+    },
+    {
+      "id": "cat-var-1",
+      "tipo": "variedad",
+      "nombre": "Aloreña",
+      "codigo": "ALOR",
+      "activo": true,
+      "orden": 1
+    },
+    {
+      "id": "cat-var-2",
+      "tipo": "variedad",
+      "nombre": "Arauco",
+      "codigo": "ARA",
+      "activo": true,
+      "orden": 2
+    },
+    {
+      "id": "cat-var-3",
+      "tipo": "variedad",
+      "nombre": "Manzanilla Fina",
+      "codigo": "MF",
+      "activo": true,
+      "orden": 3
+    },
+    {
+      "id": "cat-var-4",
+      "tipo": "variedad",
+      "nombre": "Picual",
+      "codigo": "PIC",
+      "activo": true,
+      "orden": 4
+    },
+    {
+      "id": "cat-var-5",
+      "tipo": "variedad",
+      "nombre": "Empeltre",
+      "codigo": "EMP",
+      "activo": true,
+      "orden": 5
+    },
+    {
+      "id": "cat-var-6",
+      "tipo": "variedad",
+      "nombre": "Farga (Histórica)",
+      "codigo": "FAR",
+      "activo": false,
+      "orden": 99
+    },
+    {
+      "id": "cat-cal-1",
+      "tipo": "calibre",
+      "nombre": "121/140",
+      "codigo": "121/140",
+      "activo": true,
+      "orden": 1
+    },
+    {
+      "id": "cat-cal-2",
+      "tipo": "calibre",
+      "nombre": "141/160",
+      "codigo": "141/160",
+      "activo": true,
+      "orden": 2
+    },
+    {
+      "id": "cat-cal-3",
+      "tipo": "calibre",
+      "nombre": "161/180",
+      "codigo": "161/180",
+      "activo": true,
+      "orden": 3
+    },
+    {
+      "id": "cat-cal-4",
+      "tipo": "calibre",
+      "nombre": "181/200",
+      "codigo": "181/200",
+      "activo": true,
+      "orden": 4
+    },
+    {
+      "id": "cat-cal-5",
+      "tipo": "calibre",
+      "nombre": "161/200",
+      "codigo": "161/200",
+      "activo": true,
+      "orden": 5
+    },
+    {
+      "id": "cat-cal-6",
+      "tipo": "calibre",
+      "nombre": "201/240",
+      "codigo": "201/240",
+      "activo": true,
+      "orden": 6
+    },
+    {
+      "id": "cat-cal-7",
+      "tipo": "calibre",
+      "nombre": "241/280",
+      "codigo": "241/280",
+      "activo": true,
+      "orden": 7
+    },
+    {
+      "id": "cat-cal-8",
+      "tipo": "calibre",
+      "nombre": "281/320",
+      "codigo": "281/320",
+      "activo": true,
+      "orden": 8
+    },
+    {
+      "id": "cat-cal-9",
+      "tipo": "calibre",
+      "nombre": "321/450",
+      "codigo": "321/450",
+      "activo": true,
+      "orden": 9
+    },
+    {
+      "id": "cat-cal-10",
+      "tipo": "calibre",
+      "nombre": "80/120",
+      "codigo": "80/120",
+      "activo": true,
+      "orden": 10
+    },
+    {
+      "id": "cat-cal-11",
+      "tipo": "calibre",
+      "nombre": "Sin Calibre",
+      "codigo": "SIN CAL",
+      "activo": true,
+      "orden": 11
+    },
+    {
+      "id": "cat-qual-1",
+      "tipo": "calidad",
+      "nombre": "Primera",
+      "codigo": "PRI",
+      "activo": true,
+      "orden": 1
+    },
+    {
+      "id": "cat-qual-2",
+      "tipo": "calidad",
+      "nombre": "Segunda",
+      "codigo": "SDA",
+      "activo": true,
+      "orden": 2
+    },
+    {
+      "id": "cat-qual-3",
+      "tipo": "calidad",
+      "nombre": "Tercera",
+      "codigo": "TRA",
+      "activo": true,
+      "orden": 3
+    },
+    {
+      "id": "cat-ubi-1",
+      "tipo": "ubicacion",
+      "nombre": "Nave A - Fila 1",
+      "codigo": "NAV-A1",
+      "activo": true,
+      "orden": 1
+    },
+    {
+      "id": "cat-ubi-2",
+      "tipo": "ubicacion",
+      "nombre": "Nave A - Fila 2",
+      "codigo": "NAV-A2",
+      "activo": true,
+      "orden": 2
+    },
+    {
+      "id": "cat-ubi-3",
+      "tipo": "ubicacion",
+      "nombre": "Nave A - Fila 3",
+      "codigo": "NAV-A3",
+      "activo": true,
+      "orden": 3
+    },
+    {
+      "id": "cat-ubi-4",
+      "tipo": "ubicacion",
+      "nombre": "Nave B - Fila 1",
+      "codigo": "NAV-B1",
+      "activo": true,
+      "orden": 4
+    },
+    {
+      "id": "cat-ubi-5",
+      "tipo": "ubicacion",
+      "nombre": "Nave B - Fila 2",
+      "codigo": "NAV-B2",
+      "activo": true,
+      "orden": 5
+    },
+    {
+      "id": "cat-ubi-6",
+      "tipo": "ubicacion",
+      "nombre": "Patio Fermentación",
+      "codigo": "PAT-F",
+      "activo": true,
+      "orden": 6
+    },
+    {
+      "id": "cat-ubi-7",
+      "tipo": "ubicacion",
+      "nombre": "Sector Despacho",
+      "codigo": "DESP",
+      "activo": true,
+      "orden": 7
+    },
+    {
+      "id": "cat-ubi-8",
+      "tipo": "ubicacion",
+      "nombre": "Depósito Histórico (Inactivo)",
+      "codigo": "DEP-HIST",
+      "activo": false,
+      "orden": 99
+    },
+    {
+      "id": "cat-est-1",
+      "tipo": "estado",
+      "nombre": "En fermentación",
+      "codigo": "FERM",
+      "activo": true,
+      "orden": 1
+    },
+    {
+      "id": "cat-est-2",
+      "tipo": "estado",
+      "nombre": "En reposo",
+      "codigo": "REPO",
+      "activo": true,
+      "orden": 2
+    },
+    {
+      "id": "cat-est-3",
+      "tipo": "estado",
+      "nombre": "En salmuera definitiva",
+      "codigo": "SALM",
+      "activo": true,
+      "orden": 3
+    },
+    {
+      "id": "cat-est-4",
+      "tipo": "estado",
+      "nombre": "En calibrado",
+      "codigo": "CALI",
+      "activo": true,
+      "orden": 4
+    },
+    {
+      "id": "cat-est-5",
+      "tipo": "estado",
+      "nombre": "Aprobado calidad",
+      "codigo": "APRO",
+      "activo": true,
+      "orden": 5
+    },
+    {
+      "id": "cat-est-6",
+      "tipo": "estado",
+      "nombre": "Retenido para análisis",
+      "codigo": "RETE",
+      "activo": true,
+      "orden": 6
+    },
+    {
+      "id": "cat-est-7",
+      "tipo": "estado",
+      "nombre": "Listo para despacho",
+      "codigo": "LIST",
+      "activo": true,
+      "orden": 7
+    },
+    {
+      "id": "cat-mov-1",
+      "tipo": "tipo_movimiento",
+      "nombre": "Traslado interno de nave",
+      "codigo": "TRAS",
+      "activo": true,
+      "orden": 1
+    },
+    {
+      "id": "cat-mov-2",
+      "tipo": "tipo_movimiento",
+      "nombre": "Reubicación por fermentación",
+      "codigo": "REUB",
+      "activo": true,
+      "orden": 2
+    },
+    {
+      "id": "cat-mov-3",
+      "tipo": "tipo_movimiento",
+      "nombre": "Control de calidad y muestreo",
+      "codigo": "CTRL",
+      "activo": true,
+      "orden": 3
+    },
+    {
+      "id": "cat-mov-4",
+      "tipo": "tipo_movimiento",
+      "nombre": "Ingreso desde cosecha",
+      "codigo": "INGR",
+      "activo": true,
+      "orden": 4
+    },
+    {
+      "id": "cat-mov-5",
+      "tipo": "tipo_movimiento",
+      "nombre": "Movimiento a despacho",
+      "codigo": "DESP",
+      "activo": true,
+      "orden": 5
+    }
+  ],
+  "tambores": [],
+  "historial": [],
+  "movimientos": []
+}
