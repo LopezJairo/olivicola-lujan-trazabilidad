@@ -130,7 +130,7 @@ export function createServer(options = {}) {
           status: 'ok',
           mode: 'host',
           app: 'Olivícola Luján · Trazabilidad',
-          version: '1.0.0',
+          version: '1.0.1',
           serverTime: new Date().toISOString(),
           lanIps,
           stats: {
@@ -269,7 +269,7 @@ export function createServer(options = {}) {
         const state = db.getFullState();
         sendJson(res, 200, {
           app: 'OLIVÍCOLA LUJÁN · Trazabilidad de Tambores',
-          version: '1.0.0',
+          version: '1.0.1',
           exportedAt: new Date().toISOString(),
           mode: 'host',
           data: state,

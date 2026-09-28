@@ -251,7 +251,7 @@ describe('2. Servidor Backend HTTP para LAN (server/index.js)', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.mode).toBe('host');
-    expect(res.body.version).toBe('1.0.0');
+    expect(res.body.version).toBe('1.0.1');
     expect(res.body.stats.tambores).toBe(12);
   });
 
