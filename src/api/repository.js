@@ -11,6 +11,7 @@ import {
   INITIAL_HISTORIAL,
   INITIAL_MOVIMIENTOS,
 } from './demoData.js';
+import { TEST_DATASET_15 } from '../data/testDataset.js';
 import {
   nextTamborId,
   buildDescriptiveCode,
@@ -155,6 +156,26 @@ export function resetDemoDatabase() {
     }
   } catch {}
   return initial;
+}
+
+/**
+ * Carga el conjunto oficial de 15 tambores de prueba en el espacio activo
+ * (ideal para evaluación, pruebas de escáner y verificación en vivo).
+ */
+export function loadTestDataset() {
+  const dataset = JSON.parse(JSON.stringify(TEST_DATASET_15));
+  saveDatabase(dataset);
+  try {
+    const config = getNetworkConfig();
+    if (config.mode !== NETWORK_MODES.OFFLINE) {
+      callServerApi('/api/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: dataset }),
+      }).catch(() => {});
+    }
+  } catch {}
+  return dataset;
 }
 
 /**

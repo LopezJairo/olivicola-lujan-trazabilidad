@@ -1,0 +1,865 @@
+{
+  "app": "OLIVÍCOLA LUJÁN · Trazabilidad de Tambores",
+  "version": "1.0.0",
+  "description": "Datos de prueba oficiales para demostración y evaluación del flujo completo de planta",
+  "exportedAt": "2026-09-28T23:20:32.160Z",
+  "mode": "demo",
+  "data": {
+    "catalogos": [
+      {
+        "id": "cat-prod-1",
+        "tipo": "producto",
+        "nombre": "Entera",
+        "codigo": "ENT",
+        "activo": true,
+        "orden": 1
+      },
+      {
+        "id": "cat-prod-2",
+        "tipo": "producto",
+        "nombre": "Descarozada",
+        "codigo": "DES",
+        "activo": true,
+        "orden": 2
+      },
+      {
+        "id": "cat-prod-3",
+        "tipo": "producto",
+        "nombre": "Rodajas",
+        "codigo": "FET",
+        "activo": true,
+        "orden": 3
+      },
+      {
+        "id": "cat-prod-4",
+        "tipo": "producto",
+        "nombre": "Griegas",
+        "codigo": "GRI",
+        "activo": true,
+        "orden": 4
+      },
+      {
+        "id": "cat-prod-5",
+        "tipo": "producto",
+        "nombre": "Rellenas",
+        "codigo": "RELL",
+        "activo": true,
+        "orden": 5
+      },
+      {
+        "id": "cat-prod-6",
+        "tipo": "producto",
+        "nombre": "Rotas",
+        "codigo": "ROTA",
+        "activo": true,
+        "orden": 6
+      },
+      {
+        "id": "cat-pres-1",
+        "tipo": "presentacion",
+        "nombre": "Verde",
+        "codigo": "VDE",
+        "activo": true,
+        "orden": 1
+      },
+      {
+        "id": "cat-pres-2",
+        "tipo": "presentacion",
+        "nombre": "Negra",
+        "codigo": "NN",
+        "activo": true,
+        "orden": 2
+      },
+      {
+        "id": "cat-pres-3",
+        "tipo": "presentacion",
+        "nombre": "Base",
+        "codigo": "BAS",
+        "activo": true,
+        "orden": 3
+      },
+      {
+        "id": "cat-pres-4",
+        "tipo": "presentacion",
+        "nombre": "Californiana",
+        "codigo": "CALIF",
+        "activo": true,
+        "orden": 4
+      },
+      {
+        "id": "cat-pres-5",
+        "tipo": "presentacion",
+        "nombre": "Clara",
+        "codigo": "CL",
+        "activo": true,
+        "orden": 5
+      },
+      {
+        "id": "cat-pres-6",
+        "tipo": "presentacion",
+        "nombre": "Para Griega",
+        "codigo": "P/GR",
+        "activo": true,
+        "orden": 6
+      },
+      {
+        "id": "cat-pres-7",
+        "tipo": "presentacion",
+        "nombre": "Sin Carozo",
+        "codigo": "S/C",
+        "activo": true,
+        "orden": 7
+      },
+      {
+        "id": "cat-pres-8",
+        "tipo": "presentacion",
+        "nombre": "Con Pasta",
+        "codigo": "C/P",
+        "activo": true,
+        "orden": 8
+      },
+      {
+        "id": "cat-pres-9",
+        "tipo": "presentacion",
+        "nombre": "Aceite",
+        "codigo": "ACEITE",
+        "activo": true,
+        "orden": 9
+      },
+      {
+        "id": "cat-var-1",
+        "tipo": "variedad",
+        "nombre": "Aloreña",
+        "codigo": "ALOR",
+        "activo": true,
+        "orden": 1
+      },
+      {
+        "id": "cat-var-2",
+        "tipo": "variedad",
+        "nombre": "Arauco",
+        "codigo": "ARA",
+        "activo": true,
+        "orden": 2
+      },
+      {
+        "id": "cat-var-3",
+        "tipo": "variedad",
+        "nombre": "Manzanilla Fina",
+        "codigo": "MF",
+        "activo": true,
+        "orden": 3
+      },
+      {
+        "id": "cat-var-4",
+        "tipo": "variedad",
+        "nombre": "Picual",
+        "codigo": "PIC",
+        "activo": true,
+        "orden": 4
+      },
+      {
+        "id": "cat-var-5",
+        "tipo": "variedad",
+        "nombre": "Empeltre",
+        "codigo": "EMP",
+        "activo": true,
+        "orden": 5
+      },
+      {
+        "id": "cat-var-6",
+        "tipo": "variedad",
+        "nombre": "Farga (Histórica)",
+        "codigo": "FAR",
+        "activo": false,
+        "orden": 99
+      },
+      {
+        "id": "cat-cal-1",
+        "tipo": "calibre",
+        "nombre": "121/140",
+        "codigo": "121/140",
+        "activo": true,
+        "orden": 1
+      },
+      {
+        "id": "cat-cal-2",
+        "tipo": "calibre",
+        "nombre": "141/160",
+        "codigo": "141/160",
+        "activo": true,
+        "orden": 2
+      },
+      {
+        "id": "cat-cal-3",
+        "tipo": "calibre",
+        "nombre": "161/180",
+        "codigo": "161/180",
+        "activo": true,
+        "orden": 3
+      },
+      {
+        "id": "cat-cal-4",
+        "tipo": "calibre",
+        "nombre": "181/200",
+        "codigo": "181/200",
+        "activo": true,
+        "orden": 4
+      },
+      {
+        "id": "cat-cal-5",
+        "tipo": "calibre",
+        "nombre": "161/200",
+        "codigo": "161/200",
+        "activo": true,
+        "orden": 5
+      },
+      {
+        "id": "cat-cal-6",
+        "tipo": "calibre",
+        "nombre": "201/240",
+        "codigo": "201/240",
+        "activo": true,
+        "orden": 6
+      },
+      {
+        "id": "cat-cal-7",
+        "tipo": "calibre",
+        "nombre": "241/280",
+        "codigo": "241/280",
+        "activo": true,
+        "orden": 7
+      },
+      {
+        "id": "cat-cal-8",
+        "tipo": "calibre",
+        "nombre": "281/320",
+        "codigo": "281/320",
+        "activo": true,
+        "orden": 8
+      },
+      {
+        "id": "cat-cal-9",
+        "tipo": "calibre",
+        "nombre": "321/450",
+        "codigo": "321/450",
+        "activo": true,
+        "orden": 9
+      },
+      {
+        "id": "cat-cal-10",
+        "tipo": "calibre",
+        "nombre": "80/120",
+        "codigo": "80/120",
+        "activo": true,
+        "orden": 10
+      },
+      {
+        "id": "cat-cal-11",
+        "tipo": "calibre",
+        "nombre": "Sin Calibre",
+        "codigo": "SIN CAL",
+        "activo": true,
+        "orden": 11
+      },
+      {
+        "id": "cat-qual-1",
+        "tipo": "calidad",
+        "nombre": "Primera",
+        "codigo": "PRI",
+        "activo": true,
+        "orden": 1
+      },
+      {
+        "id": "cat-qual-2",
+        "tipo": "calidad",
+        "nombre": "Segunda",
+        "codigo": "SDA",
+        "activo": true,
+        "orden": 2
+      },
+      {
+        "id": "cat-qual-3",
+        "tipo": "calidad",
+        "nombre": "Tercera",
+        "codigo": "TRA",
+        "activo": true,
+        "orden": 3
+      },
+      {
+        "id": "cat-ubi-1",
+        "tipo": "ubicacion",
+        "nombre": "Nave A - Fila 1",
+        "codigo": "NAV-A1",
+        "activo": true,
+        "orden": 1
+      },
+      {
+        "id": "cat-ubi-2",
+        "tipo": "ubicacion",
+        "nombre": "Nave A - Fila 2",
+        "codigo": "NAV-A2",
+        "activo": true,
+        "orden": 2
+      },
+      {
+        "id": "cat-ubi-3",
+        "tipo": "ubicacion",
+        "nombre": "Nave A - Fila 3",
+        "codigo": "NAV-A3",
+        "activo": true,
+        "orden": 3
+      },
+      {
+        "id": "cat-ubi-4",
+        "tipo": "ubicacion",
+        "nombre": "Nave B - Fila 1",
+        "codigo": "NAV-B1",
+        "activo": true,
+        "orden": 4
+      },
+      {
+        "id": "cat-ubi-5",
+        "tipo": "ubicacion",
+        "nombre": "Nave B - Fila 2",
+        "codigo": "NAV-B2",
+        "activo": true,
+        "orden": 5
+      },
+      {
+        "id": "cat-ubi-6",
+        "tipo": "ubicacion",
+        "nombre": "Patio Fermentación",
+        "codigo": "PAT-F",
+        "activo": true,
+        "orden": 6
+      },
+      {
+        "id": "cat-ubi-7",
+        "tipo": "ubicacion",
+        "nombre": "Sector Despacho",
+        "codigo": "DESP",
+        "activo": true,
+        "orden": 7
+      },
+      {
+        "id": "cat-ubi-8",
+        "tipo": "ubicacion",
+        "nombre": "Depósito Histórico (Inactivo)",
+        "codigo": "DEP-HIST",
+        "activo": false,
+        "orden": 99
+      },
+      {
+        "id": "cat-est-1",
+        "tipo": "estado",
+        "nombre": "En fermentación",
+        "codigo": "FERM",
+        "activo": true,
+        "orden": 1
+      },
+      {
+        "id": "cat-est-2",
+        "tipo": "estado",
+        "nombre": "En reposo",
+        "codigo": "REPO",
+        "activo": true,
+        "orden": 2
+      },
+      {
+        "id": "cat-est-3",
+        "tipo": "estado",
+        "nombre": "En salmuera definitiva",
+        "codigo": "SALM",
+        "activo": true,
+        "orden": 3
+      },
+      {
+        "id": "cat-est-4",
+        "tipo": "estado",
+        "nombre": "En calibrado",
+        "codigo": "CALI",
+        "activo": true,
+        "orden": 4
+      },
+      {
+        "id": "cat-est-5",
+        "tipo": "estado",
+        "nombre": "Aprobado calidad",
+        "codigo": "APRO",
+        "activo": true,
+        "orden": 5
+      },
+      {
+        "id": "cat-est-6",
+        "tipo": "estado",
+        "nombre": "Retenido para análisis",
+        "codigo": "RETE",
+        "activo": true,
+        "orden": 6
+      },
+      {
+        "id": "cat-est-7",
+        "tipo": "estado",
+        "nombre": "Listo para despacho",
+        "codigo": "LIST",
+        "activo": true,
+        "orden": 7
+      },
+      {
+        "id": "cat-mov-1",
+        "tipo": "tipo_movimiento",
+        "nombre": "Traslado interno de nave",
+        "codigo": "TRAS",
+        "activo": true,
+        "orden": 1
+      },
+      {
+        "id": "cat-mov-2",
+        "tipo": "tipo_movimiento",
+        "nombre": "Reubicación por fermentación",
+        "codigo": "REUB",
+        "activo": true,
+        "orden": 2
+      },
+      {
+        "id": "cat-mov-3",
+        "tipo": "tipo_movimiento",
+        "nombre": "Control de calidad y muestreo",
+        "codigo": "CTRL",
+        "activo": true,
+        "orden": 3
+      },
+      {
+        "id": "cat-mov-4",
+        "tipo": "tipo_movimiento",
+        "nombre": "Ingreso desde cosecha",
+        "codigo": "INGR",
+        "activo": true,
+        "orden": 4
+      },
+      {
+        "id": "cat-mov-5",
+        "tipo": "tipo_movimiento",
+        "nombre": "Movimiento a despacho",
+        "codigo": "DESP",
+        "activo": true,
+        "orden": 5
+      }
+    ],
+    "tambores": [
+      {
+        "id": "tb-001",
+        "tambor_id": "T000001",
+        "codigo_descriptivo": "ENT-VDE-ALOR-121/140-PRI",
+        "codigo_compacto": "ENTVDEALOR121140PRI",
+        "codigo": "ENT-VDE-ALOR-121/140-PRI-T000001",
+        "producto": "cat-prod-1",
+        "presentacion": "cat-pres-1",
+        "variedad": "cat-var-1",
+        "calibre": "cat-cal-1",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-LUJ01",
+        "fecha_ingreso": "2026-09-01",
+        "fecha_elaboracion": "2026-08-30",
+        "peso": 180,
+        "ubicacion": "cat-ubi-1",
+        "estado": "cat-est-1",
+        "observaciones": "Tambor de cosecha Aloreña Verde. Control de pH diario.",
+        "created_date": "2026-09-01T08:30:00Z"
+      },
+      {
+        "id": "tb-002",
+        "tambor_id": "T000002",
+        "codigo_descriptivo": "ENT-VDE-ARA-121/140-PRI",
+        "codigo_compacto": "ENTVDEARA121140PRI",
+        "codigo": "ENT-VDE-ARA-121/140-PRI-T000002",
+        "producto": "cat-prod-1",
+        "presentacion": "cat-pres-1",
+        "variedad": "cat-var-2",
+        "calibre": "cat-cal-1",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-LUJ01",
+        "fecha_ingreso": "2026-09-01",
+        "fecha_elaboracion": "2026-08-30",
+        "peso": 180,
+        "ubicacion": "cat-ubi-1",
+        "estado": "cat-est-1",
+        "observaciones": "Lote homogéneo variedad Arauco en salmuera.",
+        "created_date": "2026-09-01T08:45:00Z"
+      },
+      {
+        "id": "tb-003",
+        "tambor_id": "T000003",
+        "codigo_descriptivo": "ENT-VDE-MF-201/240-PRI",
+        "codigo_compacto": "ENTVDEMF201240PRI",
+        "codigo": "ENT-VDE-MF-201/240-PRI-T000003",
+        "producto": "cat-prod-1",
+        "presentacion": "cat-pres-1",
+        "variedad": "cat-var-3",
+        "calibre": "cat-cal-6",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-MAN02",
+        "fecha_ingreso": "2026-09-03",
+        "fecha_elaboracion": "2026-09-02",
+        "peso": 180,
+        "ubicacion": "cat-ubi-2",
+        "estado": "cat-est-5",
+        "observaciones": "Manzanilla Fina primera calidad. Aprobado por laboratorio.",
+        "created_date": "2026-09-03T10:15:00Z"
+      },
+      {
+        "id": "tb-004",
+        "tambor_id": "T000004",
+        "codigo_descriptivo": "ENT-NN-PIC-241/280-PRI",
+        "codigo_compacto": "ENTNNPIC241280PRI",
+        "codigo": "ENT-NN-PIC-241/280-PRI-T000004",
+        "producto": "cat-prod-1",
+        "presentacion": "cat-pres-2",
+        "variedad": "cat-var-4",
+        "calibre": "cat-cal-7",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-PIC03",
+        "fecha_ingreso": "2026-09-05",
+        "fecha_elaboracion": "2026-09-04",
+        "peso": 180,
+        "ubicacion": "cat-ubi-3",
+        "estado": "cat-est-2",
+        "observaciones": "Negra natural Picual en reposo para estabilización osmótica.",
+        "created_date": "2026-09-05T09:00:00Z"
+      },
+      {
+        "id": "tb-005",
+        "tambor_id": "T000005",
+        "codigo_descriptivo": "FET-VDE-MF-201/240-SDA",
+        "codigo_compacto": "FETVDEMF201240SDA",
+        "codigo": "FET-VDE-MF-201/240-SDA-T000005",
+        "producto": "cat-prod-3",
+        "presentacion": "cat-pres-1",
+        "variedad": "cat-var-3",
+        "calibre": "cat-cal-6",
+        "calidad": "cat-qual-2",
+        "lote": "LOTE-2026-ROD01",
+        "fecha_ingreso": "2026-09-08",
+        "fecha_elaboracion": "2026-09-07",
+        "peso": 160,
+        "ubicacion": "cat-ubi-4",
+        "estado": "cat-est-3",
+        "observaciones": "Rodajas de Manzanilla Fina verde segunda calidad.",
+        "created_date": "2026-09-08T11:20:00Z"
+      },
+      {
+        "id": "tb-006",
+        "tambor_id": "T000006",
+        "codigo_descriptivo": "DES-VDE-ALOR-121/140-PRI",
+        "codigo_compacto": "DESVDEALOR121140PRI",
+        "codigo": "DES-VDE-ALOR-121/140-PRI-T000006",
+        "producto": "cat-prod-2",
+        "presentacion": "cat-pres-1",
+        "variedad": "cat-var-1",
+        "calibre": "cat-cal-1",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-DES01",
+        "fecha_ingreso": "2026-09-10",
+        "fecha_elaboracion": "2026-09-10",
+        "peso": 140,
+        "ubicacion": "cat-ubi-5",
+        "estado": "cat-est-7",
+        "observaciones": "Aceituna descarozada Aloreña verde 140 kg por tambor. Lista para despacho.",
+        "created_date": "2026-09-10T14:30:00Z"
+      },
+      {
+        "id": "tb-007",
+        "tambor_id": "T000007",
+        "codigo_descriptivo": "GRI-P/GR-ARA-SIN CAL-PRI",
+        "codigo_compacto": "GRIPGRARASINCALPRI",
+        "codigo": "GRI-P/GR-ARA-SIN CAL-PRI-T000007",
+        "producto": "cat-prod-4",
+        "presentacion": "cat-pres-6",
+        "variedad": "cat-var-2",
+        "calibre": "cat-cal-11",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-GRI01",
+        "fecha_ingreso": "2026-09-12",
+        "fecha_elaboracion": "2026-09-11",
+        "peso": 180,
+        "ubicacion": "cat-ubi-6",
+        "estado": "cat-est-1",
+        "observaciones": "Griega Arauco para griega sin calibre en salmuera con control térmico.",
+        "created_date": "2026-09-12T09:10:00Z"
+      },
+      {
+        "id": "tb-008",
+        "tambor_id": "T000008",
+        "codigo_descriptivo": "RELL-C/P-MF-141/160-PRI",
+        "codigo_compacto": "RELLCPMF141160PRI",
+        "codigo": "RELL-C/P-MF-141/160-PRI-T000008",
+        "producto": "cat-prod-5",
+        "presentacion": "cat-pres-8",
+        "variedad": "cat-var-3",
+        "calibre": "cat-cal-2",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-RELL01",
+        "fecha_ingreso": "2026-09-14",
+        "fecha_elaboracion": "2026-09-13",
+        "peso": 160,
+        "ubicacion": "cat-ubi-1",
+        "estado": "cat-est-4",
+        "observaciones": "Rellenas con pasta Manzanilla Fina 160 kg por tambor.",
+        "created_date": "2026-09-14T08:00:00Z"
+      },
+      {
+        "id": "tb-009",
+        "tambor_id": "T000009",
+        "codigo_descriptivo": "ROTA-VDE-ARA-SIN CAL-SDA",
+        "codigo_compacto": "ROTAVDEARASINCALSDA",
+        "codigo": "ROTA-VDE-ARA-SIN CAL-SDA-T000009",
+        "producto": "cat-prod-6",
+        "presentacion": "cat-pres-1",
+        "variedad": "cat-var-2",
+        "calibre": "cat-cal-11",
+        "calidad": "cat-qual-2",
+        "lote": "LOTE-2026-ROT01",
+        "fecha_ingreso": "2026-09-16",
+        "fecha_elaboracion": "2026-09-15",
+        "peso": 160,
+        "ubicacion": "cat-ubi-2",
+        "estado": "cat-est-6",
+        "observaciones": "Rotas verdes Arauco para pasta/segunda en reposo.",
+        "created_date": "2026-09-16T15:45:00Z"
+      },
+      {
+        "id": "tb-010",
+        "tambor_id": "T000010",
+        "codigo_descriptivo": "ENT-NN-ARA-80/120-PRI",
+        "codigo_compacto": "ENTNNARA80120PRI",
+        "codigo": "ENT-NN-ARA-80/120-PRI-T000010",
+        "producto": "cat-prod-1",
+        "presentacion": "cat-pres-2",
+        "variedad": "cat-var-2",
+        "calibre": "cat-cal-10",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-ARA04",
+        "fecha_ingreso": "2026-09-18",
+        "fecha_elaboracion": "2026-09-17",
+        "peso": 180,
+        "ubicacion": "cat-ubi-7",
+        "estado": "cat-est-7",
+        "observaciones": "Entera negra Arauco 80/120 calidad exportación lista para carga.",
+        "created_date": "2026-09-18T10:00:00Z"
+      },
+      {
+        "id": "tb-011",
+        "tambor_id": "T000011",
+        "codigo_descriptivo": "DES-S/C-EMP-161/180-TRA",
+        "codigo_compacto": "DESSCEMP161180TRA",
+        "codigo": "DES-S/C-EMP-161/180-TRA-T000011",
+        "producto": "cat-prod-2",
+        "presentacion": "cat-pres-7",
+        "variedad": "cat-var-5",
+        "calibre": "cat-cal-3",
+        "calidad": "cat-qual-3",
+        "lote": "LOTE-2026-EMP02",
+        "fecha_ingreso": "2026-09-20",
+        "fecha_elaboracion": "2026-09-19",
+        "peso": 140,
+        "ubicacion": "cat-ubi-5",
+        "estado": "cat-est-5",
+        "observaciones": "Descarozada Empeltre sin carozo tercera calidad 140 kg.",
+        "created_date": "2026-09-20T16:15:00Z"
+      },
+      {
+        "id": "tb-012",
+        "tambor_id": "T000012",
+        "codigo_descriptivo": "ENT-VDE-ALOR-121/140-PRI",
+        "codigo_compacto": "ENTVDEALOR121140PRI",
+        "codigo": "ENT-VDE-ALOR-121/140-PRI-T000012",
+        "producto": "cat-prod-1",
+        "presentacion": "cat-pres-1",
+        "variedad": "cat-var-1",
+        "calibre": "cat-cal-1",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-LUJ03",
+        "fecha_ingreso": "2026-09-22",
+        "fecha_elaboracion": "2026-09-21",
+        "peso": 180,
+        "ubicacion": "cat-ubi-1",
+        "estado": "cat-est-1",
+        "observaciones": "Entera verde Aloreña 121/140 ingresada recientemente.",
+        "created_date": "2026-09-22T08:00:00Z"
+      },
+      {
+        "id": "tb-013",
+        "tambor_id": "T000013",
+        "codigo_descriptivo": "DES-BAS-ARA-141/160-PRI",
+        "codigo_compacto": "DESBASARA141160PRI",
+        "codigo": "DES-BAS-ARA-141/160-PRI-T000013",
+        "producto": "cat-prod-2",
+        "presentacion": "cat-pres-3",
+        "variedad": "cat-var-2",
+        "calibre": "cat-cal-2",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-ARA05",
+        "fecha_ingreso": "2026-09-24",
+        "fecha_elaboracion": "2026-09-23",
+        "peso": 140,
+        "ubicacion": "cat-ubi-4",
+        "estado": "cat-est-3",
+        "observaciones": "Descarozada base Arauco calibre 141/160 en salmuera definitiva.",
+        "created_date": "2026-09-24T09:15:00Z"
+      },
+      {
+        "id": "tb-014",
+        "tambor_id": "T000014",
+        "codigo_descriptivo": "FET-NN-MF-SIN CAL-PRI",
+        "codigo_compacto": "FETNNMFSINCALPRI",
+        "codigo": "FET-NN-MF-SIN CAL-PRI-T000014",
+        "producto": "cat-prod-3",
+        "presentacion": "cat-pres-2",
+        "variedad": "cat-var-3",
+        "calibre": "cat-cal-11",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-MAN03",
+        "fecha_ingreso": "2026-09-25",
+        "fecha_elaboracion": "2026-09-24",
+        "peso": 160,
+        "ubicacion": "cat-ubi-5",
+        "estado": "cat-est-5",
+        "observaciones": "Rodajas negra natural Manzanilla Fina primera calidad.",
+        "created_date": "2026-09-25T11:30:00Z"
+      },
+      {
+        "id": "tb-015",
+        "tambor_id": "T000015",
+        "codigo_descriptivo": "RELL-C/P-ALOR-161/200-PRI",
+        "codigo_compacto": "RELLCPALOR161200PRI",
+        "codigo": "RELL-C/P-ALOR-161/200-PRI-T000015",
+        "producto": "cat-prod-5",
+        "presentacion": "cat-pres-8",
+        "variedad": "cat-var-1",
+        "calibre": "cat-cal-5",
+        "calidad": "cat-qual-1",
+        "lote": "LOTE-2026-RELL01",
+        "fecha_ingreso": "2026-09-26",
+        "fecha_elaboracion": "2026-09-25",
+        "peso": 160,
+        "ubicacion": "cat-ubi-7",
+        "estado": "cat-est-7",
+        "observaciones": "Rellenas con pasta Aloreña lista para despacho en muelle.",
+        "created_date": "2026-09-26T14:20:00Z"
+      }
+    ],
+    "historial": [
+      {
+        "id": "hist-001",
+        "tambor_id": "T000001",
+        "tambor_ref": "tb-001",
+        "tipo": "Creación",
+        "descripcion": "Tambor creado en el sistema con peso neto 180 kg",
+        "actor": "Operario Planta (Demo)",
+        "created_date": "2026-09-01T08:30:00Z"
+      },
+      {
+        "id": "hist-002",
+        "tambor_id": "T000002",
+        "tambor_ref": "tb-002",
+        "tipo": "Creación",
+        "descripcion": "Tambor creado en el sistema con peso neto 180 kg",
+        "actor": "Operario Planta (Demo)",
+        "created_date": "2026-09-01T08:45:00Z"
+      },
+      {
+        "id": "hist-003",
+        "tambor_id": "T000003",
+        "tambor_ref": "tb-003",
+        "tipo": "Creación",
+        "descripcion": "Tambor creado en el sistema con peso neto 180 kg",
+        "actor": "Operario Planta (Demo)",
+        "created_date": "2026-09-03T10:15:00Z"
+      },
+      {
+        "id": "hist-004",
+        "tambor_id": "T000003",
+        "tambor_ref": "tb-003",
+        "tipo": "Movimiento",
+        "descripcion": "Movimiento: Control de calidad y muestreo",
+        "observaciones": "Muestreo completado satisfactoriamente para exportación",
+        "actor": "Jefe de Calidad",
+        "created_date": "2026-09-04T11:00:00Z"
+      },
+      {
+        "id": "hist-005",
+        "tambor_id": "T000006",
+        "tambor_ref": "tb-006",
+        "tipo": "Movimiento",
+        "descripcion": "Movimiento: Movimiento a despacho",
+        "observaciones": "Trasladado a Nave B para preparación de pallet",
+        "actor": "Operario Planta (Demo)",
+        "created_date": "2026-09-22T14:00:00Z"
+      },
+      {
+        "id": "hist-006",
+        "tambor_id": "T000010",
+        "tambor_ref": "tb-010",
+        "tipo": "Movimiento",
+        "descripcion": "Movimiento: Movimiento a despacho",
+        "observaciones": "Asignado a muelle de carga internacional",
+        "actor": "Operario Planta (Demo)",
+        "created_date": "2026-09-23T09:30:00Z"
+      },
+      {
+        "id": "hist-007",
+        "tambor_id": "T000013",
+        "tambor_ref": "tb-013",
+        "tipo": "Creación",
+        "descripcion": "Tambor creado en el sistema con peso neto 140 kg",
+        "actor": "Operario Planta (Demo)",
+        "created_date": "2026-09-24T09:15:00Z"
+      },
+      {
+        "id": "hist-008",
+        "tambor_id": "T000014",
+        "tambor_ref": "tb-014",
+        "tipo": "Creación",
+        "descripcion": "Tambor creado en el sistema con peso neto 160 kg",
+        "actor": "Operario Planta (Demo)",
+        "created_date": "2026-09-25T11:30:00Z"
+      },
+      {
+        "id": "hist-009",
+        "tambor_id": "T000015",
+        "tambor_ref": "tb-015",
+        "tipo": "Creación",
+        "descripcion": "Tambor creado en el sistema con peso neto 160 kg",
+        "actor": "Operario Planta (Demo)",
+        "created_date": "2026-09-26T14:20:00Z"
+      }
+    ],
+    "movimientos": [
+      {
+        "id": "mov-rec-001",
+        "tambor_id": "T000003",
+        "tambor_ref": "tb-003",
+        "tipo": "cat-mov-3",
+        "ubicacion_anterior": "cat-ubi-1",
+        "ubicacion_nueva": "cat-ubi-2",
+        "estado_anterior": "cat-est-1",
+        "estado_nuevo": "cat-est-5",
+        "observaciones": "Aprobado tras análisis fisicoquímico.",
+        "created_date": "2026-09-04T11:00:00Z"
+      },
+      {
+        "id": "mov-rec-002",
+        "tambor_id": "T000006",
+        "tambor_ref": "tb-006",
+        "tipo": "cat-mov-5",
+        "ubicacion_anterior": "cat-ubi-4",
+        "ubicacion_nueva": "cat-ubi-5",
+        "estado_anterior": "cat-est-5",
+        "estado_nuevo": "cat-est-7",
+        "observaciones": "Traslado a nave de guarda final.",
+        "created_date": "2026-09-22T14:00:00Z"
+      }
+    ]
+  }
+}

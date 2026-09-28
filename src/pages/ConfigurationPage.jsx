@@ -45,6 +45,7 @@ import {
   importDatabaseJSON,
   clearAllCompanyData,
   resetDemoDatabase,
+  loadTestDataset,
   getCurrentWorkspaceMode,
   setCurrentWorkspaceMode,
   getNetworkConfig,
@@ -445,6 +446,24 @@ export function ConfigurationPage() {
     }
   };
 
+  // Cargar datos de prueba (15 tambores para evaluación completa)
+  const handleLoadTestData = () => {
+    if (!canManageBackups) {
+      alert('Permiso denegado: Se requiere perfil de Administrador para cargar datos.');
+      return;
+    }
+    if (
+      confirm(
+        '¿Deseas cargar el conjunto de prueba con 15 tambores reales, movimientos y sectores para evaluar el software?'
+      )
+    ) {
+      loadTestDataset();
+      setDb(loadDatabase());
+      setSuccessMessage('¡15 tambores de prueba cargados con éxito! Puedes ver el inventario, sectores y trazabilidad.');
+      setTimeout(() => window.location.reload(), 1200);
+    }
+  };
+
   // Handlers para administración de personal
   const handleCreateUser = (e) => {
     e.preventDefault();
@@ -756,14 +775,38 @@ export function ConfigurationPage() {
             </div>
           </div>
 
-          {/* Exportar / Importar / Vaciar */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+          {/* Exportar / Importar / Cargar Demo / Vaciar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+            {/* Cargar Datos de Prueba */}
+            <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/50 space-y-2 flex flex-col justify-between">
+              <div>
+                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  Datos de Prueba (15)
+                </span>
+                <p className="text-emerald-800 text-[11px] mt-1">
+                  Carga 15 tambores reales con variedades, calibres, pesos y movimientos de ejemplo.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleLoadTestData}
+                className="w-full text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                Cargar 15 Tambores
+              </Button>
+            </div>
+
             {/* Exportar JSON */}
-            <div className="p-4 rounded-xl border border-bone-200 bg-white space-y-2">
-              <span className="font-bold text-obsidian block">Exportar Copia JSON</span>
-              <p className="text-bone-600 text-[11px]">
-                Descarga un archivo completo con tambores, movimientos, historial y catálogos.
-              </p>
+            <div className="p-4 rounded-xl border border-bone-200 bg-white space-y-2 flex flex-col justify-between">
+              <div>
+                <span className="font-bold text-obsidian block">Exportar Copia JSON</span>
+                <p className="text-bone-600 text-[11px] mt-1">
+                  Descarga un archivo completo con tambores, movimientos, historial y catálogos.
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -776,11 +819,13 @@ export function ConfigurationPage() {
             </div>
 
             {/* Importar JSON */}
-            <div className="p-4 rounded-xl border border-bone-200 bg-white space-y-2">
-              <span className="font-bold text-obsidian block">Restaurar Copia JSON</span>
-              <p className="text-bone-600 text-[11px]">
-                Restaura un inventario respaldado previamente desde tu computadora.
-              </p>
+            <div className="p-4 rounded-xl border border-bone-200 bg-white space-y-2 flex flex-col justify-between">
+              <div>
+                <span className="font-bold text-obsidian block">Restaurar Copia JSON</span>
+                <p className="text-bone-600 text-[11px] mt-1">
+                  Restaura un inventario respaldado previamente desde tu computadora.
+                </p>
+              </div>
               <label className="cursor-pointer block">
                 <span className="inline-flex items-center justify-center font-medium transition-all duration-200 active:scale-[0.98] bg-white text-obsidian hover:bg-bone-100 border border-bone-300 h-8 px-3 text-xs rounded-md w-full">
                   <Upload className="w-3.5 h-3.5 mr-1.5" />
@@ -796,11 +841,13 @@ export function ConfigurationPage() {
             </div>
 
             {/* Vaciar Datos de Planta */}
-            <div className="p-4 rounded-xl border border-bone-200 bg-white space-y-2">
-              <span className="font-bold text-obsidian block">Vaciar Datos de Planta</span>
-              <p className="text-bone-600 text-[11px]">
-                Deja el inventario en 0 tambores y limpia movimientos para iniciar producción limpia, conservando catálogos.
-              </p>
+            <div className="p-4 rounded-xl border border-bone-200 bg-white space-y-2 flex flex-col justify-between">
+              <div>
+                <span className="font-bold text-obsidian block">Vaciar Datos de Planta</span>
+                <p className="text-bone-600 text-[11px] mt-1">
+                  Deja el inventario en 0 tambores para iniciar producción limpia, conservando catálogos.
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
