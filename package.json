@@ -64,6 +64,10 @@
       "src/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "server/**/*",
+      "src/**/*"
+    ],
 
     "win": {
       "target": [

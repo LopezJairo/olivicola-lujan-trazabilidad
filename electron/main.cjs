@@ -7,6 +7,8 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('node:path');
 const os = require('node:os');
+const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
 const { spawn } = require('node:child_process');
 
 let mainWindow = null;
@@ -35,7 +37,21 @@ async function startEmbeddedServer(port = 4000) {
   }
 
   try {
-    const serverModule = await import('../server/index.js');
+    // 1. Determinar la ruta absoluta al módulo de servidor
+    let serverFilePath = path.resolve(__dirname, '..', 'server', 'index.js');
+    
+    // Si electron-builder extrajo archivos a app.asar.unpacked, usar la copia física
+    if (process.resourcesPath) {
+      const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'index.js');
+      if (fs.existsSync(unpackedPath)) {
+        serverFilePath = unpackedPath;
+      }
+    }
+
+    const serverUrl = pathToFileURL(serverFilePath).href;
+    console.log(`[Host Server] Cargando módulo de servidor desde: ${serverUrl}`);
+    const serverModule = await import(serverUrl);
+    
     const dbPath = path.join(app.getPath('userData'), 'olivicola-lujan.db.json');
     httpServerInstance = serverModule.createServer({ dbPath });
 
@@ -44,9 +60,20 @@ async function startEmbeddedServer(port = 4000) {
     isServerRunning = true;
     console.log(`[Host Server] Servidor LAN escuchando en http://0.0.0.0:${serverPort}`);
 
+    addLogEntry({
+      type: 'success',
+      source: 'Host Server',
+      message: `Servidor LAN iniciado correctamente en puerto ${serverPort} (Modo Host Activo)`,
+    });
+
     return { isRunning: true, port: serverPort, ips: getLocalIps() };
   } catch (err) {
     console.error('[Host Server Exception]', err);
+    addLogEntry({
+      type: 'error',
+      source: 'Host Server',
+      message: `Error al iniciar servidor: ${err.message}`,
+    });
     if (httpServerInstance) {
       try {
         await httpServerInstance.close();
@@ -444,7 +471,7 @@ function setupMenu() {
               type: 'info',
               title: 'Olivícola Luján · Trazabilidad',
               message: 'Sistema Integral de Trazabilidad de Tambores',
-              detail: 'Versión 1.0.0 (Windows / macOS / LAN Host-Client)\nCompatible con HPRT N130BT y Zebra GC420t.',
+              detail: `Versión ${app.getVersion()} (Windows / macOS / LAN Host-Client)\nCompatible con HPRT N130BT y Zebra GC420t.`,
             });
           },
         },

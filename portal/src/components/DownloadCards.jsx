@@ -65,7 +65,7 @@ export default function DownloadCards({ release }) {
               {/* Primary: Portable .exe */}
               <a
                 href={windows.portable_url || '#'}
-                download={windows.portable_name || 'Olivicola Lujan Trazabilidad 1.0.0.exe'}
+                download={windows.portable_name || 'Olivicola Lujan Trazabilidad 1.0.1.exe'}
                 className="group/btn relative w-full flex items-center justify-between px-6 py-4 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm transition-all duration-300 active:scale-[0.98] shadow-lg shadow-emerald-500/20"
               >
                 <div className="flex flex-col text-left">
@@ -81,7 +81,7 @@ export default function DownloadCards({ release }) {
               <div className="flex items-center justify-between pt-1 text-xs">
                 <a
                   href={windows.setup_url || '#'}
-                  download={windows.setup_name || 'Olivicola Lujan Trazabilidad Setup 1.0.0.exe'}
+                  download={windows.setup_name || 'Olivicola Lujan Trazabilidad Setup 1.0.1.exe'}
                   className="text-zinc-400 hover:text-emerald-400 flex items-center gap-1.5 transition-colors py-1 px-2 rounded-lg hover:bg-white/[0.03]"
                 >
                   <HardDrive className="w-3.5 h-3.5 text-zinc-500" />

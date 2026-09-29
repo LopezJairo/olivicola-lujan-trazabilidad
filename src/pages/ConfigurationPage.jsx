@@ -234,14 +234,20 @@ export function ConfigurationPage() {
   const handleStartElectronServer = async () => {
     if (window.electronAPI?.startServer) {
       const res = await window.electronAPI.startServer(4000);
-      setElectronState(prev => ({
-        ...prev,
-        serverRunning: res?.isRunning ?? true,
-        serverPort: res?.port || 4000,
-        ips: res?.ips || prev.ips,
-      }));
-      setSuccessMessage('Servidor embebido iniciado correctamente en el puerto 4000.');
-      setTimeout(() => setSuccessMessage(''), 4000);
+      if (res?.isRunning) {
+        setElectronState(prev => ({
+          ...prev,
+          serverRunning: true,
+          serverPort: res?.port || 4000,
+          ips: res?.ips || prev.ips,
+        }));
+        setSuccessMessage('Servidor embebido iniciado correctamente en el puerto 4000.');
+        setTimeout(() => setSuccessMessage(''), 4000);
+      } else {
+        const errorMsg = res?.error || 'No se pudo iniciar el servidor.';
+        logger.error('Servidor Host', `Error al arrancar servidor: ${errorMsg}`);
+        alert(`Error al iniciar el servidor host: ${errorMsg}`);
+      }
     }
   };
 

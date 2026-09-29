@@ -24,6 +24,8 @@ if (!fs.existsSync(distElectron)) {
   fs.mkdirSync(distElectron, { recursive: true });
 }
 
+const portalPublic = path.join(rootDir, 'portal', 'public');
+
 const files = fs.readdirSync(tmpDist);
 for (const file of files) {
   if (file.endsWith('.exe') || file.endsWith('.blockmap') || file.endsWith('.zip')) {
@@ -31,6 +33,12 @@ for (const file of files) {
     const dest = path.join(distElectron, file);
     fs.copyFileSync(src, dest);
     console.log(`📦 Copiado: ${file} -> dist-electron/`);
+
+    if (file.endsWith('.exe') && fs.existsSync(portalPublic)) {
+      const portalDest = path.join(portalPublic, file);
+      fs.copyFileSync(src, portalDest);
+      console.log(`🌐 Sincronizado: ${file} -> portal/public/`);
+    }
   }
 }
 

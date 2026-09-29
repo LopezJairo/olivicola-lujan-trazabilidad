@@ -13,7 +13,13 @@ export default function App() {
     try {
       const cached = localStorage.getItem('olivicola_portal_versions');
       if (cached) {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        const winUrl = parsed?.releases?.[0]?.downloads?.windows?.portable_url;
+        if (parsed?.latest_version === DEFAULT_VERSIONS_DATA.latest_version && winUrl && winUrl.includes('1.0.1')) {
+          return parsed;
+        }
+        localStorage.removeItem('olivicola_portal_versions');
+        localStorage.removeItem('olivicola_portal_versions_override');
       }
     } catch (e) {
       console.warn('Error reading from localStorage:', e);
