@@ -15,7 +15,7 @@ export default function App() {
       if (cached) {
         const parsed = JSON.parse(cached);
         const winUrl = parsed?.releases?.[0]?.downloads?.windows?.portable_url;
-        if (parsed?.latest_version === DEFAULT_VERSIONS_DATA.latest_version && winUrl && winUrl.includes('1.0.1')) {
+        if (parsed?.latest_version === DEFAULT_VERSIONS_DATA.latest_version && winUrl && winUrl.includes(DEFAULT_VERSIONS_DATA.latest_version)) {
           return parsed;
         }
         localStorage.removeItem('olivicola_portal_versions');

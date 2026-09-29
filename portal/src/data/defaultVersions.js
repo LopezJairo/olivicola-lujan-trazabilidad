@@ -1,14 +1,65 @@
 export const DEFAULT_VERSIONS_DATA = {
   app_name: "Olivícola Luján - Sistema de Trazabilidad Industrial",
-  latest_version: "1.0.1",
-  updated_at: "2026-09-28",
+  latest_version: "1.0.2",
+  updated_at: "2026-09-29",
   contact_support: "soporte@olivicolalujan.com",
   releases: [
     {
-      "version": "1.0.1",
-      "date": "28 de Septiembre, 2026",
+      "version": "1.0.2",
+      "date": "29 de Septiembre, 2026",
       "tag": "Estable · Recomendada",
       "status": "latest",
+      "summary": "Versión de alta estabilidad con sincronización LAN en tiempo real, resolución de módulos de servidor en macOS, soporte Gatekeeper y consola de diagnóstico integrada.",
+      "downloads": {
+        "windows": {
+          "available": true,
+          "name": "Windows x64",
+          "arch": "64-bit (x86_64)",
+          "os_req": "Windows 10 / 11",
+          "size": "81 MB",
+          "portable_name": "Olivicola Lujan Trazabilidad 1.0.2.exe",
+          "portable_url": "./Olivicola%20Lujan%20Trazabilidad%201.0.2.exe",
+          "setup_name": "Olivicola Lujan Trazabilidad Setup 1.0.2.exe",
+          "setup_url": "./Olivicola%20Lujan%20Trazabilidad%20Setup%201.0.2.exe",
+          "role_badge": "Recomendado para Servidor Host o Cliente"
+        },
+        "mac": {
+          "available": true,
+          "name": "macOS",
+          "arch": "Apple Silicon (ARM64)",
+          "os_req": "macOS 12.0+",
+          "size": "99 MB",
+          "dmg_name": "Olivicola Lujan Trazabilidad-1.0.2-arm64.dmg",
+          "dmg_url": "./Olivicola%20Lujan%20Trazabilidad-1.0.2-arm64.dmg",
+          "zip_name": "Olivicola Lujan Trazabilidad-1.0.2-arm64-mac.zip",
+          "zip_url": "./Olivicola%20Lujan%20Trazabilidad-1.0.2-arm64-mac.zip",
+          "role_badge": "Terminal Cliente LAN o Administración"
+        }
+      },
+      "changelog": [
+        {
+          "category": "Sincronización LAN",
+          "text": "Motor reactivo de sincronización automática en tiempo real (heartbeat cada 4s) y botón manual en Inventario para reflejo instantáneo de tambores entre Host y Clientes."
+        },
+        {
+          "category": "Servidor Embebido",
+          "text": "Desempaquetado físico de módulos de servidor y catálogos en runtime, garantizando arranque instantáneo sin errores de importación en macOS y Windows."
+        },
+        {
+          "category": "Seguridad macOS",
+          "text": "Limpieza de cuarentena y guía paso a paso integrada en el portal de descargas para ejecución directa sin bloqueos de Gatekeeper."
+        },
+        {
+          "category": "Logs & Diagnóstico",
+          "text": "Acceso directo en barra de login y panel de red con latencia en milisegundos y registro de eventos en vivo."
+        }
+      ]
+    },
+    {
+      "version": "1.0.1",
+      "date": "28 de Septiembre, 2026",
+      "tag": "Versión Previa",
+      "status": "previous",
       "summary": "Actualización oficial con acceso directo a la Consola de Logs y Diagnóstico en tiempo real, medición de latencia en milisegundos, cargador de 15 tambores de prueba con 1 solo clic y motor de base de datos resiliente compatible con Windows.",
       "downloads": {
         "windows": {
