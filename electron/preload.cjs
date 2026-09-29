@@ -21,4 +21,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('trigger-import-backup', callback);
     return () => ipcRenderer.removeListener('trigger-import-backup', callback);
   },
+  openLogsWindow: () => ipcRenderer.invoke('open-logs-window'),
+  onNavigateToLogs: (callback) => {
+    ipcRenderer.on('navigate-to-logs', callback);
+    return () => ipcRenderer.removeListener('navigate-to-logs', callback);
+  },
+  logToMain: (entry) => ipcRenderer.invoke('log-to-main', entry),
 });
+

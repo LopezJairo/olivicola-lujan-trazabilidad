@@ -55,9 +55,20 @@ export const logger = {
       console.log(prefix, entry.message, details || '');
     }
 
+    // Sincronizar con el proceso principal de Electron
+    if (typeof window !== 'undefined' && window.electronAPI?.logToMain) {
+      window.electronAPI.logToMain({
+        type: entry.type,
+        source: entry.source,
+        message: entry.message + (details ? ` | ${entry.details}` : ''),
+        time: entry.time,
+      }).catch(() => {});
+    }
+
     emitChange();
     return entry;
   },
+
 
   info(source, message, details) {
     return this.add('info', source, message, details);

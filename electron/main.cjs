@@ -72,6 +72,150 @@ function stopEmbeddedServer() {
   }
 }
 
+let logsWindow = null;
+const mainLogsBuffer = [];
+
+function addLogEntry(entry) {
+  const item = {
+    id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    time: entry.time || new Date().toLocaleTimeString(),
+    type: entry.type || 'info',
+    source: entry.source || 'Sistema',
+    message: String(entry.message || ''),
+  };
+  mainLogsBuffer.push(item);
+  if (mainLogsBuffer.length > 300) {
+    mainLogsBuffer.shift();
+  }
+  if (logsWindow && !logsWindow.isDestroyed()) {
+    logsWindow.webContents.send('append-log', item);
+  }
+}
+
+function openLogsWindow() {
+  if (logsWindow && !logsWindow.isDestroyed()) {
+    logsWindow.focus();
+    return;
+  }
+
+  logsWindow = new BrowserWindow({
+    width: 720,
+    height: 520,
+    minWidth: 500,
+    minHeight: 350,
+    title: 'Consola de Logs y Diagnóstico · Olivícola Luján',
+    backgroundColor: '#121417',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
+    },
+  });
+
+  const htmlContent = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Logs y Diagnóstico · Olivícola Luján</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; background: #121417; color: #E5E7EB; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    header { background: #1A1D24; padding: 10px 14px; border-bottom: 1px solid #2D333F; display: flex; justify-content: space-between; align-items: center; }
+    h1 { font-size: 13px; font-weight: 700; color: #10B981; letter-spacing: 0.5px; }
+    .actions { display: flex; gap: 8px; }
+    button { background: #2A303C; border: 1px solid #3F4756; color: #F3F4F6; padding: 5px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; }
+    button:hover { background: #374151; }
+    button.primary { background: #059669; border-color: #10B981; }
+    button.primary:hover { background: #047857; }
+    #logs-container { flex: 1; overflow-y: auto; padding: 12px; font-size: 11px; line-height: 1.5; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .log-entry { margin-bottom: 6px; word-break: break-all; padding: 2px 4px; border-radius: 4px; display: flex; gap: 8px; }
+    .log-entry:hover { background: rgba(255,255,255,0.04); }
+    .time { color: #6B7280; flex-shrink: 0; }
+    .badge { font-weight: 700; text-transform: uppercase; font-size: 9px; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+    .badge-info { background: #1E3A8A; color: #93C5FD; }
+    .badge-success { background: #064E3B; color: #6EE7B7; }
+    .badge-warn { background: #78350F; color: #FCD34D; }
+    .badge-error { background: #7F1D1D; color: #FCA5A5; }
+    .source { color: #9CA3AF; font-weight: 600; flex-shrink: 0; }
+    .msg { color: #F3F4F6; flex: 1; }
+    footer { background: #1A1D24; padding: 6px 14px; border-top: 1px solid #2D333F; font-size: 10px; color: #6B7280; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>OLIVÍCOLA LUJÁN · CONSOLA DE DIAGNÓSTICO EN VIVO</h1>
+    <div class="actions">
+      <button class="primary" id="btn-copy">Copiar Registros</button>
+      <button id="btn-clear">Limpiar</button>
+      <button id="btn-reload-main">Recargar App Principal</button>
+    </div>
+  </header>
+  <div id="logs-container"></div>
+  <footer>
+    <span id="log-count">0 eventos</span>
+    <span>Atajo rápido: Cmd+Shift+L</span>
+  </footer>
+  <script>
+    const container = document.getElementById('logs-container');
+    const countEl = document.getElementById('log-count');
+    const logs = [];
+
+    function renderLog(l) {
+      logs.push(l);
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML = '<span class="time">[' + l.time + ']</span>' +
+        '<span class="badge badge-' + (l.type || 'info') + '">' + (l.type || 'info') + '</span>' +
+        '<span class="source">[' + (l.source || 'Sistema') + ']</span>' +
+        '<span class="msg">' + escapeHtml(l.message) + '</span>';
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+      countEl.innerText = logs.length + ' eventos registrados';
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    document.getElementById('btn-copy').onclick = () => {
+      const text = logs.map(l => '[' + l.time + '] [' + (l.type || '').toUpperCase() + '] [' + l.source + ']: ' + l.message).join('\\n');
+      navigator.clipboard.writeText(text);
+      alert('Logs copiados al portapapeles');
+    };
+
+    document.getElementById('btn-clear').onclick = () => {
+      container.innerHTML = '';
+      logs.length = 0;
+      countEl.innerText = '0 eventos registrados';
+    };
+
+    document.getElementById('btn-reload-main').onclick = () => {
+      window.location.reload();
+    };
+
+    // Recibir logs desde el proceso principal
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'new-log') {
+        renderLog(event.data.payload);
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+  logsWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+  logsWindow.webContents.on('did-finish-load', () => {
+    mainLogsBuffer.forEach((entry) => {
+      logsWindow.webContents.executeJavaScript(`renderLog(${JSON.stringify(entry)})`).catch(() => {});
+    });
+  });
+
+  logsWindow.on('closed', () => {
+    logsWindow = null;
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -85,6 +229,8 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,
+      webSecurity: false, // CRÍTICO: Permite cargar módulos ES locales y assets con file:// sin bloqueo de CORS
+      allowRunningInsecureContent: true,
     },
   });
 
@@ -96,12 +242,31 @@ function createWindow() {
     mainWindow.loadFile(distIndexPath);
   }
 
-  // Depuración de errores en carga de UI
-  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
-    console.error(`[Electron] Error al cargar interfaz (${errorCode}): ${errorDescription}`);
+  // Depuración activa de consola del renderer hacia terminal y buffer de logs
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    const type = level === 3 ? 'error' : level === 2 ? 'warn' : 'info';
+    const filename = sourceId ? path.basename(sourceId) : 'app';
+    console.log(`[Renderer ${type.toUpperCase()}] ${message} (${filename}:${line})`);
+    addLogEntry({
+      type,
+      source: 'Renderer',
+      message: `${message} [${filename}:${line}]`,
+      time: new Date().toLocaleTimeString(),
+    });
   });
 
-  // Evitar navegación externa
+  // Captura de errores al cargar la interfaz de usuario
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Electron] Error al cargar interfaz (${errorCode}): ${errorDescription} en ${validatedURL}`);
+    addLogEntry({
+      type: 'error',
+      source: 'Electron',
+      message: `Error al cargar interfaz (${errorCode}): ${errorDescription} (${validatedURL})`,
+      time: new Date().toLocaleTimeString(),
+    });
+  });
+
+  // Evitar navegación externa no deseada
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
@@ -113,6 +278,7 @@ function createWindow() {
 
   setupMenu();
 }
+
 
 function setupMenu() {
   const template = [
@@ -200,7 +366,57 @@ function setupMenu() {
       ],
     },
     {
+      label: 'Logs y Diagnóstico',
+      submenu: [
+        {
+          label: 'Ver Consola de Logs en Pantalla',
+          accelerator: 'CmdOrCtrl+L',
+          click: () => {
+            if (!mainWindow) return;
+            mainWindow.webContents.send('navigate-to-logs');
+          },
+        },
+        {
+          label: 'Abrir Ventana Flotante de Logs',
+          accelerator: 'CmdOrCtrl+Shift+L',
+          click: () => {
+            openLogsWindow();
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Herramientas de Desarrollador (DevTools)',
+          accelerator: 'Alt+CmdOrCtrl+I',
+          click: () => {
+            mainWindow?.webContents.toggleDevTools();
+          },
+        },
+        {
+          label: 'Copiar Diagnóstico al Portapapeles',
+          click: () => {
+            const ips = getLocalIps();
+            const text = [
+              `Plataforma: ${process.platform} (${process.arch})`,
+              `Versión App: ${app.getVersion()}`,
+              `Servidor Embebido: ${isServerRunning ? `Activo (Puerto ${serverPort})` : 'Detenido'}`,
+              `IPs Locales: ${ips.map(i => `${i.iface}: ${i.ip}`).join(', ') || 'Ninguna'}`,
+              `Últimos Registros (${mainLogsBuffer.length}):`,
+              ...mainLogsBuffer.slice(-25).map(l => `[${l.time}] [${l.type.toUpperCase()}] [${l.source}]: ${l.message}`),
+            ].join('\n');
+            const { clipboard } = require('electron');
+            clipboard.writeText(text);
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'Diagnóstico de Sistema Copiado',
+              message: 'El diagnóstico completo ha sido copiado al portapapeles.',
+            });
+          },
+        },
+      ],
+    },
+    {
       label: 'Ver',
+
       submenu: [
         { label: 'Recargar', role: 'reload' },
         { label: 'Forzar recarga', role: 'forceReload' },
@@ -274,17 +490,18 @@ ipcMain.handle('stop-server', () => {
   return { isRunning: false, port: serverPort, ips: getLocalIps() };
 });
 
-ipcMain.handle('print-zebra-zpl', async (_event, zplContent) => {
-  try {
-    const bytes = typeof zplContent === 'string' ? Buffer.byteLength(zplContent, 'utf8') : 0;
-    console.log('[Zebra ZPL Print Request]', bytes, 'bytes');
-    return { success: true, bytes, timestamp: new Date().toISOString() };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
+ipcMain.handle('open-logs-window', () => {
+  openLogsWindow();
+  return { success: true };
+});
+
+ipcMain.handle('log-to-main', (_event, entry) => {
+  addLogEntry(entry);
+  return { success: true };
 });
 
 app.whenReady().then(() => {
+
   createWindow();
 
   app.on('activate', () => {

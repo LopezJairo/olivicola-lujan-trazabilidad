@@ -183,8 +183,16 @@ export function ConfigurationPage() {
     const unsubscribe = logger.subscribe((newLogs) => {
       setSystemLogs(newLogs);
     });
+
+    if (window.location.hash === '#consola-logs' || window.location.search.includes('tab=logs') || window.location.hash.includes('logs')) {
+      setTimeout(() => {
+        document.getElementById('consola-logs')?.scrollIntoView({ behavior: 'smooth' });
+      }, 150);
+    }
+
     return unsubscribe;
   }, []);
+
 
   const handleRunDiagnostics = async () => {
     setIsRunningDiag(true);

@@ -23,6 +23,7 @@ import {
   WifiOff,
   ChevronDown,
   LogOut,
+  Terminal,
 } from 'lucide-react';
 import { useAuth, ROLES, PERMISOS } from './Auth.jsx';
 import {
@@ -41,6 +42,25 @@ export function Layout({ children }) {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [networkConfig, setNetworkConfig] = useState(getNetworkConfig());
 
+  const handleGoToLogs = () => {
+    navigate('/configuracion');
+    setTimeout(() => {
+      const el = document.getElementById('consola-logs');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 150);
+  };
+
+  // Escuchar evento del menú nativo de Electron (Cmd+L)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.electronAPI?.onNavigateToLogs) {
+      return window.electronAPI.onNavigateToLogs(() => {
+        handleGoToLogs();
+      });
+    }
+  }, []);
+
   // Atajos de teclado del 1 al 7 para acceso ultrarrápido
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -53,11 +73,16 @@ export function Layout({ children }) {
       else if (e.key === '5') navigate('/calidad');
       else if (e.key === '6') navigate('/historial');
       else if (e.key === '7') navigate('/configuracion');
+      else if (e.key.toLowerCase() === 'l' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleGoToLogs();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
+
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -119,8 +144,8 @@ export function Layout({ children }) {
               </span>
             </div>
 
-            {/* Indicador de Red (Host / Cliente / Offline) */}
-            <div className="flex items-center justify-between text-[10px] font-mono bg-bone-100/60 px-2 py-1 rounded-lg text-bone-600">
+            {/* Indicador de Red (Host / Cliente / Offline) y Acceso Directo a Logs */}
+            <div className="flex items-center justify-between text-[10px] font-mono bg-bone-100/70 p-1.5 rounded-lg text-bone-600 gap-1.5 border border-bone-200">
               <div className="flex items-center gap-1.5 min-w-0">
                 {networkConfig.mode === NETWORK_MODES.HOST ? (
                   <>
@@ -139,10 +164,23 @@ export function Layout({ children }) {
                   </>
                 )}
               </div>
-              <Link to="/configuracion" className="text-olive-800 hover:underline shrink-0">
-                Red
-              </Link>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Link to="/configuracion" className="text-olive-800 hover:underline">
+                  Red
+                </Link>
+                <span className="text-bone-300">|</span>
+                <button
+                  type="button"
+                  onClick={handleGoToLogs}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-100 hover:bg-emerald-200 px-1.5 py-0.5 rounded transition-colors active:scale-95 shadow-2xs cursor-pointer"
+                  title="Acceder a la Consola de Logs y Diagnóstico en Tiempo Real"
+                >
+                  <Terminal className="w-2.5 h-2.5 text-emerald-700" />
+                  <span>Logs</span>
+                </button>
+              </div>
             </div>
+
           </div>
         </div>
 
@@ -255,7 +293,16 @@ export function Layout({ children }) {
           </div>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleGoToLogs}
+            className="p-2 rounded-lg bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-xs"
+            title="Consola de Logs y Diagnóstico"
+          >
+            <Terminal className="w-4 h-4" />
+          </button>
+
           <Link
             to="/escanear"
             className="p-2 rounded-lg bg-olive-100 text-olive-900 flex items-center justify-center"
@@ -263,6 +310,7 @@ export function Layout({ children }) {
           >
             <QrCode className="w-5 h-5" />
           </Link>
+
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
