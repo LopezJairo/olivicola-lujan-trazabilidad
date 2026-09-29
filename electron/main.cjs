@@ -39,22 +39,19 @@ async function startEmbeddedServer(port = 4000) {
     const dbPath = path.join(app.getPath('userData'), 'olivicola-lujan.db.json');
     httpServerInstance = serverModule.createServer({ dbPath });
 
-    await new Promise((resolve, reject) => {
-      httpServerInstance.listen(port, '0.0.0.0', () => {
-        console.log(`[Host Server] Servidor LAN escuchando en http://0.0.0.0:${port}`);
-        isServerRunning = true;
-        serverPort = port;
-        resolve();
-      });
-      httpServerInstance.once('error', (err) => {
-        console.error('[Host Server Listen Error]', err);
-        reject(err);
-      });
-    });
+    const result = await httpServerInstance.listen(port, '0.0.0.0');
+    serverPort = result?.port || port;
+    isServerRunning = true;
+    console.log(`[Host Server] Servidor LAN escuchando en http://0.0.0.0:${serverPort}`);
 
     return { isRunning: true, port: serverPort, ips: getLocalIps() };
   } catch (err) {
     console.error('[Host Server Exception]', err);
+    if (httpServerInstance) {
+      try {
+        await httpServerInstance.close();
+      } catch {}
+    }
     httpServerInstance = null;
     isServerRunning = false;
     return { isRunning: false, error: err.message, ips: getLocalIps() };
@@ -62,15 +59,16 @@ async function startEmbeddedServer(port = 4000) {
 }
 
 // Detener servidor local
-function stopEmbeddedServer() {
+async function stopEmbeddedServer() {
   if (httpServerInstance) {
     try {
-      httpServerInstance.close();
+      await httpServerInstance.close();
     } catch {}
     httpServerInstance = null;
     isServerRunning = false;
   }
 }
+
 
 let logsWindow = null;
 const mainLogsBuffer = [];
@@ -354,8 +352,8 @@ function setupMenu() {
         },
         {
           label: 'Detener Servidor Host LAN',
-          click: () => {
-            stopEmbeddedServer();
+          click: async () => {
+            await stopEmbeddedServer();
             dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: 'Servidor Host LAN',
@@ -365,6 +363,7 @@ function setupMenu() {
         },
       ],
     },
+
     {
       label: 'Logs y Diagnóstico',
       submenu: [
@@ -485,10 +484,11 @@ ipcMain.handle('start-server', async (_event, port = 4000) => {
   return await startEmbeddedServer(port);
 });
 
-ipcMain.handle('stop-server', () => {
-  stopEmbeddedServer();
+ipcMain.handle('stop-server', async () => {
+  await stopEmbeddedServer();
   return { isRunning: false, port: serverPort, ips: getLocalIps() };
 });
+
 
 ipcMain.handle('open-logs-window', () => {
   openLogsWindow();
