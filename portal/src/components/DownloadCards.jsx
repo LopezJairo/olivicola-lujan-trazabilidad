@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Download, Laptop, Monitor, Check, Copy, ArrowUpRight, HardDrive, Shield, FileText, Sparkles } from 'lucide-react';
+import { Download, Laptop, Monitor, Check, Copy, ArrowUpRight, HardDrive, Shield, FileText, Sparkles, HelpCircle, Terminal } from 'lucide-react';
 
 export default function DownloadCards({ release }) {
   const [copiedLink, setCopiedLink] = useState(null);
+  const [showMacHelp, setShowMacHelp] = useState(false);
+  const [copiedCmd, setCopiedCmd] = useState(false);
 
   const windows = release?.downloads?.windows || {};
   const mac = release?.downloads?.mac || {};
@@ -12,6 +14,12 @@ export default function DownloadCards({ release }) {
     navigator.clipboard.writeText(url);
     setCopiedLink(key);
     setTimeout(() => setCopiedLink(null), 2500);
+  };
+
+  const handleCopyCommand = (cmd) => {
+    navigator.clipboard.writeText(cmd);
+    setCopiedCmd(true);
+    setTimeout(() => setCopiedCmd(false), 2500);
   };
 
   return (
@@ -200,6 +208,66 @@ export default function DownloadCards({ release }) {
                     </>
                   )}
                 </button>
+              </div>
+
+              {/* Mac Gatekeeper / Seguridad Help */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowMacHelp(!showMacHelp)}
+                  className="w-full text-left flex items-center justify-between text-[11px] text-zinc-400 hover:text-emerald-400 transition-colors py-1.5 px-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]"
+                >
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    ¿Aviso de "No se puede abrir" o "Desarrollador no verificado"?
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-mono">
+                    {showMacHelp ? 'Ocultar' : 'Ver solución'}
+                  </span>
+                </button>
+
+                {showMacHelp && (
+                  <div className="mt-2.5 p-3 rounded-xl bg-black/40 border border-white/[0.08] text-xs text-zinc-300 space-y-2.5 animate-fadeIn">
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Al no provenir del App Store oficial, macOS Gatekeeper bloquea la app por seguridad. Puedes habilitarla con cualquiera de estas dos opciones:
+                    </p>
+
+                    {/* Opción 1: Terminal */}
+                    <div className="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+                        <span className="flex items-center gap-1">
+                          <Terminal className="w-3 h-3 text-emerald-400" />
+                          Opción 1: Comando en Terminal (1 Clic)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCommand('xattr -cr "/Applications/Olivicola Lujan Trazabilidad.app"')}
+                          className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 normal-case font-sans"
+                        >
+                          {copiedCmd ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              <span>Copiado</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copiar comando</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <code className="block p-1.5 rounded bg-black/70 font-mono text-[11px] text-emerald-300 select-all overflow-x-auto">
+                        xattr -cr "/Applications/Olivicola Lujan Trazabilidad.app"
+                      </code>
+                    </div>
+
+                    {/* Opción 2: Ajustes */}
+                    <div className="text-[11px] text-zinc-400 leading-relaxed pl-1 border-l-2 border-emerald-500/30">
+                      <span className="font-semibold text-zinc-300">Opción 2 (Sin Terminal):</span> Ve a <strong>Ajustes del Sistema</strong> → <strong>Privacidad y seguridad</strong> → busca el aviso abajo en Seguridad y haz clic en <strong>"Abrir de todos modos"</strong>.
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
