@@ -61,8 +61,10 @@
       "dist/**/*",
       "electron/**/*",
       "server/**/*",
+      "src/**/*",
       "package.json"
     ],
+
     "win": {
       "target": [
         "nsis",
