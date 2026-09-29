@@ -367,7 +367,7 @@ export function LoginPage() {
         {/* Barra de Estado y Acceso Directo a Logs */}
         <div className="flex items-center justify-between px-3.5 py-2.5 bg-white/90 rounded-xl border border-bone-200 text-[11px] font-mono shadow-soft-xs">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">v1.0.2</span>
+            <span className="font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">v1.0.3</span>
             <span className="text-bone-400">·</span>
             <span className="text-bone-600 flex items-center gap-1">
               {netConfig.mode === NETWORK_MODES.HOST ? (
