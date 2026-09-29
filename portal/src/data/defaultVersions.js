@@ -16,11 +16,11 @@ export const DEFAULT_VERSIONS_DATA = {
           "name": "Windows x64",
           "arch": "64-bit (x86_64)",
           "os_req": "Windows 10 / 11",
-          "size": "85 MB",
+          "size": "81 MB",
           "portable_name": "Olivicola Lujan Trazabilidad 1.0.1.exe",
-          "portable_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.1/Olivicola.Lujan.Trazabilidad.1.0.1.exe",
+          "portable_url": "./Olivicola%20Lujan%20Trazabilidad%201.0.1.exe",
           "setup_name": "Olivicola Lujan Trazabilidad Setup 1.0.1.exe",
-          "setup_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.1/Olivicola.Lujan.Trazabilidad.Setup.1.0.1.exe",
+          "setup_url": "./Olivicola%20Lujan%20Trazabilidad%20Setup%201.0.1.exe",
           "role_badge": "Recomendado para Servidor Host o Cliente"
         },
         "mac": {
@@ -28,13 +28,14 @@ export const DEFAULT_VERSIONS_DATA = {
           "name": "macOS",
           "arch": "Apple Silicon (ARM64)",
           "os_req": "macOS 12.0+",
-          "size": "98 MB",
+          "size": "99 MB",
           "dmg_name": "Olivicola Lujan Trazabilidad-1.0.1-arm64.dmg",
-          "dmg_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.1/Olivicola.Lujan.Trazabilidad-1.0.1-arm64.dmg",
+          "dmg_url": "./Olivicola%20Lujan%20Trazabilidad-1.0.1-arm64.dmg",
           "zip_name": "Olivicola Lujan Trazabilidad-1.0.1-arm64-mac.zip",
-          "zip_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.1/Olivicola.Lujan.Trazabilidad-1.0.1-arm64-mac.zip",
+          "zip_url": "./Olivicola%20Lujan%20Trazabilidad-1.0.1-arm64-mac.zip",
           "role_badge": "Terminal Cliente LAN o Administración"
         }
+
       },
       "changelog": [
         {
