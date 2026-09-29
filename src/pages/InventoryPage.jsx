@@ -12,8 +12,10 @@ import {
   SlidersHorizontal,
   Building2,
   FileCode,
+  RefreshCw,
 } from 'lucide-react';
-import { loadDatabase } from '../api/repository.js';
+import { useDatabase } from '../hooks/useDatabase.js';
+import { syncWithHostServer, getNetworkConfig, NETWORK_MODES } from '../api/repository.js';
 import { searchDrums, calculateInventoryTotals, resolveCatalogName } from '../lib/domain.js';
 import { formatKg, formatDate } from '../lib/utils.js';
 import { generateDrumZPL, generateBatchZPL, downloadZplFile } from '../lib/zpl.js';
@@ -25,8 +27,16 @@ import { PhysicalLabel } from '../components/Barcode.jsx';
 
 export function InventoryPage() {
   const navigate = useNavigate();
-  const db = loadDatabase();
+  const db = useDatabase();
   const { tambores, catalogos } = db;
+  const [isSyncing, setIsSyncing] = useState(false);
+  const netConfig = getNetworkConfig();
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    await syncWithHostServer();
+    setIsSyncing(false);
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
@@ -194,6 +204,20 @@ export function InventoryPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+          {netConfig.mode !== NETWORK_MODES.OFFLINE && (
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="text-xs border-emerald-400 bg-emerald-50/70 text-emerald-900 hover:bg-emerald-100 font-semibold"
+              title="Sincronizar inventario con el Servidor Host ahora"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isSyncing ? 'animate-spin text-emerald-600' : 'text-emerald-700'}`} />
+              <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar'}</span>
+            </Button>
+          )}
+
           <Link to="/inventario/toma">
             <Button
               variant="outline"

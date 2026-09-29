@@ -39,6 +39,10 @@
       },
       "changelog": [
         {
+          "category": "Sincronización LAN",
+          "text": "Motor reactivo de sincronización automática en tiempo real (heartbeat cada 4s) y botón manual en Inventario para reflejo instantáneo de tambores entre Host y Clientes."
+        },
+        {
           "category": "Logs & Diagnóstico",
           "text": "Botón directo 'Ver Logs y Diagnóstico' en Configuración y consola de eventos en vivo con medición de latencia en milisegundos."
         },

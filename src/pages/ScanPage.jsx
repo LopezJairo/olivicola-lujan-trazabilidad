@@ -55,9 +55,11 @@ function playChime(success = true) {
   }
 }
 
+import { useDatabase } from '../hooks/useDatabase.js';
+
 export function ScanPage() {
   const navigate = useNavigate();
-  const db = loadDatabase();
+  const db = useDatabase();
   const { tambores, catalogos, historial } = db;
 
   const [scanInput, setScanInput] = useState('');

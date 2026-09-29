@@ -6,3 +6,7 @@ dist-ssr
 *.log
 dist-electron
 portal/dist
+portal/public/*.exe
+portal/public/*.dmg
+portal/public/*.zip
+portal/public/*.blockmap

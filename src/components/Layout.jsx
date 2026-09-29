@@ -61,6 +61,15 @@ export function Layout({ children }) {
     }
   }, []);
 
+  // Mantener actualizado el estado de red en el sidebar
+  useEffect(() => {
+    const handleDbUpdated = () => {
+      setNetworkConfig(getNetworkConfig());
+    };
+    window.addEventListener('olivicola-db-updated', handleDbUpdated);
+    return () => window.removeEventListener('olivicola-db-updated', handleDbUpdated);
+  }, []);
+
   // Atajos de teclado del 1 al 7 para acceso ultrarrápido
   useEffect(() => {
     const handleKeyDown = (e) => {

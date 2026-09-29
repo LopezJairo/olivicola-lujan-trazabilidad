@@ -15,7 +15,7 @@ import {
   Activity,
   CheckCircle2,
 } from 'lucide-react';
-import { loadDatabase } from '../api/repository.js';
+import { useDatabase } from '../hooks/useDatabase.js';
 import { useAuth, ROLES, PERMISOS } from '../components/Auth.jsx';
 import { formatDateTime } from '../lib/utils.js';
 import { Badge } from '../components/ui/badge.jsx';
@@ -24,7 +24,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.
 
 export function HistoryPage() {
   const { user, role, can } = useAuth();
-  const db = loadDatabase();
+  const db = useDatabase();
   const { historial } = db;
 
   const [searchQuery, setSearchQuery] = useState('');

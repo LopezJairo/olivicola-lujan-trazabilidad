@@ -12,7 +12,7 @@ import {
   ChevronRight,
   Package,
 } from 'lucide-react';
-import { loadDatabase } from '../api/repository.js';
+import { useDatabase } from '../hooks/useDatabase.js';
 import { calculateInventoryTotals, resolveCatalogName } from '../lib/domain.js';
 import { formatKg, formatDateTime } from '../lib/utils.js';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card.jsx';
@@ -21,7 +21,7 @@ import { Button } from '../components/ui/button.jsx';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const db = loadDatabase();
+  const db = useDatabase();
   const { tambores, catalogos, movimientos, historial } = db;
 
   const totals = calculateInventoryTotals(tambores);

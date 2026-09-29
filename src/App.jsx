@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Layout } from './components/Layout.jsx';
 import { ProtectedRoute } from './components/Auth.jsx';
@@ -16,10 +16,14 @@ import { ConfigurationPage } from './pages/ConfigurationPage.jsx';
 import { HelpPage } from './pages/HelpPage.jsx';
 import { QualityPage } from './pages/QualityPage.jsx';
 import { Button } from './components/ui/button.jsx';
-
 import { LoginPage } from './pages/LoginPage.jsx';
+import { initNetworkAutoSync } from './api/repository.js';
 
 export function App() {
+  useEffect(() => {
+    initNetworkAutoSync();
+  }, []);
+
   return (
     <Routes>
       {/* Rutas de autenticación */}

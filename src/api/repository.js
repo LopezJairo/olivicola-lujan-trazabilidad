@@ -137,6 +137,9 @@ export function saveDatabase(data, specificMode = null) {
   const key = getStorageKeyForMode(mode);
   try {
     localStorage.setItem(key, JSON.stringify(data));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('olivicola-db-updated', { detail: { mode, timestamp: Date.now() } }));
+    }
   } catch (err) {
     console.error('Error al guardar base de datos local:', err);
     throw new Error('No se pudo guardar la información en el almacenamiento local');
@@ -167,7 +170,8 @@ export function loadTestDataset() {
   saveDatabase(dataset);
   try {
     const config = getNetworkConfig();
-    if (config.mode !== NETWORK_MODES.OFFLINE) {
+    const isElectron = typeof window !== 'undefined' && Boolean(window.electronAPI);
+    if (config.mode !== NETWORK_MODES.OFFLINE || isElectron) {
       callServerApi('/api/restore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -359,14 +363,124 @@ export async function syncWithHostServer() {
 }
 
 /**
+ * Consulta de bajo costo para verificar si el servidor Host tiene novedades y sincronizar.
+ */
+export async function checkAndSyncFromHost() {
+  const config = getNetworkConfig();
+  if (config.mode !== NETWORK_MODES.CLIENT) return false;
+
+  const url = normalizeHostUrl(config.hostUrl);
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const statusRes = await fetch(`${url}/api/status`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!statusRes.ok) {
+      setNetworkConfig({ status: 'disconnected' });
+      return false;
+    }
+
+    const statusData = await statusRes.json();
+    const localDb = loadDatabase();
+    const localTamboresCount = localDb.tambores?.length || 0;
+    const serverTamboresCount = statusData.stats?.tambores ?? -1;
+
+    // Si la cantidad de tambores en el Host es distinta o el cliente no ha sincronizado aún
+    if (serverTamboresCount !== localTamboresCount || !config.lastSync) {
+      logger.info('Cliente LAN', `Detectada actualización en Host (${serverTamboresCount} tambores en servidor vs ${localTamboresCount} locales). Sincronizando...`);
+      return await syncWithHostServer();
+    } else {
+      setNetworkConfig({ status: 'connected' });
+    }
+    return true;
+  } catch (err) {
+    setNetworkConfig({ status: 'disconnected' });
+    return false;
+  }
+}
+
+/**
+ * Reconciliador del Servidor Host local:
+ * Si el servidor backend está vacío pero el frontend tiene tambores locales (ej. cargados antes de iniciar el server),
+ * los propaga al backend para que los terminales clientes puedan verlos de inmediato.
+ */
+export async function syncHostWithLocalState() {
+  try {
+    const url = 'http://localhost:4000';
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`${url}/api/database`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) return;
+
+    const serverState = await res.json();
+    const localState = loadDatabase();
+
+    const serverCount = serverState.tambores?.length || 0;
+    const localCount = localState.tambores?.length || 0;
+
+    if (serverCount === 0 && localCount > 0) {
+      logger.info('Servidor Host', `Propagando ${localCount} tambores locales al backend HTTP...`);
+      await fetch(`${url}/api/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: localState }),
+      });
+    } else if (serverCount > 0 && localCount === 0) {
+      saveDatabase(serverState);
+    }
+  } catch {}
+}
+
+let autoSyncIntervalId = null;
+
+/**
+ * Inicia el motor de sincronización automática en segundo plano:
+ * - Detecta si el Host inició el servidor embebido.
+ * - En modo Cliente, sondea periódicamente el Host cada 4 segundos.
+ */
+export function initNetworkAutoSync() {
+  if (typeof window === 'undefined') return;
+
+  // Auto-detección en Electron: si el servidor local está activo, fijar modo Host
+  if (window.electronAPI?.getServerStatus) {
+    window.electronAPI.getServerStatus().then(async (status) => {
+      if (status?.isRunning) {
+        const current = getNetworkConfig();
+        if (current.mode !== NETWORK_MODES.HOST) {
+          setNetworkConfig({
+            mode: NETWORK_MODES.HOST,
+            hostUrl: 'http://localhost:4000',
+            status: 'connected',
+          });
+        }
+        await syncHostWithLocalState();
+      }
+    }).catch(() => {});
+  }
+
+  // Intervalo de auto-sincronización periódica
+  if (!autoSyncIntervalId) {
+    autoSyncIntervalId = setInterval(async () => {
+      const config = getNetworkConfig();
+      if (config.mode === NETWORK_MODES.CLIENT) {
+        await checkAndSyncFromHost();
+      }
+    }, 4000);
+  }
+}
+
+/**
  * Realiza llamadas HTTP al servidor local si estamos en Modo Host o Cliente LAN.
  * Si la red falla o está en modo offline, retorna null para operar de modo local.
  */
 export async function callServerApi(endpoint, options = {}) {
   const config = getNetworkConfig();
-  if (config.mode === NETWORK_MODES.OFFLINE) return null;
+  const isElectron = typeof window !== 'undefined' && Boolean(window.electronAPI);
+  
+  if (config.mode === NETWORK_MODES.OFFLINE && !isElectron) return null;
 
-  const baseUrl = normalizeHostUrl(config.hostUrl);
+  const baseUrl = normalizeHostUrl(config.mode === NETWORK_MODES.HOST || isElectron ? (config.hostUrl || 'http://localhost:4000') : config.hostUrl);
   const url = `${baseUrl}${endpoint}`;
 
   try {
@@ -415,21 +529,37 @@ export async function createDrum(rawInput, currentUser = null) {
     throw new Error(firstError || 'Datos del tambor inválidos');
   }
 
-  // 1. Sincronización con Servidor Host si estamos en modo Host o Cliente LAN
+  // 1. Sincronización con Servidor Host si estamos en modo Host o Cliente LAN, o en Electron
   const config = getNetworkConfig();
-  if (config.mode !== NETWORK_MODES.OFFLINE) {
-    const serverResult = await callServerApi('/api/tambores', {
-      method: 'POST',
-      body: JSON.stringify({ drumData: rawInput, currentUser }),
-    });
+  const isElectron = typeof window !== 'undefined' && Boolean(window.electronAPI);
+  const canSendToServer = config.mode !== NETWORK_MODES.OFFLINE || isElectron;
 
-    if (serverResult && serverResult.tambor_id) {
-      const freshState = loadDatabase();
-      if (!freshState.tambores.some((d) => d.tambor_id === serverResult.tambor_id)) {
-        freshState.tambores.unshift(serverResult);
-        saveDatabase(freshState);
+  if (canSendToServer) {
+    try {
+      const serverResult = await callServerApi('/api/tambores', {
+        method: 'POST',
+        body: JSON.stringify({ drumData: rawInput, currentUser }),
+      });
+
+      if (serverResult && serverResult.tambor_id) {
+        const freshState = loadDatabase();
+        if (!freshState.tambores.some((d) => d.tambor_id === serverResult.tambor_id)) {
+          freshState.tambores.unshift(serverResult);
+          freshState.historial.unshift({
+            id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            tambor_id: serverResult.tambor_id,
+            tambor_ref: serverResult.id,
+            tipo: 'Creación',
+            descripcion: `Tambor creado en el sistema con peso neto ${serverResult.peso} kg`,
+            actor: currentUser?.nombre || 'Operario Planta',
+            created_date: serverResult.created_date || new Date().toISOString(),
+          });
+          saveDatabase(freshState);
+        }
+        return serverResult;
       }
-      return serverResult;
+    } catch (err) {
+      console.warn('Fallo al comunicar con servidor host, operando localmente:', err);
     }
   }
 

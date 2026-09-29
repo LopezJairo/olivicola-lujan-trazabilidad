@@ -41,6 +41,12 @@ export function QualityPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  useEffect(() => {
+    const handleUpdate = () => setDb(loadDatabase());
+    window.addEventListener('olivicola-db-updated', handleUpdate);
+    return () => window.removeEventListener('olivicola-db-updated', handleUpdate);
+  }, []);
+
   // Formulario de inspección de calidad
   const [inspectionForm, setInspectionForm] = useState({
     targetStatus: 'cat-est-5', // Aprobado calidad
