@@ -73,7 +73,7 @@ export default function DownloadCards({ release }) {
               {/* Primary: Portable .exe */}
               <a
                 href={windows.portable_url || '#'}
-                download={windows.portable_name || 'Olivicola Lujan Trazabilidad 1.0.3.exe'}
+                download={windows.portable_name || 'Olivicola Lujan Trazabilidad 1.0.4.exe'}
                 className="group/btn relative w-full flex items-center justify-between px-6 py-4 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm transition-all duration-300 active:scale-[0.98] shadow-lg shadow-emerald-500/20"
               >
                 <div className="flex flex-col text-left">

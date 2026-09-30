@@ -22,7 +22,7 @@ import { Button } from '../components/ui/button.jsx';
 export function Dashboard() {
   const navigate = useNavigate();
   const db = useDatabase();
-  const { tambores, catalogos, movimientos, historial } = db;
+  const { tambores = [], catalogos = [], movimientos = [], historial = [] } = db || {};
 
   const totals = calculateInventoryTotals(tambores);
 

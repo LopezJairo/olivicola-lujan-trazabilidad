@@ -25,7 +25,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.
 export function HistoryPage() {
   const { user, role, can } = useAuth();
   const db = useDatabase();
-  const { historial } = db;
+  const { historial = [] } = db || {};
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('ALL');

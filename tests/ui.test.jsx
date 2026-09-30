@@ -79,26 +79,55 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
     expect(jsonStr).not.toContain('Ubicación:');
   });
 
-  it('5. Todas las paginas del sistema exportan componentes funcionales sin variables no definidas', async () => {
-    const pages = [
-      () => import('../src/pages/InventoryPage.jsx'),
-      () => import('../src/pages/Dashboard.jsx'),
-      () => import('../src/pages/NewDrumPage.jsx'),
-      () => import('../src/pages/EditDrumPage.jsx'),
-      () => import('../src/pages/ScanPage.jsx'),
-      () => import('../src/pages/DrumDetailPage.jsx'),
-      () => import('../src/pages/BatchLabelsPage.jsx'),
-      () => import('../src/pages/HistoryPage.jsx'),
-      () => import('../src/pages/ConfigurationPage.jsx'),
-      () => import('../src/pages/HelpPage.jsx'),
-      () => import('../src/pages/InventoryAuditPage.jsx'),
-      () => import('../src/pages/QualityPage.jsx'),
+  it('5. Todas las paginas del sistema se renderizan correctamente sin errores ni hooks indefinidos', async () => {
+    const { renderToString } = await import('react-dom/server');
+    const { MemoryRouter } = await import('react-router-dom');
+    const { AuthProvider } = await import('../src/components/Auth.jsx');
+
+    const { InventoryPage } = await import('../src/pages/InventoryPage.jsx');
+    const { Dashboard } = await import('../src/pages/Dashboard.jsx');
+    const { NewDrumPage } = await import('../src/pages/NewDrumPage.jsx');
+    const { EditDrumPage } = await import('../src/pages/EditDrumPage.jsx');
+    const { ScanPage } = await import('../src/pages/ScanPage.jsx');
+    const { DrumDetailPage } = await import('../src/pages/DrumDetailPage.jsx');
+    const { BatchLabelsPage } = await import('../src/pages/BatchLabelsPage.jsx');
+    const { HistoryPage } = await import('../src/pages/HistoryPage.jsx');
+    const { ConfigurationPage } = await import('../src/pages/ConfigurationPage.jsx');
+    const { HelpPage } = await import('../src/pages/HelpPage.jsx');
+    const { InventoryAuditPage } = await import('../src/pages/InventoryAuditPage.jsx');
+    const { QualityPage } = await import('../src/pages/QualityPage.jsx');
+    const { LoginPage } = await import('../src/pages/LoginPage.jsx');
+    const { Layout } = await import('../src/components/Layout.jsx');
+
+    const componentsToTest = [
+      { name: 'Dashboard', elem: <Dashboard /> },
+      { name: 'InventoryPage', elem: <InventoryPage /> },
+      { name: 'QualityPage', elem: <QualityPage /> },
+      { name: 'ScanPage', elem: <ScanPage /> },
+      { name: 'HistoryPage', elem: <HistoryPage /> },
+      { name: 'ConfigurationPage', elem: <ConfigurationPage /> },
+      { name: 'HelpPage', elem: <HelpPage /> },
+      { name: 'InventoryAuditPage', elem: <InventoryAuditPage /> },
+      { name: 'NewDrumPage', elem: <NewDrumPage /> },
+      { name: 'EditDrumPage', elem: <EditDrumPage /> },
+      { name: 'BatchLabelsPage', elem: <BatchLabelsPage /> },
+      { name: 'DrumDetailPage', elem: <DrumDetailPage /> },
+      { name: 'LoginPage', elem: <LoginPage /> },
+      { name: 'Layout', elem: <Layout /> },
     ];
 
-    for (const loadPage of pages) {
-      const module = await loadPage();
-      const component = Object.values(module).find((v) => typeof v === 'function');
-      expect(typeof component).toBe('function');
+    for (const { name, elem } of componentsToTest) {
+      expect(() => {
+        const html = renderToString(
+          <MemoryRouter>
+            <AuthProvider>
+              {elem}
+            </AuthProvider>
+          </MemoryRouter>
+        );
+        expect(html).toBeDefined();
+        expect(typeof html).toBe('string');
+      }, `Error renderizando la página/componente: ${name}`).not.toThrow();
     }
   });
 

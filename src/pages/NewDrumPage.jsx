@@ -32,7 +32,7 @@ export function NewDrumPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const db = loadDatabase();
-  const { tambores, historial, catalogos } = db;
+  const { tambores = [], historial = [], catalogos = [] } = db || {};
 
   // Próximo ID calculado
   const nextId = useMemo(() => nextTamborId(tambores, historial), [tambores, historial]);

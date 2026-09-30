@@ -33,7 +33,7 @@ export function InventoryAuditPage() {
   const location = useLocation();
   const { user } = useAuth();
   const [db, setDb] = useState(loadDatabase());
-  const { tambores, catalogos } = db;
+  const { tambores = [], catalogos = [] } = db || {};
 
   const [activeTab, setActiveTab] = useState('batch'); // 'batch' | 'live'
   const [batchText, setBatchText] = useState(

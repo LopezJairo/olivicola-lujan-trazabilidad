@@ -28,7 +28,7 @@ import { PhysicalLabel } from '../components/Barcode.jsx';
 export function InventoryPage() {
   const navigate = useNavigate();
   const db = useDatabase();
-  const { tambores, catalogos } = db;
+  const { tambores = [], catalogos = [] } = db || {};
   const [isSyncing, setIsSyncing] = useState(false);
   const netConfig = getNetworkConfig();
 

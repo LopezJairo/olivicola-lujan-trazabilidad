@@ -60,7 +60,7 @@ import { useDatabase } from '../hooks/useDatabase.js';
 export function ScanPage() {
   const navigate = useNavigate();
   const db = useDatabase();
-  const { tambores, catalogos, historial } = db;
+  const { tambores = [], catalogos = [], historial = [] } = db || {};
 
   const [scanInput, setScanInput] = useState('');
   const [lastScanned, setLastScanned] = useState(null);

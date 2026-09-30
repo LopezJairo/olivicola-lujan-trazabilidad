@@ -31,7 +31,7 @@ import {
 export function BatchLabelsPage() {
   const location = useLocation();
   const db = loadDatabase();
-  const { tambores, catalogos } = db;
+  const { tambores = [], catalogos = [] } = db || {};
 
   // Modo: 'tambores' | 'sectores'
   const [printMode, setPrintMode] = useState(

@@ -28,7 +28,7 @@ export function EditDrumPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const db = loadDatabase();
-  const { tambores, catalogos } = db;
+  const { tambores = [], catalogos = [] } = db || {};
 
   const drum = tambores.find((d) => d.id === id || d.tambor_id?.toUpperCase() === id?.toUpperCase());
 

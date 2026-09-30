@@ -50,7 +50,7 @@ export function DrumDetailPage() {
   const { user } = useAuth();
 
   const [db, setDb] = useState(loadDatabase());
-  const { tambores, catalogos, historial, movimientos } = db;
+  const { tambores = [], catalogos = [], historial = [], movimientos = [] } = db || {};
 
   // Buscar el tambor por id técnico o tambor_id
   const drum = tambores.find((d) => d.id === id || d.tambor_id?.toUpperCase() === id?.toUpperCase());

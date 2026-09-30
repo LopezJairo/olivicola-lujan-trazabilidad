@@ -5,7 +5,7 @@
  * y registrar los movimientos oficiales de inspección en el historial inalterable.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -33,7 +33,7 @@ import { formatDateTime } from '../lib/utils.js';
 export function QualityPage() {
   const { user, can } = useAuth();
   const [db, setDb] = useState(loadDatabase());
-  const { tambores, catalogos } = db;
+  const { tambores = [], catalogos = [] } = db || {};
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('PENDIENTES'); // 'ALL' | 'PENDIENTES' | 'APROBADOS' | 'RETENIDOS'
@@ -59,11 +59,12 @@ export function QualityPage() {
 
   // Clasificación de tambores
   const drumsWithNames = useMemo(() => {
+    const cats = catalogos || [];
     return (tambores || []).map((t) => {
-      const estadoObj = catalogos.find((c) => c.id === t.estado && c.tipo === 'estado');
-      const ubiObj = catalogos.find((c) => c.id === t.ubicacion && c.tipo === 'ubicacion');
-      const prodObj = catalogos.find((c) => c.id === t.producto && c.tipo === 'producto');
-      const varObj = catalogos.find((c) => c.id === t.variedad && c.tipo === 'variedad');
+      const estadoObj = cats.find((c) => c.id === t.estado && c.tipo === 'estado');
+      const ubiObj = cats.find((c) => c.id === t.ubicacion && c.tipo === 'ubicacion');
+      const prodObj = cats.find((c) => c.id === t.producto && c.tipo === 'producto');
+      const varObj = cats.find((c) => c.id === t.variedad && c.tipo === 'variedad');
 
       return {
         ...t,
