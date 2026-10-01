@@ -190,6 +190,45 @@ describe('Pruebas de Componentes UI y Etiquetado', () => {
     // El barcode value debe ser el código único ENT-VDE-ALOR-121/140-PRI-T000011
     expect(jsonStr).toContain('"value":"ENT-VDE-ALOR-121/140-PRI-T000011"');
   });
+
+  it('9. Dashboard incluye el botón para Reportes & Manual Gerencia (PDF)', async () => {
+    const { renderToString } = await import('react-dom/server');
+    const { MemoryRouter } = await import('react-router-dom');
+    const { AuthProvider } = await import('../src/components/Auth.jsx');
+    const { Dashboard } = await import('../src/pages/Dashboard.jsx');
+
+    const html = renderToString(
+      <MemoryRouter>
+        <AuthProvider>
+          <Dashboard />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(html).toContain('Reportes &amp; Manual Gerencia (PDF)');
+    expect(html).toContain('Trazabilidad de Tambores');
+  });
+
+  it('10. Layout incluye en el pie del sidebar la firma de autoría y propiedad de Jairo López', async () => {
+    const { renderToString } = await import('react-dom/server');
+    const { MemoryRouter } = await import('react-router-dom');
+    const { AuthProvider } = await import('../src/components/Auth.jsx');
+    const { Layout } = await import('../src/components/Layout.jsx');
+
+    const html = renderToString(
+      <MemoryRouter>
+        <AuthProvider>
+          <Layout>
+            <div>Contenido Principal de Prueba</div>
+          </Layout>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(html).toContain('Jairo López');
+    expect(html).toContain('Software diseñado y desarrollado por');
+  });
 });
+
 
 

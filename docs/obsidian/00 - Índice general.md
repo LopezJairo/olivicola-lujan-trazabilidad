@@ -28,7 +28,7 @@ Base de conocimiento oficial del **Sistema de Trazabilidad Industrial de Tambore
 - **Comprensión y Alcance:** [[Olivícola Luján/01 - Visión y alcance del MVP|01 - Visión y alcance del MVP]] y [[Olivícola Luján/02 - Personas y experiencia de uso|02 - Personas y experiencia de uso]].
 - **Operación en Planta:** [[Olivícola Luján/04 - Manual del operario|04 - Manual del operario]] y [[Olivícola Luján/08 - Identificación y etiquetas|08 - Identificación y etiquetas]].
 - **Control de Calidad y Procesos:** [[Olivícola Luján/03 - Flujos y reglas del negocio|03 - Flujos y reglas del negocio]] y [[Olivícola Luján/07 - Modelo de datos y catálogos|07 - Modelo de datos y catálogos]].
-- **Gerencia y Administración:** [[Olivícola Luján/05 - Manual de administración|05 - Manual de administración]] y [[Olivícola Luján/09 - Instalación y puesta en marcha|09 - Instalación y puesta en marcha]].
+- **Gerencia y Administración:** [[Olivícola Luján/05 - Manual de administración|05 - Manual de administración]], [[Olivícola Luján/09 - Instalación y puesta en marcha|09 - Instalación y puesta en marcha]] y [[Olivícola Luján/15 - Manual de uso y funcionalidades para gerencia|15 - Manual de uso y funcionalidades para gerencia]].
 - **Desarrollo y Arquitectura:** [[Olivícola Luján/06 - Arquitectura y mapa del código|06 - Arquitectura y mapa del código]] y [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]].
 - **Hoja de Ruta y Decisiones:** [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]], [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]] y [[Olivícola Luján/13 - Decisiones y preguntas abiertas|13 - Decisiones y preguntas abiertas]].
 - **Terminología y Referencias:** [[Olivícola Luján/14 - Glosario y mantenimiento|14 - Glosario y mantenimiento]] y [[Olivícola Luján/99 - Especificación original|99 - Especificación original]].
@@ -53,6 +53,7 @@ Base de conocimiento oficial del **Sistema de Trazabilidad Industrial de Tambore
 | [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]] | Registro de funcionalidades completadas y roadmap de despliegue en fábrica. |
 | [[Olivícola Luján/13 - Decisiones y preguntas abiertas|13 - Decisiones y preguntas abiertas]] | Resoluciones acordadas con la dirección (hardware, catálogos, red y roles). |
 | [[Olivícola Luján/14 - Glosario y mantenimiento|14 - Glosario y mantenimiento]] | Glosario de términos industriales/técnicos y pautas de actualización documental. |
+| [[Olivícola Luján/15 - Manual de uso y funcionalidades para gerencia|15 - Manual de uso y funcionalidades para gerencia]] | Guía de uso de pantallas, KPIs de productividad, hardware y certificación de autoría de Jairo López. |
 | [[Olivícola Luján/99 - Especificación original|99 - Especificación original]] | Requerimiento histórico original preservado como línea de base. |
 
 ---

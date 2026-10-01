@@ -282,6 +282,13 @@ export function Layout({ children }) {
             </button>
           </div>
         </div>
+
+        {/* Firma de Autoría y Propiedad */}
+        <div className="px-3 py-1.5 bg-bone-200/50 border-t border-bone-200 text-center">
+          <p className="text-[10px] text-bone-500 font-mono tracking-tight">
+            Software diseñado y desarrollado por <strong className="text-obsidian font-semibold">Jairo López</strong>
+          </p>
+        </div>
       </aside>
 
       {/* ---------------- BARRA SUPERIOR MÓVIL ---------------- */}
@@ -374,6 +381,12 @@ export function Layout({ children }) {
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Cerrar Sesión</span>
               </button>
+            </div>
+
+            <div className="pt-2 text-center border-t border-bone-200">
+              <span className="text-[10px] text-bone-500 font-mono">
+                Propiedad y desarrollo: <strong className="text-obsidian">Jairo López</strong> · v1.0.6
+              </span>
             </div>
           </div>
         </div>

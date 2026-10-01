@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   QrCode,
@@ -11,6 +11,13 @@ import {
   Sparkles,
   ChevronRight,
   Package,
+  FileText,
+  Printer,
+  Download,
+  ShieldCheck,
+  X,
+  ExternalLink,
+  BookOpen,
 } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase.js';
 import { calculateInventoryTotals, resolveCatalogName } from '../lib/domain.js';
@@ -23,6 +30,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const db = useDatabase();
   const { tambores = [], catalogos = [], movimientos = [], historial = [] } = db || {};
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const totals = calculateInventoryTotals(tambores);
 
@@ -43,6 +51,10 @@ export function Dashboard() {
   // Últimos 4 eventos del historial
   const recentEvents = (historial || []).slice(0, 4);
 
+  const handleOpenPdf = (url) => {
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* ---------------- CABECERA PRINCIPAL ---------------- */}
@@ -62,7 +74,18 @@ export function Dashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            onClick={() => setShowReportModal(true)}
+            className="text-xs flex items-center gap-1.5 border-olive-500/50 bg-olive-50/70 hover:bg-olive-100 text-olive-950 font-semibold shadow-soft-xs"
+          >
+            <FileText className="w-3.5 h-3.5 text-olive-800" />
+            <span>Reportes & Manual Gerencia (PDF)</span>
+          </Button>
+
           <Link to="/etiquetas">
             <Button variant="outline" size="default" className="text-xs">
               Imprimir etiquetas
@@ -354,6 +377,169 @@ export function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* ---------------- MODAL DOCUMENTACIÓN & REPORTES EJECUTIVOS ---------------- */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl border border-bone-300 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-7 space-y-6 relative">
+            <button
+              onClick={() => setShowReportModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-xl text-bone-500 hover:text-obsidian hover:bg-bone-100 transition-colors"
+              aria-label="Cerrar modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Encabezado del modal */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Badge variant="paleGreen" className="text-[10px] uppercase font-mono tracking-wider">
+                  Documentación Oficial
+                </Badge>
+                <span className="text-xs text-bone-400 font-mono">· Versión 1.0.6</span>
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-obsidian">
+                Reportes de Producción & Manual de Gerencia
+              </h3>
+              <p className="text-xs sm:text-sm text-bone-600 mt-1">
+                Documentos corporativos oficiales en formato PDF con métricas auditables, balance de tambores y guía integral de uso del software.
+              </p>
+            </div>
+
+            {/* Grid de Documentos */}
+            <div className="space-y-4">
+              {/* Tarjeta 1: Informe Ejecutivo */}
+              <div className="p-4 sm:p-5 rounded-xl border border-bone-200 bg-bone-50/60 hover:border-olive-500/40 transition-colors">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-olive-800 text-bone-50 flex items-center justify-center shrink-0 shadow-soft-xs">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-serif text-base font-bold text-obsidian">
+                        Informe Ejecutivo de Producción & Métricas
+                      </h4>
+                      <p className="text-xs text-bone-600 mt-0.5">
+                        Balance exacto de 210.800 kg de stock, 6 productos, 5 variedades maestras, calibres, calidad y ocupación por naves.
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-[10px] shrink-0">
+                    2 Páginas
+                  </Badge>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-bone-200 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-[11px] text-bone-500 font-mono">
+                    Formato A4 · Doble firma gerencial
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenPdf('/INFORME_EJECUTIVO_GERENCIA_OLIVICOLA_LUJAN.pdf')}
+                      className="text-xs flex items-center gap-1.5"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Ver / Imprimir</span>
+                    </Button>
+                    <a
+                      href="/INFORME_EJECUTIVO_GERENCIA_OLIVICOLA_LUJAN.pdf"
+                      download="INFORME_EJECUTIVO_GERENCIA_OLIVICOLA_LUJAN.pdf"
+                      className="inline-flex"
+                    >
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="text-xs flex items-center gap-1.5"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Descargar PDF</span>
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tarjeta 2: Manual de Uso de Gerencia */}
+              <div className="p-4 sm:p-5 rounded-xl border border-bone-200 bg-bone-50/60 hover:border-olive-500/40 transition-colors">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-obsidian text-bone-50 flex items-center justify-center shrink-0 shadow-soft-xs">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-serif text-base font-bold text-obsidian">
+                        Manual de Uso y Funcionalidades para Gerencia
+                      </h4>
+                      <p className="text-xs text-bone-600 mt-0.5">
+                        Guía pantalla por pantalla, pesaje asistido, lector inalámbrico HPRT N130BT, Zebra GC420t ZPL II, red LAN y KPIs.
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-[10px] shrink-0">
+                    4 Páginas
+                  </Badge>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-bone-200 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-[11px] text-bone-500 font-mono">
+                    Certificado con firma de autoría
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenPdf('/MANUAL_DE_USO_Y_FUNCIONALIDADES_GERENCIA.pdf')}
+                      className="text-xs flex items-center gap-1.5"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Abrir</span>
+                    </Button>
+                    <a
+                      href="/MANUAL_DE_USO_Y_FUNCIONALIDADES_GERENCIA.pdf"
+                      download="MANUAL_DE_USO_Y_FUNCIONALIDADES_GERENCIA.pdf"
+                      className="inline-flex"
+                    >
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="text-xs flex items-center gap-1.5"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Descargar Manual</span>
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Certificación de Autoría y Licencia */}
+            <div className="p-4 rounded-xl border border-bone-200 bg-olive-50/50 flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-olive-800 shrink-0 mt-0.5" />
+              <div className="text-xs text-bone-700 leading-relaxed">
+                <span className="font-semibold text-obsidian block mb-0.5">
+                  Certificación de Autoría y Propiedad de Software
+                </span>
+                Software diseñado, desarrollado y propiedad exclusiva de <strong className="text-olive-950 font-bold">Jairo López</strong>. Todos los derechos morales y patrimoniales reservados para Olivícola Luján S.A.
+              </div>
+            </div>
+
+            {/* Pie de modal */}
+            <div className="flex justify-end pt-2 border-t border-bone-200">
+              <Button
+                variant="outline"
+                size="default"
+                onClick={() => setShowReportModal(false)}
+                className="text-xs"
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
