@@ -1,15 +1,62 @@
 {
   "app_name": "Olivícola Luján - Sistema de Trazabilidad Industrial",
-  "latest_version": "1.0.5",
+  "latest_version": "1.0.6",
   "updated_at": "2026-10-01",
   "contact_support": "soporte@olivicolalujan.com",
   "releases": [
     {
-      "version": "1.0.5",
+      "version": "1.0.6",
       "date": "1 de Octubre, 2026",
       "tag": "Estable · Recomendada",
       "status": "latest",
-      "summary": "Seguridad operacional y control de accesos: Inhabilitación estricta de cambio de rol y salto entre usuarios para cuentas de operarios. Protección de la gestión de personal, contraseñas y permisos jerárquicos.",
+      "summary": "Aislamiento total de secciones administrativas: Ocultamiento estricto de 'Jerarquía de Perfiles y Control de Permisos' y 'Gestión de Personal y Cuentas de Acceso' para operarios de planta.",
+      "downloads": {
+        "windows": {
+          "available": true,
+          "name": "Windows x64",
+          "arch": "64-bit (x86_64)",
+          "os_req": "Windows 10 / 11",
+          "size": "81 MB",
+          "portable_name": "Olivicola Lujan Trazabilidad 1.0.6.exe",
+          "portable_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.6/Olivicola.Lujan.Trazabilidad.1.0.6.exe",
+          "setup_name": "Olivicola Lujan Trazabilidad Setup 1.0.6.exe",
+          "setup_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.6/Olivicola.Lujan.Trazabilidad.Setup.1.0.6.exe",
+          "role_badge": "Recomendado para Servidor Host o Cliente"
+        },
+        "mac": {
+          "available": true,
+          "name": "macOS",
+          "arch": "Apple Silicon (ARM64)",
+          "os_req": "macOS 12.0+",
+          "size": "99 MB",
+          "dmg_name": "Olivicola Lujan Trazabilidad-1.0.6-arm64.dmg",
+          "dmg_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.6/Olivicola.Lujan.Trazabilidad-1.0.6-arm64.dmg",
+          "zip_name": "Olivicola Lujan Trazabilidad-1.0.6-arm64-mac.zip",
+          "zip_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.6/Olivicola.Lujan.Trazabilidad-1.0.6-arm64-mac.zip",
+          "role_badge": "Terminal Cliente LAN o Administración"
+        }
+      },
+      "changelog": [
+        {
+          "category": "Seguridad de Operarios",
+          "text": "La sección 'Jerarquía de Perfiles y Control de Permisos' ya no se visualiza en absoluto para cuentas de operario."
+        },
+        {
+          "category": "Privacidad de Accesos",
+          "text": "El módulo 'Gestión de Personal y Cuentas de Acceso' queda 100% oculto e inaccesible para los operarios de planta."
+        },
+        {
+          "category": "Control Exclusivo de Gerencia",
+          "text": "Únicamente las sesiones con perfil de Gerente / Administrador tienen visibilidad y control sobre roles y credenciales."
+        }
+      ]
+    },
+    {
+      "version": "1.0.5",
+      "date": "1 de Octubre, 2026",
+      "tag": "Versión Previa",
+      "status": "previous",
+      "summary": "Seguridad operacional y control de accesos: Inhabilitación estricta de cambio de rol y salto entre usuarios para cuentas de operarios.",
       "downloads": {
         "windows": {
           "available": true,
@@ -40,14 +87,6 @@
         {
           "category": "Seguridad Operacional",
           "text": "Bloqueo integral de conmutación de perfiles para operarios, impidiendo saltar a cuentas de administración o calidad."
-        },
-        {
-          "category": "Control de Usuarios",
-          "text": "Módulo de gestión de personal, blanqueo de contraseñas y asignación de rangos restringido exclusivamente a Gerencia General."
-        },
-        {
-          "category": "Estabilidad y Red",
-          "text": "Persistencia de credenciales con control de sesión seguro y sincronización LAN reactiva."
         }
       ]
     },

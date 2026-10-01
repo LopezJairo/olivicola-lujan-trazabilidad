@@ -13,7 +13,9 @@ import {
   useAuth,
 } from '../src/components/Auth.jsx';
 import { renderToString } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
 import { clearAllCompanyData, loadDatabase, getCurrentWorkspaceMode } from '../src/api/repository.js';
+import { ConfigurationPage } from '../src/pages/ConfigurationPage.jsx';
 
 // Mock localStorage para Vitest en entorno Node
 const localStorageMock = (() => {
@@ -181,5 +183,44 @@ describe('Pruebas de Seguridad, Autenticación y Modo Empresa Limpio', () => {
 
     // Administrador puede conmutar a Calidad
     expect(() => authContextVal.switchRole('calidad')).not.toThrow();
+  });
+
+  it('8. Jerarquía de Perfiles y Gestión de Personal no se visualizan al operario, pero sí al administrador', () => {
+    // 1) Caso Operario: la sesión por defecto es OP-01 (Operario)
+    localStorage.clear();
+    const htmlOperario = renderToString(
+      <MemoryRouter>
+        <AuthProvider>
+          <ConfigurationPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    // No debe contener ni la Jerarquía de Perfiles ni la Gestión de Personal ni banners de advertencia de operario
+    expect(htmlOperario).not.toContain('Jerarquía de Perfiles y Control de Permisos');
+    expect(htmlOperario).not.toContain('Gestión de Personal y Cuentas de Acceso');
+    expect(htmlOperario).not.toContain('Cambio de rol inhabilitado para Operarios');
+    expect(htmlOperario).not.toContain('Modo Operario Protegido');
+    expect(htmlOperario).not.toContain('Acceso Restringido para Operarios');
+    expect(htmlOperario).not.toContain('Clave Maestra de Autorización para Gerencia');
+
+    // 2) Caso Administrador: sesión de Administrador
+    localStorage.setItem(
+      'olivicola-lujan-user-session-v2',
+      JSON.stringify(DEFAULT_USERS.admin)
+    );
+    const htmlAdmin = renderToString(
+      <MemoryRouter>
+        <AuthProvider>
+          <ConfigurationPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    // Debe contener ambas secciones completas y operacionales
+    expect(htmlAdmin).toContain('Jerarquía de Perfiles y Control de Permisos');
+    expect(htmlAdmin).toContain('Gestión de Personal y Cuentas de Acceso');
+    expect(htmlAdmin).toContain('Clave Maestra de Autorización para Gerencia / Calidad');
+    expect(htmlAdmin).toContain('Registrar Personal');
   });
 });

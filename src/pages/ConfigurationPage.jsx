@@ -1226,7 +1226,7 @@ export function ConfigurationPage() {
       </Card>
 
       {/* ---------------- GESTIÓN DE PERSONAL Y CUENTAS DE USUARIO ---------------- */}
-      {canManageUsers ? (
+      {canManageUsers && (
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1403,138 +1403,93 @@ export function ConfigurationPage() {
             </div>
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {/* ---------------- JERARQUÍA DE PERFILES Y MATRIZ DE PERMISOS ---------------- */}
+      {canSwitchRole && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Users className="w-5 h-5 text-olive-800" />
-              <span>Gestión de Personal y Cuentas de Acceso</span>
-            </CardTitle>
-            <p className="text-xs text-bone-600 mt-0.5">
-              Administración de cuentas y asignación de rangos jerárquicos de planta.
-            </p>
-          </CardHeader>
-          <CardContent className="text-xs">
-            <div className="p-4 rounded-xl bg-bone-100/70 border border-bone-300 flex items-start gap-3 text-bone-700">
-              <Lock className="w-4 h-4 text-bone-500 shrink-0 mt-0.5" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <p className="font-semibold text-obsidian">Acceso Restringido para Operarios</p>
-                <p className="text-[11px] text-bone-600 mt-0.5 leading-relaxed">
-                  Has iniciado sesión como <strong className="text-obsidian">{user?.nombre}</strong> ({role} · Legajo: {user?.legajo || '—'}). La modificación de cuentas, asignación de roles, blanqueo de claves y administración de permisos de acceso requieren rango de <strong>Gerente / Administrador</strong>.
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-olive-800" />
+                  <span>Jerarquía de Perfiles y Control de Permisos</span>
+                </CardTitle>
+                <p className="text-xs text-bone-600">
+                  Niveles de seguridad operacional configurados para el personal de Olivícola Luján.
                 </p>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Operario de Planta */}
+              <div
+                onClick={() => switchRole('operario')}
+                className={`p-4 rounded-xl border transition-all cursor-pointer hover:border-bone-300 ${
+                  role === ROLES.OPERARIO
+                    ? 'border-olive-800 bg-olive-50 ring-1 ring-olive-800'
+                    : 'border-bone-200 bg-white'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-bold text-obsidian text-sm">Operador de Planta</span>
+                  {role === ROLES.OPERARIO && <Badge variant="paleGreen">Sesión Activa</Badge>}
+                </div>
+                <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
+                  <li>Pesaje y registro de tambores</li>
+                  <li>Escaneo continuo con HPRT N130BT</li>
+                  <li>Toma física de inventario por sectores</li>
+                  <li>Impresión térmica Zebra GC420t</li>
+                </ul>
+              </div>
+
+              {/* Responsable de Calidad */}
+              <div
+                onClick={() => switchRole('calidad')}
+                className={`p-4 rounded-xl border transition-all cursor-pointer hover:border-bone-300 ${
+                  role === ROLES.CALIDAD
+                    ? 'border-emerald-700 bg-emerald-50 ring-1 ring-emerald-700'
+                    : 'border-bone-200 bg-white'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-bold text-obsidian text-sm">Responsable de Calidad</span>
+                  {role === ROLES.CALIDAD && <Badge variant="paleGreen">Sesión Activa</Badge>}
+                </div>
+                <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
+                  <li>Autorización y liberación de lotes</li>
+                  <li>Muestreos de laboratorio (pH, salinidad)</li>
+                  <li>Retención de lotes observados</li>
+                  <li>Consulta de trazabilidad e historial</li>
+                </ul>
+              </div>
+
+              {/* Gerente / Administrador */}
+              <div
+                onClick={() => switchRole('admin')}
+                className={`p-4 rounded-xl border transition-all cursor-pointer hover:border-bone-300 ${
+                  role === ROLES.ADMINISTRADOR
+                    ? 'border-obsidian bg-bone-100 ring-1 ring-obsidian'
+                    : 'border-bone-200 bg-white'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-bold text-obsidian text-sm">Gerente / Administrador</span>
+                  {role === ROLES.ADMINISTRADOR && <Badge variant="default">Sesión Activa</Badge>}
+                </div>
+                <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
+                  <li>Auditoría en tiempo real por operador</li>
+                  <li>Gestión de catálogos oficiales</li>
+                  <li>Copias de seguridad y restauración</li>
+                  <li>Configuración de red y eliminación</li>
+                </ul>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
-
-      {/* ---------------- JERARQUÍA DE PERFILES Y MATRIZ DE PERMISOS ---------------- */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-olive-800" />
-                <span>Jerarquía de Perfiles y Control de Permisos</span>
-              </CardTitle>
-              <p className="text-xs text-bone-600">
-                Niveles de seguridad operacional configurados para el personal de Olivícola Luján.
-              </p>
-            </div>
-            {role === ROLES.OPERARIO && (
-              <Badge variant="outline" className="text-amber-800 border-amber-300 bg-amber-50 gap-1 self-start sm:self-auto font-mono text-[10px]">
-                <Lock className="w-3 h-3 text-amber-700" />
-                <span>Cambio de rol inhabilitado para Operarios</span>
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4 text-xs">
-          {role === ROLES.OPERARIO && (
-            <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-amber-900 text-xs flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-semibold block text-amber-950">Seguridad: Modo Operario Protegido</span>
-                <span className="text-[11px] text-amber-800 leading-relaxed">
-                  La conmutación manual de perfil y salto entre usuarios está inhabilitada para el personal de planta para prevenir accesos no autorizados. Para utilizar funciones de Calidad o Gerencia, cierra sesión e inicia con las credenciales correspondientes.
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Operario de Planta */}
-            <div
-              onClick={canSwitchRole ? () => switchRole('operario') : undefined}
-              className={`p-4 rounded-xl border transition-all ${
-                canSwitchRole ? 'cursor-pointer hover:border-bone-300' : 'cursor-default'
-              } ${
-                role === ROLES.OPERARIO
-                  ? 'border-olive-800 bg-olive-50 ring-1 ring-olive-800'
-                  : 'border-bone-200 bg-white'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="font-bold text-obsidian text-sm">Operador de Planta</span>
-                {role === ROLES.OPERARIO && <Badge variant="paleGreen">Sesión Activa</Badge>}
-              </div>
-              <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
-                <li>Pesaje y registro de tambores</li>
-                <li>Escaneo continuo con HPRT N130BT</li>
-                <li>Toma física de inventario por sectores</li>
-                <li>Impresión térmica Zebra GC420t</li>
-              </ul>
-            </div>
-
-            {/* Responsable de Calidad */}
-            <div
-              onClick={canSwitchRole ? () => switchRole('calidad') : undefined}
-              className={`p-4 rounded-xl border transition-all ${
-                canSwitchRole ? 'cursor-pointer hover:border-bone-300' : 'cursor-default'
-              } ${
-                role === ROLES.CALIDAD
-                  ? 'border-emerald-700 bg-emerald-50 ring-1 ring-emerald-700'
-                  : 'border-bone-200 bg-white'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="font-bold text-obsidian text-sm">Responsable de Calidad</span>
-                {role === ROLES.CALIDAD && <Badge variant="paleGreen">Sesión Activa</Badge>}
-              </div>
-              <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
-                <li>Autorización y liberación de lotes</li>
-                <li>Muestreos de laboratorio (pH, salinidad)</li>
-                <li>Retención de lotes observados</li>
-                <li>Consulta de trazabilidad e historial</li>
-              </ul>
-            </div>
-
-            {/* Gerente / Administrador */}
-            <div
-              onClick={canSwitchRole ? () => switchRole('admin') : undefined}
-              className={`p-4 rounded-xl border transition-all ${
-                canSwitchRole ? 'cursor-pointer hover:border-bone-300' : 'cursor-default'
-              } ${
-                role === ROLES.ADMINISTRADOR
-                  ? 'border-obsidian bg-bone-100 ring-1 ring-obsidian'
-                  : 'border-bone-200 bg-white'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="font-bold text-obsidian text-sm">Gerente / Administrador</span>
-                {role === ROLES.ADMINISTRADOR && <Badge variant="default">Sesión Activa</Badge>}
-              </div>
-              <ul className="text-bone-600 text-[11px] space-y-1 list-disc list-inside">
-                <li>Auditoría en tiempo real por operador</li>
-                <li>Gestión de catálogos oficiales</li>
-                <li>Copias de seguridad y restauración</li>
-                <li>Configuración de red y eliminación</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* ---------------- MODAL CREAR / EDITAR OPCIÓN DE CATÁLOGO ---------------- */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
