@@ -12,29 +12,31 @@ function getGitHubToken() {
   return '';
 }
 
+const pkg = require('../package.json');
+const VERSION = pkg.version;
 const TOKEN = getGitHubToken();
 const RELEASE_ID = process.env.RELEASE_ID || '399328735';
 const REPO = 'LopezJairo/olivicola-lujan-trazabilidad';
 
 const filesToUpload = [
   {
-    local: 'dist-electron/Olivicola Lujan Trazabilidad 1.0.4.exe',
-    remote: 'Olivicola.Lujan.Trazabilidad.1.0.4.exe',
+    local: `dist-electron/Olivicola Lujan Trazabilidad ${VERSION}.exe`,
+    remote: `Olivicola.Lujan.Trazabilidad.${VERSION}.exe`,
     mime: 'application/vnd.microsoft.portable-executable',
   },
   {
-    local: 'dist-electron/Olivicola Lujan Trazabilidad Setup 1.0.4.exe',
-    remote: 'Olivicola.Lujan.Trazabilidad.Setup.1.0.4.exe',
+    local: `dist-electron/Olivicola Lujan Trazabilidad Setup ${VERSION}.exe`,
+    remote: `Olivicola.Lujan.Trazabilidad.Setup.${VERSION}.exe`,
     mime: 'application/vnd.microsoft.portable-executable',
   },
   {
-    local: 'dist-electron/Olivicola Lujan Trazabilidad-1.0.4-arm64.dmg',
-    remote: 'Olivicola.Lujan.Trazabilidad-1.0.4-arm64.dmg',
+    local: `dist-electron/Olivicola Lujan Trazabilidad-${VERSION}-arm64.dmg`,
+    remote: `Olivicola.Lujan.Trazabilidad-${VERSION}-arm64.dmg`,
     mime: 'application/x-apple-diskimage',
   },
   {
-    local: 'dist-electron/Olivicola Lujan Trazabilidad-1.0.4-arm64-mac.zip',
-    remote: 'Olivicola.Lujan.Trazabilidad-1.0.4-arm64-mac.zip',
+    local: `dist-electron/Olivicola Lujan Trazabilidad-${VERSION}-arm64-mac.zip`,
+    remote: `Olivicola.Lujan.Trazabilidad-${VERSION}-arm64-mac.zip`,
     mime: 'application/zip',
   },
 ];
