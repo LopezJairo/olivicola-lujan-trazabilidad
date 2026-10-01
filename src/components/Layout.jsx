@@ -37,9 +37,8 @@ import { cn } from '../lib/utils.js';
 export function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, role, switchRole, logout, can } = useAuth();
+  const { user, role, logout, can } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [networkConfig, setNetworkConfig] = useState(getNetworkConfig());
 
   const handleGoToLogs = () => {
@@ -95,7 +94,6 @@ export function Layout({ children }) {
 
   useEffect(() => {
     setMobileMenuOpen(false);
-    setRoleMenuOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {

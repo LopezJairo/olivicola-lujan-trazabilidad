@@ -9,7 +9,10 @@ import {
   saveStoredUsers,
   getAdminSecretKey,
   setAdminSecretKey,
+  AuthProvider,
+  useAuth,
 } from '../src/components/Auth.jsx';
+import { renderToString } from 'react-dom/server';
 import { clearAllCompanyData, loadDatabase, getCurrentWorkspaceMode } from '../src/api/repository.js';
 
 // Mock localStorage para Vitest en entorno Node
@@ -84,5 +87,99 @@ describe('Pruebas de Seguridad, Autenticación y Modo Empresa Limpio', () => {
   it('4. Modo predeterminado del sistema es empresa (no demo)', () => {
     const mode = getCurrentWorkspaceMode();
     expect(mode).toBe('empresa');
+  });
+
+  it('5. Usuario activo Operario tiene canSwitchRole en false y switchRole lanza error de permiso', () => {
+    let authContextVal = null;
+    function Consumer() {
+      authContextVal = useAuth();
+      return <div>Operario Test</div>;
+    }
+
+    renderToString(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    expect(authContextVal).toBeDefined();
+    expect(authContextVal.role).toBe(ROLES.OPERARIO);
+    expect(authContextVal.canSwitchRole).toBe(false);
+
+    // Intentar saltar a Administrador o Calidad desde cuenta operario debe ser rechazado
+    expect(() => authContextVal.switchRole('admin')).toThrow(
+      'Operación no permitida: Los operarios de planta no tienen autorización para alternar o cambiar roles de usuario.'
+    );
+    expect(() => authContextVal.switchRole('calidad')).toThrow(
+      'Operación no permitida: Los operarios de planta no tienen autorización para alternar o cambiar roles de usuario.'
+    );
+  });
+
+  it('6. Operario no puede ejecutar operaciones de gestión de usuarios (cambiar claves, roles, eliminar)', () => {
+    let authContextVal = null;
+    function Consumer() {
+      authContextVal = useAuth();
+      return <div>Operario Security Test</div>;
+    }
+
+    renderToString(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    expect(authContextVal.role).toBe(ROLES.OPERARIO);
+    expect(authContextVal.can(PERMISOS.GESTION_USUARIOS)).toBe(false);
+
+    // Intentar modificar contraseña o rol de un usuario
+    expect(() =>
+      authContextVal.adminUpdateUser('usr-operario-01', { newPassword: 'hack' })
+    ).toThrow('Permiso denegado: Solo el Administrador puede gestionar usuarios.');
+
+    expect(() =>
+      authContextVal.adminUpdateUser('usr-operario-01', { rol: ROLES.ADMINISTRADOR })
+    ).toThrow('Permiso denegado: Solo el Administrador puede gestionar usuarios.');
+
+    // Intentar registrar usuario vía adminCreateUser
+    expect(() =>
+      authContextVal.adminCreateUser({
+        nombre: 'Falso Admin',
+        legajo: 'HACK-01',
+        password: '123',
+        rol: ROLES.ADMINISTRADOR,
+      })
+    ).toThrow('Permiso denegado: Solo el Administrador puede gestionar personal.');
+
+    // Intentar cambiar clave maestra de autorización de gerencia
+    expect(() => authContextVal.updateAdminSecret('NUEVA_CLAVE')).toThrow(
+      'Permiso denegado: Solo el Administrador puede modificar la clave de autorización.'
+    );
+  });
+
+  it('7. Administrador tiene canSwitchRole en true y puede conmutar roles para auditoría y pruebas', () => {
+    let authContextVal = null;
+    function Consumer() {
+      authContextVal = useAuth();
+      return <div>Admin Test</div>;
+    }
+
+    // Inicializar sesión simulada como Administrador
+    localStorage.setItem(
+      'olivicola-lujan-user-session-v2',
+      JSON.stringify(DEFAULT_USERS.admin)
+    );
+
+    renderToString(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    expect(authContextVal).toBeDefined();
+    expect(authContextVal.role).toBe(ROLES.ADMINISTRADOR);
+    expect(authContextVal.canSwitchRole).toBe(true);
+
+    // Administrador puede conmutar a Calidad
+    expect(() => authContextVal.switchRole('calidad')).not.toThrow();
   });
 });

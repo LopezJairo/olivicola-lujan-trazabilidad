@@ -377,7 +377,22 @@ export function AuthProvider({ children }) {
     setAdminSecretState(newSecret.trim());
   };
 
+  const canSwitchRole = useMemo(() => {
+    // Un operario NUNCA puede cambiar de rol ni saltar entre usuarios
+    if (!currentUser || currentUser?.rol === ROLES.OPERARIO) {
+      return false;
+    }
+    // Solo un Administrador con permiso de gestión de usuarios puede conmutar roles
+    return checkPermission(currentUser?.rol, PERMISOS.GESTION_USUARIOS);
+  }, [currentUser]);
+
   const switchRole = (roleKey) => {
+    if (!canSwitchRole) {
+      throw new Error(
+        'Operación no permitida: Los operarios de planta no tienen autorización para alternar o cambiar roles de usuario.'
+      );
+    }
+
     const key = roleKey?.toLowerCase();
     const currentUsers = getStoredUsers();
 
@@ -424,6 +439,7 @@ export function AuthProvider({ children }) {
         adminSecret,
         can,
         hasPermission: can,
+        canSwitchRole,
         loginWithCredentials,
         registerUser,
         adminCreateUser,

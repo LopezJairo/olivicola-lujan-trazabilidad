@@ -101,6 +101,7 @@ export function ConfigurationPage() {
     user,
     role,
     switchRole,
+    canSwitchRole,
     can,
     usersList = [],
     adminSecret,
@@ -1225,19 +1226,19 @@ export function ConfigurationPage() {
       </Card>
 
       {/* ---------------- GESTIÓN DE PERSONAL Y CUENTAS DE USUARIO ---------------- */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Users className="w-5 h-5 text-olive-800" />
-                <span>Gestión de Personal y Cuentas de Acceso</span>
-              </CardTitle>
-              <p className="text-xs text-bone-600 mt-0.5">
-                Cuentas de operarios, supervisores de calidad y administradores autorizados para operar en la planta.
-              </p>
-            </div>
-            {canManageUsers && (
+      {canManageUsers ? (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Users className="w-5 h-5 text-olive-800" />
+                  <span>Gestión de Personal y Cuentas de Acceso</span>
+                </CardTitle>
+                <p className="text-xs text-bone-600 mt-0.5">
+                  Cuentas de operarios, supervisores de calidad y administradores autorizados para operar en la planta.
+                </p>
+              </div>
               <Button
                 type="button"
                 variant="primary"
@@ -1251,13 +1252,11 @@ export function ConfigurationPage() {
                 <Plus className="w-4 h-4 mr-1.5" />
                 Registrar Personal
               </Button>
-            )}
-          </div>
-        </CardHeader>
+            </div>
+          </CardHeader>
 
-        <CardContent className="space-y-6 text-xs">
-          {/* Subsección: Clave de Autorización de Gerencia */}
-          {canManageUsers && (
+          <CardContent className="space-y-6 text-xs">
+            {/* Subsección: Clave de Autorización de Gerencia */}
             <div className="p-4 rounded-xl bg-bone-100/70 border border-bone-300 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
@@ -1296,141 +1295,184 @@ export function ConfigurationPage() {
                 </form>
               </div>
             </div>
-          )}
 
-          {/* Tabla de Usuarios Registrados */}
-          <div className="bezel-shell">
-            <div className="bezel-core p-0 overflow-x-auto bg-white">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-bone-200 bg-bone-50/70 font-mono text-[11px] text-bone-600 uppercase tracking-wider">
-                    <th className="p-3 font-semibold">Legajo</th>
-                    <th className="p-3 font-semibold">Nombre y Apellido</th>
-                    <th className="p-3 font-semibold">Rol Asignado</th>
-                    <th className="p-3 font-semibold">Estado</th>
-                    <th className="p-3 text-right">Acciones de Cuenta</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-bone-100 font-sans">
-                  {usersList.map((u) => {
-                    const isSelf = u.id === user?.id;
-                    return (
-                      <tr key={u.id} className="hover:bg-bone-50/60 transition-colors">
-                        <td className="p-3 font-mono font-bold text-obsidian whitespace-nowrap">
-                          {u.legajo || '—'}
-                        </td>
-                        <td className="p-3 font-semibold text-obsidian">
-                          <div className="flex items-center gap-1.5">
-                            <span>{u.nombre}</span>
-                            {isSelf && (
-                              <span className="text-[9px] bg-bone-200 text-bone-700 font-mono px-1.5 py-0.2 rounded">
-                                Tú
-                              </span>
+            {/* Tabla de Usuarios Registrados */}
+            <div className="bezel-shell">
+              <div className="bezel-core p-0 overflow-x-auto bg-white">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-bone-200 bg-bone-50/70 font-mono text-[11px] text-bone-600 uppercase tracking-wider">
+                      <th className="p-3 font-semibold">Legajo</th>
+                      <th className="p-3 font-semibold">Nombre y Apellido</th>
+                      <th className="p-3 font-semibold">Rol Asignado</th>
+                      <th className="p-3 font-semibold">Estado</th>
+                      <th className="p-3 text-right">Acciones de Cuenta</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-bone-100 font-sans">
+                    {usersList.map((u) => {
+                      const isSelf = u.id === user?.id;
+                      return (
+                        <tr key={u.id} className="hover:bg-bone-50/60 transition-colors">
+                          <td className="p-3 font-mono font-bold text-obsidian whitespace-nowrap">
+                            {u.legajo || '—'}
+                          </td>
+                          <td className="p-3 font-semibold text-obsidian">
+                            <div className="flex items-center gap-1.5">
+                              <span>{u.nombre}</span>
+                              {isSelf && (
+                                <span className="text-[9px] bg-bone-200 text-bone-700 font-mono px-1.5 py-0.2 rounded">
+                                  Tú
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-bone-500 block font-normal">{u.cargo || 'Personal de Planta'}</span>
+                          </td>
+                          <td className="p-3">
+                            {!isSelf ? (
+                              <select
+                                value={u.rol}
+                                onChange={(e) => handleChangeUserRole(u, e.target.value)}
+                                className="text-xs font-medium py-1 px-2 rounded-lg border border-bone-300 bg-white"
+                              >
+                                <option value={ROLES.OPERARIO}>Operario</option>
+                                <option value={ROLES.CALIDAD}>Calidad</option>
+                                <option value={ROLES.ADMINISTRADOR}>Administrador</option>
+                              </select>
+                            ) : (
+                              <Badge
+                                variant={
+                                  u.rol === ROLES.ADMINISTRADOR
+                                    ? 'default'
+                                    : u.rol === ROLES.CALIDAD
+                                    ? 'paleGreen'
+                                    : 'outline'
+                                }
+                              >
+                                {u.rol}
+                              </Badge>
                             )}
-                          </div>
-                          <span className="text-[10px] text-bone-500 block font-normal">{u.cargo || 'Personal de Planta'}</span>
-                        </td>
-                        <td className="p-3">
-                          {canManageUsers && !isSelf ? (
-                            <select
-                              value={u.rol}
-                              onChange={(e) => handleChangeUserRole(u, e.target.value)}
-                              className="text-xs font-medium py-1 px-2 rounded-lg border border-bone-300 bg-white"
-                            >
-                              <option value={ROLES.OPERARIO}>Operario</option>
-                              <option value={ROLES.CALIDAD}>Calidad</option>
-                              <option value={ROLES.ADMINISTRADOR}>Administrador</option>
-                            </select>
-                          ) : (
-                            <Badge
-                              variant={
-                                u.rol === ROLES.ADMINISTRADOR
-                                  ? 'default'
-                                  : u.rol === ROLES.CALIDAD
-                                  ? 'paleGreen'
-                                  : 'outline'
-                              }
-                            >
-                              {u.rol}
+                          </td>
+                          <td className="p-3">
+                            <Badge variant={u.activo !== false ? 'paleGreen' : 'default'} dot={u.activo !== false}>
+                              {u.activo !== false ? 'Activo' : 'Desactivado'}
                             </Badge>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <Badge variant={u.activo !== false ? 'paleGreen' : 'default'} dot={u.activo !== false}>
-                            {u.activo !== false ? 'Activo' : 'Desactivado'}
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {canManageUsers && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleOpenPasswordModal(u)}
-                                  className="text-[11px] h-7 px-2.5"
-                                  title="Blanquear o cambiar contraseña"
-                                >
-                                  <Lock className="w-3 h-3 mr-1" />
-                                  Clave
-                                </Button>
-                                {!isSelf && (
-                                  <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleToggleUserActive(u)}
-                                      className="text-[11px] h-7 px-2.5"
-                                    >
-                                      <Power className="w-3 h-3 mr-1" />
-                                      {u.activo !== false ? 'Desactivar' : 'Activar'}
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteUser(u)}
-                                      className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                      title="Eliminar usuario"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenPasswordModal(u)}
+                                className="text-[11px] h-7 px-2.5"
+                                title="Blanquear o cambiar contraseña"
+                              >
+                                <Lock className="w-3 h-3 mr-1" />
+                                Clave
+                              </Button>
+                              {!isSelf && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleToggleUserActive(u)}
+                                    className="text-[11px] h-7 px-2.5"
+                                  >
+                                    <Power className="w-3 h-3 mr-1" />
+                                    {u.activo !== false ? 'Desactivar' : 'Activar'}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteUser(u)}
+                                    className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    title="Eliminar usuario"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Users className="w-5 h-5 text-olive-800" />
+              <span>Gestión de Personal y Cuentas de Acceso</span>
+            </CardTitle>
+            <p className="text-xs text-bone-600 mt-0.5">
+              Administración de cuentas y asignación de rangos jerárquicos de planta.
+            </p>
+          </CardHeader>
+          <CardContent className="text-xs">
+            <div className="p-4 rounded-xl bg-bone-100/70 border border-bone-300 flex items-start gap-3 text-bone-700">
+              <Lock className="w-4 h-4 text-bone-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-obsidian">Acceso Restringido para Operarios</p>
+                <p className="text-[11px] text-bone-600 mt-0.5 leading-relaxed">
+                  Has iniciado sesión como <strong className="text-obsidian">{user?.nombre}</strong> ({role} · Legajo: {user?.legajo || '—'}). La modificación de cuentas, asignación de roles, blanqueo de claves y administración de permisos de acceso requieren rango de <strong>Gerente / Administrador</strong>.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ---------------- JERARQUÍA DE PERFILES Y MATRIZ DE PERMISOS ---------------- */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-olive-800" />
-            <span>Jerarquía de Perfiles y Control de Permisos</span>
-          </CardTitle>
-          <p className="text-xs text-bone-600">
-            Niveles de seguridad operacional configurados para el personal de Olivícola Luján.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-olive-800" />
+                <span>Jerarquía de Perfiles y Control de Permisos</span>
+              </CardTitle>
+              <p className="text-xs text-bone-600">
+                Niveles de seguridad operacional configurados para el personal de Olivícola Luján.
+              </p>
+            </div>
+            {role === ROLES.OPERARIO && (
+              <Badge variant="outline" className="text-amber-800 border-amber-300 bg-amber-50 gap-1 self-start sm:self-auto font-mono text-[10px]">
+                <Lock className="w-3 h-3 text-amber-700" />
+                <span>Cambio de rol inhabilitado para Operarios</span>
+              </Badge>
+            )}
+          </div>
         </CardHeader>
 
         <CardContent className="space-y-4 text-xs">
+          {role === ROLES.OPERARIO && (
+            <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-amber-900 text-xs flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold block text-amber-950">Seguridad: Modo Operario Protegido</span>
+                <span className="text-[11px] text-amber-800 leading-relaxed">
+                  La conmutación manual de perfil y salto entre usuarios está inhabilitada para el personal de planta para prevenir accesos no autorizados. Para utilizar funciones de Calidad o Gerencia, cierra sesión e inicia con las credenciales correspondientes.
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Operario de Planta */}
             <div
-              onClick={() => switchRole('operario')}
-              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+              onClick={canSwitchRole ? () => switchRole('operario') : undefined}
+              className={`p-4 rounded-xl border transition-all ${
+                canSwitchRole ? 'cursor-pointer hover:border-bone-300' : 'cursor-default'
+              } ${
                 role === ROLES.OPERARIO
                   ? 'border-olive-800 bg-olive-50 ring-1 ring-olive-800'
-                  : 'border-bone-200 bg-white hover:border-bone-300'
+                  : 'border-bone-200 bg-white'
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">
@@ -1447,11 +1489,13 @@ export function ConfigurationPage() {
 
             {/* Responsable de Calidad */}
             <div
-              onClick={() => switchRole('calidad')}
-              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+              onClick={canSwitchRole ? () => switchRole('calidad') : undefined}
+              className={`p-4 rounded-xl border transition-all ${
+                canSwitchRole ? 'cursor-pointer hover:border-bone-300' : 'cursor-default'
+              } ${
                 role === ROLES.CALIDAD
                   ? 'border-emerald-700 bg-emerald-50 ring-1 ring-emerald-700'
-                  : 'border-bone-200 bg-white hover:border-bone-300'
+                  : 'border-bone-200 bg-white'
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">
@@ -1468,11 +1512,13 @@ export function ConfigurationPage() {
 
             {/* Gerente / Administrador */}
             <div
-              onClick={() => switchRole('admin')}
-              className={`cursor-pointer p-4 rounded-xl border transition-all ${
+              onClick={canSwitchRole ? () => switchRole('admin') : undefined}
+              className={`p-4 rounded-xl border transition-all ${
+                canSwitchRole ? 'cursor-pointer hover:border-bone-300' : 'cursor-default'
+              } ${
                 role === ROLES.ADMINISTRADOR
                   ? 'border-obsidian bg-bone-100 ring-1 ring-obsidian'
-                  : 'border-bone-200 bg-white hover:border-bone-300'
+                  : 'border-bone-200 bg-white'
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">

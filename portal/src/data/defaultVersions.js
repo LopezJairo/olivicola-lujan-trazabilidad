@@ -1,14 +1,61 @@
 export const DEFAULT_VERSIONS_DATA = {
   app_name: "Olivícola Luján - Sistema de Trazabilidad Industrial",
-  latest_version: "1.0.3",
-  updated_at: "2026-09-29",
+  latest_version: "1.0.5",
+  updated_at: "2026-10-01",
   contact_support: "soporte@olivicolalujan.com",
   releases: [
     {
-      "version": "1.0.4",
-      "date": "30 de Septiembre, 2026",
+      "version": "1.0.5",
+      "date": "1 de Octubre, 2026",
       "tag": "Estable · Recomendada",
       "status": "latest",
+      "summary": "Seguridad operacional y control de accesos: Inhabilitación estricta de cambio de rol y salto entre usuarios para cuentas de operarios. Protección de la gestión de personal, contraseñas y permisos jerárquicos.",
+      "downloads": {
+        "windows": {
+          "available": true,
+          "name": "Windows x64",
+          "arch": "64-bit (x86_64)",
+          "os_req": "Windows 10 / 11",
+          "size": "81 MB",
+          "portable_name": "Olivicola Lujan Trazabilidad 1.0.5.exe",
+          "portable_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.5/Olivicola.Lujan.Trazabilidad.1.0.5.exe",
+          "setup_name": "Olivicola Lujan Trazabilidad Setup 1.0.5.exe",
+          "setup_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.5/Olivicola.Lujan.Trazabilidad.Setup.1.0.5.exe",
+          "role_badge": "Recomendado para Servidor Host o Cliente"
+        },
+        "mac": {
+          "available": true,
+          "name": "macOS",
+          "arch": "Apple Silicon (ARM64)",
+          "os_req": "macOS 12.0+",
+          "size": "99 MB",
+          "dmg_name": "Olivicola Lujan Trazabilidad-1.0.5-arm64.dmg",
+          "dmg_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.5/Olivicola.Lujan.Trazabilidad-1.0.5-arm64.dmg",
+          "zip_name": "Olivicola Lujan Trazabilidad-1.0.5-arm64-mac.zip",
+          "zip_url": "https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/download/v1.0.5/Olivicola.Lujan.Trazabilidad-1.0.5-arm64-mac.zip",
+          "role_badge": "Terminal Cliente LAN o Administración"
+        }
+      },
+      "changelog": [
+        {
+          "category": "Seguridad Operacional",
+          "text": "Bloqueo integral de conmutación de perfiles para operarios, impidiendo saltar a cuentas de administración o calidad."
+        },
+        {
+          "category": "Control de Usuarios",
+          "text": "Módulo de gestión de personal, blanqueo de contraseñas y asignación de rangos restringido exclusivamente a Gerencia General."
+        },
+        {
+          "category": "Estabilidad y Red",
+          "text": "Persistencia de credenciales con control de sesión seguro y sincronización LAN reactiva."
+        }
+      ]
+    },
+    {
+      "version": "1.0.4",
+      "date": "30 de Septiembre, 2026",
+      "tag": "Versión Previa",
+      "status": "previous",
       "summary": "Corrección definitiva de arranque de servidor en Electron: soporte nativo ES Module en paquetes desempaquetados de servidor y catálogos, enlaces de descarga directa y sincronización en tiempo real.",
       "downloads": {
         "windows": {
