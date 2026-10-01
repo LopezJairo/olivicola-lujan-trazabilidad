@@ -2,52 +2,55 @@
 title: "02 - Personas y experiencia de uso"
 proyecto: "Olivícola Luján"
 tipo: documentacion
-actualizado: 2026-09-24
+actualizado: 2026-10-01
+version: "1.0.6"
 tags:
   - olivicola-lujan
-  - mvp
+  - perfiles
+  - ux
 ---
 
 # 02 - Personas y experiencia de uso
 
 [[Olivícola Luján/00 - Índice general|← Volver al índice general]]
 
-## Usuarios
+## Matriz de Perfiles y Jerarquía de Accesos
 
-| Persona | Necesidad principal | Experiencia tecnológica |
-|---|---|---|
-| Operario | Identificar, registrar y mover tambores sin dudas. | Muy baja, según el requerimiento. |
-| Gerente o administrador | Revisar inventario, corregir datos y administrar catálogos. | Mayor conocimiento de la operación. |
+El sistema implementa una estricta separación de responsabilidades y permisos adaptada a la dinámica industrial de Olivícola Luján:
 
-Los roles son una intención del producto. La interfaz actual muestra un rol, pero no impone una separación de permisos por función. Ver [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]].
+| Perfil | Responsabilidades | Nivel Tecnológico | Interfaz y Accesibilidad |
+|---|---|---|---|
+| **Operador de Planta** | Pesaje de tambores en balanza, escaneo rápido continuo con HPRT N130BT, toma de inventario físico por sectores, impresión térmica Zebra GC420t. | Mínimo. No debe lidiar con conceptos informáticos ni configuraciones. | **Modo Operario Protegido:** Interfaz limpia con atajos directos (1 al 7). Las secciones de *Jerarquía de Perfiles*, *Cambio de Roles* y *Gestión de Personal* están **100% ocultas**. No puede modificar contraseñas ni permisos. |
+| **Responsable de Calidad** | Autorización y liberación de lotes, muestreos fisicoquímicos de salmuera (pH, salinidad %, acidez, defectos), retención de lotes observados, auditoría de fermentación. | Medio. Enfocado en parámetros de proceso e inocuidad alimentaria. | Acceso al módulo de Control de Calidad (`/calidad`), visualización técnica de fichas de tambor y trazabilidad de lotes. |
+| **Gerente / Administrador** | Auditoría operativa en tiempo real, gestión de catálogos oficiales del Excel, copias de seguridad de base de datos, configuración de red LAN (Servidor Host vs Terminales), alta de personal y asignación de rangos. | Avanzado. Supervisión general y toma de decisiones comerciales y técnicas. | Control total del sistema. Visualización y administración de cuentas de usuario, tabla de personal, configuración de red y clave maestra de seguridad. |
 
-## Principios de uso
+---
 
-1. Mostrar acciones concretas: «Escanear un tambor», «Registrar tambor», «Guardar movimiento».
-2. Dar prioridad al escáner y al alta desde el inicio.
-3. Elegir valores mediante listas; no pedir que se memoricen códigos.
-4. Generar automáticamente número y código de barras.
-5. Mantener visible el número del tambor en su ficha.
-6. Informar si una operación se guardó o falló.
-7. Conservar el contexto y explicar cómo recuperarse de un error.
-8. Pedir confirmación explícita antes de eliminar.
+## Principios de Diseño Industrial y Baja Fricción
 
-## Implementación actual
+1. **Prioridad al Teclado Numérico y Lectores Ópticos:**
+   - La pantalla de escaneo (`/escanear`) mantiene foco automático constante sobre el campo de lectura.
+   - Atajos numéricos directos disponibles desde cualquier pantalla:
+     - `1`: Inicio / Resumen de Planta
+     - `2`: Escanear Tambor
+     - `3`: Inventario de Tambores
+     - `4`: Registrar Nuevo Tambor / Pesaje
+     - `5`: Control de Calidad
+     - `6`: Historial y Auditoría
+     - `7`: Configuración del Sistema
+     - `Cmd + L` / `Ctrl + L`: Consola de Diagnóstico y Logs en vivo
+2. **Eliminación de la Memorización de Códigos:**
+   - El operario solo selecciona nombres claros en listas desplegables (ej. *"Arauco"*, *"Entera"*, *"Verde"*); el software compila en milisegundos los códigos alfanuméricos estandarizados (`ARA`, `ENT`, `VDE`).
+3. **Pesos Predeterminados:**
+   - Al seleccionar el tipo de producto en el formulario de alta, el sistema precarga el peso sugerido oficial de planta (ej. Descarozada: 140 kg; Entera: 180 kg; Rellenas: 160 kg), permitiendo al operador confirmar o ajustar el pesaje de balanza con solo presionar Enter.
+4. **Protección Contra Errores Operativos Involuntarios:**
+   - Para eliminar un tambor se requiere escribir explícitamente su código visible (`T000001`), evitando pulsaciones accidentales.
+   - La eliminación mantiene un registro de baja lógica auditable en el Historial para prevenir la pérdida de trazabilidad.
 
-El inicio tiene accesos destacados al escáner y al registro. El formulario está dividido entre características del producto y datos de ingreso. El escáner recibe foco automático. Se usan mensajes de resultado, estados de carga y botones deshabilitados durante una operación. Los modales se basan en Radix y las pantallas tienen reglas de adaptación a móvil.
+---
 
-## Validación pendiente con operarios
+## Autenticación y Control de Sesión
 
-- Lectura de textos y códigos a la distancia real de trabajo.
-- Tamaño de controles con guantes o pantallas táctiles, si se usan.
-- Contraste en iluminación de planta.
-- Comprensión de términos como presentación, calibre y estado.
-- Navegación sin mouse mediante teclado y lector.
-- Recuperación después de escanear un código desconocido.
-- Conveniencia de una pantalla operativa con menos opciones visibles.
-
-No se realizó una prueba de accesibilidad ni una observación de usuarios. La estética y el tamaño de texto deben validarse en el equipo real.
-
-## Primer uso propuesto
-
-Un responsable configura los catálogos, muestra un tambor de prueba y acompaña un alta y un movimiento. Luego observa a un operario repetir el circuito sin indicaciones y registra las dudas. Esta capacitación aún no se ejecutó.
+- Cada miembro del personal cuenta con un número de **Legajo** único (ej. `OP-01`, `OP-02`, `CAL-01`, `ADM-01`) y una contraseña personal.
+- La sesión permanece activa en el equipo durante el turno de trabajo y se muestra claramente en el encabezado y en el pie de la barra lateral con el nombre y cargo del operador.
+- Al cerrar el turno, el operador puede presionar el botón de desconexión en la esquina inferior izquierda para permitir el ingreso del siguiente turno.

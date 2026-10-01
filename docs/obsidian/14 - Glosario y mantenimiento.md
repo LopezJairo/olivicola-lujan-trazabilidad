@@ -2,55 +2,46 @@
 title: "14 - Glosario y mantenimiento"
 proyecto: "Olivícola Luján"
 tipo: documentacion
-actualizado: 2026-09-24
+actualizado: 2026-10-01
+version: "1.0.6"
 tags:
   - olivicola-lujan
-  - mvp
+  - glosario
+  - mantenimiento
 ---
 
 # 14 - Glosario y mantenimiento
 
 [[Olivícola Luján/00 - Índice general|← Volver al índice general]]
 
-## Glosario
+## Glosario de Términos Industriales y de Software
 
-| Término | Significado en el MVP |
+| Término | Definición en el Contexto de Olivícola Luján |
 |---|---|
-| Tambor | Unidad física cuyo contenido y recorrido se registra. |
-| ID técnico | Identificador interno del registro, usado en rutas y persistencia. |
-| Número de tambor | Código visible secuencial como `T000001`. |
-| Código descriptivo | Combinación de características del producto. |
-| Código completo | Código descriptivo más número del tambor. |
-| CODE 128 | Formato de barras que representa el código completo. |
-| Catálogo | Conjunto de opciones administrables para un campo. |
-| Lote | Identificación del lote que informa la empresa. |
-| Movimiento | Registro de una acción que puede cambiar ubicación/estado. |
-| Historial | Secuencia de eventos y cambios por tambor. |
-| MVP | Versión mínima para comprobar el circuito de trabajo con usuarios. |
-| Demo local | Datos almacenados en el navegador actual para pruebas. |
-| Piloto | Prueba acotada en la empresa con condiciones y responsables definidos. |
-| Transacción | Operación que garantiza que un conjunto de escrituras se confirma o revierte como unidad. |
-| Idempotencia | Repetir una solicitud sin duplicar su efecto. |
+| **Tambor** | Unidad básica de contención y estiba industrial (tambores plásticos de 140, 160 o 180 kg según el producto). |
+| **Tambor ID (`tambor_id`)** | Identificador visible secuencial permanente (ej. `T000001`). Nunca se repite ni se recicla tras una baja. |
+| **Código Descriptivo** | Código alfanumérico con guiones que resume las 5 características principales: `PRODUCTO-PRESENTACIÓN-VARIEDAD-CALIBRE-CALIDAD` (ej: `ENT-VDE-ALOR-121/140-PRI`). |
+| **Código Compacto** | Código alfanumérico sin guiones ni barras (`ENTVDEALOR121140PRI`), optimizado como base oficial para generar el código de barras CODE 128. |
+| **Código Completo con ID** | Identificador total de trazabilidad: `ENT-VDE-ALOR-121/140-PRI-T000001`. Permite saber el contenido y la unidad individual exacta. |
+| **CODE 128** | Simbología de código de barras de alta densidad utilizada en las etiquetas térmicas. |
+| **ZPL II (Zebra Programming Language)** | Lenguaje nativo de control de las impresoras industriales Zebra GC420t que permite imprimir a nivel de hardware con máxima nitidez. |
+| **Sensor de Espacio (Gap / Web)** | Muesca o separación entre etiquetas en el rollo que la impresora detecta ópticamente para cortar o detener el avance con precisión milimétrica. |
+| **Modo Batch / Almacenamiento** | Modalidad del escáner HPRT N130BT que permite guardar en memoria interna hasta 50.000 lecturas en planta para volcarlas luego en ráfaga a la computadora. |
+| **Servidor Host** | Computadora principal de la planta (ej. Balanza de Entrada) que aloja la base de datos SQLite y sirve la API local en el puerto 4000. |
+| **Terminal Cliente LAN** | Computadora secundaria que se conecta por red interna a la IP del Servidor Host para consultar y actualizar datos en tiempo real. |
+| **Legajo** | Identificador corto único del empleado (ej. `OP-01`, `CAL-01`, `ADM-01`) para inicio de sesión en el sistema. |
+| **Clave Maestra de Autorización** | Contraseña confidencial de gerencia requerida para otorgar o modificar permisos de administración y calidad. |
+| **Liberación de Lote** | Dictamen formal emitido por el responsable de calidad tras el análisis fisicoquímico que habilita un lote para calibrado o despacho. |
 
-## Mantener la documentación
+---
 
-1. Revisar [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]] después de cada cambio verificable.
-2. Actualizar [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]] cuando una tarea termine, indicando su evidencia.
-3. Registrar decisiones y supuestos en [[Olivícola Luján/13 - Decisiones y preguntas abiertas|13 - Decisiones y preguntas abiertas]].
-4. Actualizar los manuales si cambian textos o pasos de la interfaz.
-5. Cambiar `actualizado` en el encabezado de cada nota modificada.
-6. Comprobar que los enlaces del índice siguen resolviendo.
+## Mantenimiento de la Bóveda de Documentación
 
-Las notas usan enlaces completos desde la raíz de la bóveda (`Olivícola Luján/...`) para evitar colisiones con documentos de otros proyectos. No requieren plugins de Obsidian; los diagramas están en Mermaid.
-
-## Fuentes y precedencia
-
-La especificación original se conserva en [[Olivícola Luján/99 - Especificación original|99 - Especificación original]]. La aclaración posterior del usuario confirma el enfoque de MVP para una empresa con datos reales. El código local determina el estado implementado; las ejecuciones de pruebas determinan lo verificado. Una intención del documento original no debe convertirse en una afirmación de funcionalidad terminada.
-
-## Copias
-
-Esta sección existe en la bóveda y tiene una copia en `docs/obsidian/` del proyecto. No hay sincronización automática entre ambas ubicaciones. Mantenerlas alineadas de manera consciente y evitar sobrescribir cambios manuales sin revisión.
-
-## Información que no debe guardarse aquí
-
-Contraseñas, tokens, credenciales de servicio y datos operativos sensibles ajenos al propósito de la documentación. Estos documentos describen la aplicación; no reemplazan la base de datos ni un sistema de copias de seguridad.
+1. **Ubicaciones:**
+   - La documentación reside en la carpeta `docs/obsidian/` del repositorio de código fuente y se replica en la bóveda de Obsidian del usuario en `/Users/jairolopez/Desktop/Claude by Jairo/Claude by Jairo/Olivícola Luján`.
+2. **Normas de Redacción:**
+   - Cada nota cuenta con metadatos frontmatter YAML (`title`, `proyecto`, `actualizado`, `version`, `tags`).
+   - Los enlaces internos emplean sintaxis Obsidian estándar con nombre de carpeta: `[[Olivícola Luján/XX - Nombre de Nota|XX - Nombre de Nota]]`.
+3. **Actualización:**
+   - Cada cambio de versión (ej. v1.0.6 a v1.0.7) debe registrarse en el índice general (`00`) y en la nota de estado (`10`).
+   - Mantener las notas sincronizadas entre el repositorio y la bóveda local de Obsidian.

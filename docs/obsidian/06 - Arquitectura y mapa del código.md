@@ -2,82 +2,134 @@
 title: "06 - Arquitectura y mapa del código"
 proyecto: "Olivícola Luján"
 tipo: documentacion
-actualizado: 2026-09-25
+actualizado: 2026-10-01
+version: "1.0.6"
 tags:
   - olivicola-lujan
-  - mvp
+  - arquitectura
+  - electron
+  - stack
 ---
 
 # 06 - Arquitectura y mapa del código
 
 [[Olivícola Luján/00 - Índice general|← Volver al índice general]]
 
-## Stack
+## Stack Tecnológico Integral
 
-| Capa | Tecnología | Uso |
-|---|---|---|
-| Interfaz | React 18, JSX y Vite ESM | Pantallas y compilación. |
-| Estilos | Tailwind CSS y CSS propio | Tokens, mapeo de colores y diseño adaptable. |
-| UI | Componentes de patrón shadcn con Radix, CVA y utilidades | Botón y diálogo en `src/components/ui/`. |
-| Iconografía | lucide-react | Acciones y navegación. |
-| Rutas | react-router-dom | Navegación y rutas protegidas. |
-| Datos | TanStack React Query | Consulta, mutaciones e invalidación. |
-| Etiquetas | jsbarcode | CODE 128 en SVG. |
-| Persistencia | localStorage | Persistencia en el navegador por repositorio. |
-
-Las versiones solicitadas están en `package.json`; las resueltas se fijan en `package-lock.json`. El proyecto aún no dispone de un despliegue remoto verificado.
-
-## Flujo de dependencias
+El sistema está construido como una solución desktop nativa de alto rendimiento con backend de sincronización LAN integrado:
 
 ```mermaid
-flowchart TD
-    UI[App y pantallas] --> Q[React Query]
-    Q --> R[repository.js]
-    R --> D[domain.js: validación y códigos]
-    R --> L[Persistencia local: localStorage]
-    A[AuthProvider] --> S[Sesión de usuario local]
-    A --> P[ProtectedRoute]
-    P --> UI
+graph TB
+    subgraph "Capa de Presentación y UI (Electron Renderer)"
+        UI[React 18 + Vite 5 + Tailwind CSS]
+        RQ[TanStack Query v5 - Caché y Mutaciones]
+        BC[jsbarcode - Renderizado CODE 128 SVG]
+        ZP[Generador Nativo ZPL II - Zebra GC420t]
+        AU[AuthProvider - Jerarquía de Perfiles y Guardas]
+    end
+
+    subgraph "Capa de Proceso Principal (Electron Main Process)"
+        EMP[electron/main.cjs - Ventana, Ciclo de Vida e IPC]
+        PRL[electron/preload.cjs - Context Bridge Seguro]
+        SRV[server/index.js - Servidor Express LAN Embebido]
+    end
+
+    subgraph "Capa de Persistencia y Red"
+        SQL[SQLite / data/olivicola.db - Base de Datos Host]
+        LAN[Red Local LAN - API REST en puerto 4000]
+        LST[localStorage Repositorio - Respaldo y Modo Offline]
+    end
+
+    UI --> PRL
+    PRL --> EMP
+    EMP --> SRV
+    SRV --> SQL
+    UI --> LAN
+    UI --> LST
 ```
 
-## Mapa del código
+### Detalle de Tecnologías:
+- **Entorno de Escritorio:** Electron 33 (multiplataforma Windows x64 y macOS ARM64 Apple Silicon).
+- **Frontend:** React 18, Vite 5, Tailwind CSS, Lucide React (iconografía técnica), Radix UI (primitivas de accesibilidad).
+- **Gestor de Estado Asíncrono:** `@tanstack/react-query` con invalidación reactiva.
+- **Códigos de Barra:** `jsbarcode` (renderizado SVG de CODE 128) y generador nativo ZPL II para impresoras industriales Zebra.
+- **Backend Embebido:** Node.js con Express, arquitectura de endpoints REST (`/api/status`, `/api/tambores`, `/api/movimientos`, `/api/sync`) y soporte para base de datos SQLite persistente en disco del sistema.
+- **Pruebas y Calidad:** Vitest con 7 archivos de pruebas y **94 tests unitarios y de integración**.
+- **Portal de Distribución:** Vite SPA desplegado en **Vercel** (`portal/`) para descarga pública de instaladores `.exe` y `.dmg`.
 
-| Archivo o carpeta | Responsabilidad |
-|---|---|
-| `src/main.jsx` | Montaje, router, QueryClient y límite de errores. |
-| `src/App.jsx` | Enrutamiento principal y estructura base con Layout. |
-| `src/pages/` | Vistas y pantallas operativas de la aplicación. |
-| `src/components/Auth.jsx` | Sesión, protección de rutas y selector de rol. |
-| `src/components/Barcode.jsx` | SVG del código y generación del documento de impresión. |
-| `src/components/ui/` | Botón y modal reutilizables. |
-| `src/api/demoData.js` | Ejemplos iniciales y catálogos por defecto. |
-| `src/api/repository.js` | Persistencia local, operaciones CRUD, auditoría y respaldo. |
-| `src/lib/domain.js` | Reglas, validación, diferencias y búsqueda. |
-| `src/lib/utils.js` | Composición de clases CSS y formateo. |
-| `src/index.css` | Tokens y estilos de escritorio/móvil. |
-| `tests/domain.test.js` | Pruebas unitarias de dominio. |
-| `tests/repository.test.js` | Pruebas de integración del repositorio. |
-| `tests/ui.test.jsx` | Pruebas de componentes de interfaz. |
+---
 
-## Rutas
+## Mapa de Archivos del Proyecto
 
-| Ruta | Pantalla |
-|---|---|
-| `/` | Inicio y resumen. |
-| `/escanear` | Lectura USB o manual. |
-| `/inventario` | Listado, búsqueda y filtros. |
-| `/historial` | Eventos globales. |
-| `/configuracion` | Catálogos y respaldo. |
-| `/tambores/nuevo` | Alta. |
-| `/tambores/:id` | Ficha; `id` es el identificador técnico. |
-| `/tambores/:id/editar` | Edición. |
-| `/tambores/:id/etiqueta` | Etiqueta individual. |
-| `/etiquetas` | Selección e impresión múltiple. |
-| `/ayuda` | Guía rápida. |
-| `/login`, `/register`, `/forgot-password`, `/reset-password` | Entrada al sistema y selector de rol. |
+```text
+OlivicolaLujanTrazabilidad/
+├── electron/
+│   ├── main.cjs             # Proceso principal: gestión de ventana, arranque de Express y menús
+│   └── preload.cjs          # Puente IPC seguro (window.electronAPI)
+├── server/
+│   ├── index.js             # Servidor backend Express para red LAN (puerto 4000)
+│   ├── database.js          # Conexión y esquema SQLite (data/olivicola.db)
+│   └── routes/              # Endpoints para tambores, catálogos, auditoría y usuarios
+├── src/
+│   ├── api/
+│   │   ├── repository.js    # Capa de abstracción de datos: sincronización LAN, SQLite y fallback
+│   │   └── demoData.js      # Catálogos oficiales del Excel y datos semilla
+│   ├── components/
+│   │   ├── Auth.jsx         # Contexto de autenticación, legajos, permisos y guardas
+│   │   ├── Barcode.jsx      # Etiquetas físicas térmicas, calibración 100x50 mm y ZPL II
+│   │   ├── Layout.jsx       # Barra lateral responsiva, estado de red LAN y atajos 1-7
+│   │   └── ui/              # Componentes base (Button, Card, Dialog, Badge, Input)
+│   ├── lib/
+│   │   ├── domain.js        # Reglas de negocio: códigos compactos, validaciones y pesos
+│   │   └── logger.js        # Registrador de eventos para la consola de diagnóstico
+│   ├── pages/
+│   │   ├── Dashboard.jsx        # Pantalla principal con estadísticas y accesos directos
+│   │   ├── ScanPage.jsx         # Escaneo rápido continuo de tambores con HPRT N130BT
+│   │   ├── InventoryPage.jsx    # Grilla de tambores, filtros y cálculo de kilos
+│   │   ├── InventoryAuditPage.jsx # Toma física de inventario por sectores (Batch Mode)
+│   │   ├── NewDrumPage.jsx      # Formulario de alta y pesaje con pesos sugeridos
+│   │   ├── EditDrumPage.jsx     # Edición de características y control de cambios
+│   │   ├── QualityPage.jsx      # Módulo exclusivo de Control de Calidad y liberación
+│   │   ├── BatchLabelsPage.jsx  # Impresión múltiple y exportación de comandos ZPL
+│   │   ├── HistoryPage.jsx      # Trazabilidad cronológica completa de eventos
+│   │   ├── ConfigurationPage.jsx# Catálogos, red LAN, logs y gestión de usuarios
+│   │   └── LoginPage.jsx        # Entrada segura por legajo y contraseña
+│   ├── App.jsx              # Enrutador principal de React Router
+│   └── main.jsx             # Punto de entrada del cliente React
+├── portal/                  # Portal web público en Vercel para descarga de ejecutables
+│   ├── public/              # versions.json y ejecutables compilados
+│   └── src/                 # Landing page con tabla de versiones y guías de instalación
+├── scripts/
+│   ├── build-win.cjs        # Script de compilación para Windows x64 (NSIS + Portable)
+│   ├── build-mac.cjs        # Script de compilación para macOS ARM64 (DMG + ZIP)
+│   └── upload-release.cjs   # Automatización de subida a GitHub Releases
+├── tests/                   # Suite de 94 pruebas automatizadas
+│   ├── domain.test.js       # Pruebas de reglas de negocio, códigos y pesos
+│   ├── architecture.test.js # Pruebas estructurales de componentes y dependencias
+│   ├── hardware_adaptation.test.js # Pruebas de Zebra GC420t (ZPL II) y HPRT N130BT
+│   ├── repository.test.js   # Pruebas de persistencia y aislamiento
+│   ├── auth_security.test.jsx # Pruebas de seguridad, legajos y ocultamiento de roles
+│   ├── ui.test.jsx          # Pruebas de renderizado de componentes y etiquetas
+│   └── sync.test.js         # Pruebas de sincronización LAN Host / Cliente
+└── package.json             # Versión activa v1.0.6 y configuración de Electron Builder
+```
 
-## Lectura y actualización
+---
 
-La consulta principal carga las entidades administradas. Tras una mutación exitosa se invalida la consulta principal en React Query. La caché considera frescos los datos durante 15 segundos.
+## Rutas del Sistema
 
-Ver [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]].
+| Ruta | Componente | Descripción y Permisos |
+|---|---|---|
+| `/` | `Dashboard` | Resumen operativo, indicadores de tambores y accesos directos (Atajo `1`). |
+| `/escanear` | `ScanPage` | Foco constante para lector HPRT N130BT (Atajo `2`). |
+| `/inventario` | `InventoryPage` | Tabla de tambores, filtrado multicriterio y exportación (Atajo `3`). |
+| `/inventario/toma` | `InventoryAuditPage` | Toma masiva por sectores con escáner en modo memoria. |
+| `/tambores/nuevo` | `NewDrumPage` | Alta y pesaje con pesos sugeridos oficiales (Atajo `4`). |
+| `/tambores/:id` | `DrumDetailPage` | Ficha técnica individual y trazabilidad completa del tambor. |
+| `/tambores/:id/editar`| `EditDrumPage` | Corrección de datos con registro en auditoría. |
+| `/calidad` | `QualityPage` | Muestreo fisicoquímico y liberación de lotes (Atajo `5`). |
+| `/etiquetas` | `BatchLabelsPage` | Impresión térmica masiva y generación ZPL II. |
+| `/historial` | `HistoryPage` | Registro histórico inmutable de planta (Atajo `6`). |
+| `/configuracion` | `ConfigurationPage` | Red LAN, catálogos, logs y personal (Atajo `7`, protegido). |
+| `/login` | `LoginPage` | Inicio de sesión seguro con Legajo y Contraseña. |

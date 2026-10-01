@@ -2,86 +2,138 @@
 title: "07 - Modelo de datos y catálogos"
 proyecto: "Olivícola Luján"
 tipo: documentacion
-actualizado: 2026-09-24
+actualizado: 2026-10-01
+version: "1.0.6"
 tags:
   - olivicola-lujan
-  - mvp
+  - catalogos
+  - modelo-datos
+  - excel-oficial
 ---
 
 # 07 - Modelo de datos y catálogos
 
 [[Olivícola Luján/00 - Índice general|← Volver al índice general]]
 
-## Entidades
+## Entidades Principales
 
-Las entidades del sistema corresponden a Tambor, Historial, Movimiento y Catálogo. Los identificadores `id` y las marcas temporales como `created_date` son campos generados automáticamente por el repositorio; no equivalen a `tambor_id`.
+El modelo de datos está estructurado alrededor de seis entidades normalizadas:
 
 ```mermaid
 erDiagram
+    USUARIO ||--o{ HISTORIAL : ejecuta
+    USUARIO ||--o{ MOVIMIENTO : realiza
     CATALOGO ||--o{ TAMBOR : clasifica
-    TAMBOR ||--o{ HISTORIAL : registra
-    TAMBOR ||--o{ MOVIMIENTO : tiene
+    TAMBOR ||--o{ HISTORIAL : audita
+    TAMBOR ||--o{ MOVIMIENTO : traslada
+    TAMBOR ||--o{ MUESTREO_CALIDAD : inspecciona
     CATALOGO ||--o{ MOVIMIENTO : define
 ```
 
-Las relaciones son lógicas mediante identificadores string. El diagrama no implica claves foráneas, borrado en cascada ni restricciones de base de datos ya configuradas.
+---
 
-## Tambor
+## 1. Entidad Tambor
 
-| Campo | Tipo | Regla o significado |
+Representa la unidad básica de almacenamiento en la planta (tambores de 140, 160 o 180 kg):
+
+| Campo | Tipo | Significado y Reglas de Negocio |
 |---|---|---|
-| `id` | string | Identificador técnico del registro. |
-| `tambor_id` | string | Número visible: `T000001` y siguientes. |
-| `codigo_descriptivo` | string | Cinco componentes del producto (`ENT-VDE-ALOR-121/140-PRI`). |
-| `codigo_compacto` | string | Código sin guiones ni barra del calibre (`ENTVDEALOR121140PRI`), base oficial para CODE 128. |
-| `codigo` | string | Descriptivo más número de tambor (`ENT-VDE-ALOR-121/140-PRI-T000001`). |
-| `producto`, `presentacion`, `variedad`, `calibre`, `calidad` | string | IDs de opciones de catálogo oficiales. |
-| `lote` | string | Obligatorio; se recortan espacios externos. |
-| `fecha_ingreso` | string | Obligatoria, formato esperado `YYYY-MM-DD`. |
-| `fecha_elaboracion` | string | Opcional; no posterior al ingreso. |
-| `peso` | number | Peso neto en kg (pesos sugeridos: Descarozada 140 kg, Entera/Griega 180 kg, Rellenas/Rodajas/Rotas 160 kg). |
-| `ubicacion`, `estado` | string | IDs de opciones de catálogo. |
-| `observaciones` | string | Texto opcional. |
-| `created_date` | string | Fecha/hora de creación. |
+| `id` | string | Identificador único técnico interno (ej. `tb-1727789012345`). |
+| `tambor_id` | string | Identificador secuencial visible y permanente (ej. `T000001`). No se reasigna. |
+| `codigo_descriptivo` | string | Código legible con 5 componentes (ej. `ENT-VDE-ALOR-121/140-PRI`). |
+| `codigo_compacto` | string | Versión sin guiones ni barras (ej. `ENTVDEALOR121140PRI`), base oficial para **CODE 128**. |
+| `codigo` | string | Código completo con ID: `ENT-VDE-ALOR-121/140-PRI-T000001`. |
+| `producto` | string | ID del catálogo oficial (ej. `cat-prod-1` -> *Entera*). |
+| `presentacion` | string | ID del catálogo oficial (ej. `cat-pres-1` -> *Verde*). |
+| `variedad` | string | ID del catálogo oficial (ej. `cat-var-1` -> *Aloreña*). |
+| `calibre` | string | ID del catálogo oficial (ej. `cat-cal-3` -> *121/140*). |
+| `calidad` | string | ID del catálogo oficial (ej. `cat-calid-1` -> *Primera*). |
+| `lote` | string | Código de lote del productor o molienda. Obligatorio. |
+| `fecha_ingreso` | string | Fecha de pesaje/recepción (`YYYY-MM-DD`). |
+| `fecha_elaboracion` | string | Fecha de cosecha/elaboración. Opcional (`<= fecha_ingreso`). |
+| `peso` | number | Peso neto real en kilogramos medido en balanza. |
+| `ubicacion` | string | ID del sector o fila actual (ej. `cat-ubi-1` -> *Nave A - Fila 1*). |
+| `estado` | string | Estado del lote (ej. *En fermentación*, *Liberado*, *Observado*). |
+| `observaciones` | string | Notas operativas o analíticas adicionales. |
+| `created_date` | string | Timestamp ISO 8601 de creación en el sistema. |
 
-## Historial
+---
 
-| Campo | Significado |
-|---|---|
-| `tambor_id` | Número visible, conservado aunque se borre la ficha. |
-| `tambor_ref` | ID técnico del tambor relacionado. |
-| `tipo` | Creación, edición, movimiento o eliminación. |
-| `campo` | Campo modificado, si corresponde. |
-| `valor_anterior`, `valor_nuevo` | Valores serializados como texto. |
-| `descripcion` | Descripción del evento. |
-| `observaciones` | Texto asociado, cuando corresponde. |
-| `actor` | Nombre disponible en la sesión o identidad demo. |
-| `created_date` | Fecha y hora para ordenar el historial. |
+## 2. Catálogos Oficiales de Gerencia (Excel Oficial)
 
-No hay snapshot completo en altas/eliminaciones ni copia histórica del nombre de cada catálogo. La conservación de registros no equivale a auditoría inmutable.
+Todos los valores de clasificación del software provienen del generador y catálogo oficial provisto por la Gerencia General de Olivícola Luján:
 
-## Movimiento
+### A. Productos (`producto`) y Pesos Sugeridos Oficiales
+| Nombre | Código | Peso Sugerido Oficial | Descripción |
+|---|---|---|---|
+| **Entera** | `ENT` | **180 kg** | Aceituna entera en salmuera tradicional. |
+| **Descarozada** | `DES` | **140 kg** | Aceituna sin carozo. |
+| **Rodajas** | `FET` | **160 kg** | Aceituna fileteada en rodajas / fetas. |
+| **Griegas** | `GRI` | **180 kg** | Aceituna negra estilo griego arrugada. |
+| **Rellenas** | `RELL` | **160 kg** | Aceituna descarozada rellena (pasta morrón u otros). |
+| **Rotas** | `ROTA` | **160 kg** | Aceituna rota para pasta o descarte secundario. |
 
-Contiene `tambor_id`, `tambor_ref`, `tipo`, `ubicacion_anterior`, `ubicacion_nueva`, `estado_anterior`, `estado_nuevo` y `observaciones`. `tipo` referencia una opción de catálogo de tipo `tipo_movimiento`. Los eventos de Historial complementan esta entidad; no la reemplazan.
+### B. Presentación / Color (`presentacion`)
+| Nombre | Código | Nombre | Código |
+|---|---|---|---|
+| **Verde** | `VDE` | **Para Griega** | `P/GR` |
+| **Negra** | `NN` | **Sin Carozo** | `S/C` |
+| **Base** | `BAS` | **Con Pasta** | `C/P` |
+| **Californiana** | `CALIF` | **Aceite** | `ACEITE` |
+| **Clara** | `CL` | | |
 
-## Catalogo
+### C. Variedades (`variedad`)
+| Nombre | Código | Descripción de Variedad |
+|---|---|---|
+| **Aloreña** | `ALOR` | Tradicional de mesa, textura firme. |
+| **Arauco** | `ARA` | Variedad insignia mendocina, gran calibre y sabor. |
+| **Manzanilla Fina** | `MF` | Excelente textura y rendimiento. |
+| **Picual** | `PIC` | Alto contenido de polifenoles y resistencia. |
+| **Empeltre** | `EMP` | Típica aceituna negra de sabor dulce y maduro. |
 
-Cada opción contiene `tipo`, `nombre`, `codigo`, `activo` y `orden`. Los tipos admitidos son producto, presentacion, variedad, calibre, calidad, ubicacion, estado y tipo_movimiento. Los selectores muestran opciones activas ordenadas por orden y luego por nombre. Una edición puede conservar una opción inactiva ya asignada.
+### D. Calibres Oficiales (`calibre`)
+| Calibre | Código | Calibre | Código |
+|---|---|---|---|
+| **Sin Calibre** | `SIN CAL` | **161/200** | `161/200` |
+| **80/120** | `80/120` | **201/240** | `201/240` |
+| **121/140** | `121/140` | **241/280** | `241/280` |
+| **141/160** | `141/160` | **281/320** | `281/320` |
+| **161/180** | `161/180` | **321/450** | `321/450` |
+| **181/200** | `181/200` | | |
 
-### Catálogos Oficiales de Gerencia:
-- **Productos:** Entera (`ENT`), Descarozada (`DES`), Rodajas (`FET`), Griegas (`GRI`), Rellenas (`RELL`), Rotas (`ROTA`).
-- **Presentación / Color:** Verde (`VDE`), Negra (`NN`), Base (`BAS`), Californiana (`CALIF`), Clara (`CL`), Para Griega (`P/GR`), Sin Carozo (`S/C`), Con Pasta (`C/P`), Aceite (`ACEITE`).
-- **Variedades:** Aloreña (`ALOR`), Arauco (`ARA`), Manzanilla Fina (`MF`), Picual (`PIC`), Empeltre (`EMP`).
-- **Calibres:** Sin Calibre (`SIN CAL`), `80/120`, `121/140`, `141/160`, `161/180`, `181/200`, `161/200`, `201/240`, `241/280`, `281/320`, `321/450`.
-- **Calidades:** Primera (`PRI`), Segunda (`SDA`), Tercera (`TRA`).
+### E. Calidades (`calidad`)
+- **Primera:** Código `PRI` (calidad de exportación y primera selección).
+- **Segunda:** Código `SDA` (mercado interno selecto).
+- **Tercera:** Código `TRA` (segunda selección o destino industrial).
 
-### Pesos Predeterminados / Sugeridos por Tipo de Producto:
-- **Descarozada:** 140 kg / tambor
-- **Entera / Griega:** 180 kg / tambor
-- **Rellenas / Rodajas / Rotas:** 160 kg / tambor
+---
 
-## Validaciones actuales y sus límites
+## 3. Entidad Historial y Auditoría
 
-Hay validación de pertenencia a catálogo, activación, lote, peso y relación entre fechas. La fecha de ingreso se comprueba por patrón y el control HTML. El repositorio valida la unicidad de `tambor_id` y de `(tipo, codigo)`. Para operar con múltiples puestos concurrentes en el futuro, las garantías de concurrencia deberán resolverse del lado del servidor.
+Registra cronológicamente cada cambio que experimenta un tambor:
+- `tambor_id`: Código visible del tambor.
+- `tambor_ref`: ID técnico de enlace.
+- `tipo`: *Creación*, *Edición*, *Movimiento*, *Pesaje*, *Calidad*, *Baja*.
+- `campo`: Atributo específico alterado (ej. `peso`, `ubicacion`, `estado`).
+- `valor_anterior` y `valor_nuevo`: Valores serializados antes y después del cambio.
+- `actor`: Nombre y legajo del usuario que realizó la acción.
+- `created_date`: Timestamp inmutable.
 
-Relacionado: [[Olivícola Luján/03 - Flujos y reglas del negocio|03 - Flujos y reglas del negocio]], [[Olivícola Luján/08 - Identificación y etiquetas|08 - Identificación y etiquetas]], [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]].
+---
+
+## 4. Entidad Movimiento
+
+Registra los traslados físicos entre sectores de planta:
+- `tambor_id`, `tipo_movimiento`, `ubicacion_anterior`, `ubicacion_nueva`, `estado_anterior`, `estado_nuevo`, `usuario`, `fecha` y `observaciones`.
+
+---
+
+## 5. Entidad Usuario y Control de Acceso
+
+- `id`: Identificador único (`usr-operario-01`, etc.).
+- `legajo`: Identificador de inicio de sesión (`OP-01`, `CAL-01`, `ADM-01`).
+- `nombre`: Nombre y apellido del operario o supervisor.
+- `password`: Contraseña almacenada en bóveda local segura.
+- `rol`: `operario`, `calidad` o `admin`.
+- `cargo`: Sector o puesto asignado (ej. *Balanza Entrada*, *Jefe de Planta*).
+- `activo`: Booleano para inhabilitar accesos sin borrar el historial del empleado.

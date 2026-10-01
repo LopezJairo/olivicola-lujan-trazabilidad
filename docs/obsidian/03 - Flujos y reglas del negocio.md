@@ -2,60 +2,98 @@
 title: "03 - Flujos y reglas del negocio"
 proyecto: "Olivícola Luján"
 tipo: documentacion
-actualizado: 2026-09-24
+actualizado: 2026-10-01
+version: "1.0.6"
 tags:
   - olivicola-lujan
-  - mvp
+  - flujos
+  - logica-negocio
 ---
 
 # 03 - Flujos y reglas del negocio
 
 [[Olivícola Luján/00 - Índice general|← Volver al índice general]]
 
-## Ciclo principal
+## 1. Flujo de Ingreso y Registro de Tambor (Balanza de Entrada)
 
 ```mermaid
-flowchart LR
-    A[Completar datos] --> B[Validar]
-    B --> C[Asignar ID y códigos]
-    C --> D[Guardar tambor]
-    D --> E[Registrar historial]
-    E --> F[Abrir ficha]
-    F --> G[Imprimir etiqueta]
-    G --> H[Escanear]
-    H --> F
-    F --> I[Registrar movimiento]
-    I --> E
+flowchart TD
+    A[Llegada de Tambor a Balanza] --> B[Selección de 5 atributos oficiales]
+    B --> C[Precarga automática de peso sugerido]
+    C --> D[Carga de Lote y Fecha de Ingreso]
+    D --> E[Cálculo de Siguiente ID: T000001...]
+    E --> F[Construcción de Códigos Descriptivo y Compacto]
+    F --> G[Persistencia en Servidor Host / SQLite]
+    G --> H[Impresión automática de etiqueta Zebra GC420t]
+    H --> I[Pegado de etiqueta física en tambor]
 ```
 
-## Alta
+### Reglas de Negocio:
+1. **Unicidad de Tambor:** Cada tambor recibe un `tambor_id` estrictamente secuencial que nunca se repite ni se reasigna tras una baja.
+2. **Estructura del Código Descriptivo:** Formado por `PRODUCTO-PRESENTACIÓN-VARIEDAD-CALIBRE-CALIDAD` (ej: `ENT-VDE-ALOR-121/140-PRI`).
+3. **Estructura del Código Compacto:** Elimina guiones y barras para optimizar la densidad de barras en la etiqueta térmica (`ENTVDEALOR121140PRI`).
+4. **Código Completo con Identificador:** `ENT-VDE-ALOR-121/140-PRI-T000001`. Permite saber exactamente qué producto contiene y qué tambor individual es.
 
-Seleccionar valores activos de los catálogos y completar lote, ingreso y peso. El sistema calcula `nextTamborId` usando tambores e historial para no reutilizar números de registros eliminados. Construye el código descriptivo y el completo, guarda el tambor, registra «Tambor creado» y abre la ficha.
+---
 
-## Edición
+## 2. Flujo de Toma de Inventario Físico por Sectores (Lector HPRT N130BT)
 
-Se preserva `tambor_id`. Se validan los datos, reconstruyen los códigos y comparan los campos de negocio. Por cada campo distinto se agrega un evento con `campo`, `valor_anterior` y `valor_nuevo`. Las opciones inactivas ya asignadas pueden mantenerse al editar. Cambiar un catálogo puede alterar el código al volver a guardar un tambor; no se actualizan las etiquetas físicas automáticamente.
+Diseñado específicamente para el trabajo ágil en los patios y naves de estiba:
 
-## Movimiento
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operario
+    participant Escaner as Lector HPRT N130BT (Modo Batch)
+    participant App as Software Olivícola Luján (/inventario/toma)
+    participant Host as Servidor Host LAN
 
-Desde la ficha se elige un tipo activo y una ubicación activa, con observaciones opcionales. La implementación también permite cambiar el estado. Se crea `Movimiento`, se registra el evento correspondiente y se actualiza ubicación y/o estado. Cada cambio de esos campos agrega su evento al historial.
+    Operario->>Escaner: Escanea código del sector físico (ej. NAV-A1)
+    loop Tambores del sector
+        Operario->>Escaner: Escanea cada tambor de la fila (T000001, T000002...)
+    end
+    Operario->>App: Conecta lector o escanea código "Upload Data"
+    Escaner-->>App: Volcado masivo de lecturas en ráfaga
+    App->>App: Detecta código del sector inicial
+    App->>App: Agrupa tambores, deduplica IDs y cuenta existencias
+    App->>Operario: Muestra resumen (ej. "14 tambores en Nave A - Fila 1")
+    Operario->>App: Presiona "Confirmar e Impactar Inventario"
+    App->>Host: Actualiza ubicaciones y registra movimiento masivo
+```
 
-## Eliminación
+### Reglas de Inventario:
+1. **Detección de Sectores:** Si el código leído coincide con una ubicación del catálogo (ej. `NAV-A1`, `NAV-A2`, `PAT-B`), el sistema lo toma automáticamente como encabezado de sector.
+2. **Deduplicación:** Si un mismo tambor fue escaneado varias veces por accidente en la misma fila, el sistema lo cuenta una sola vez gracias a su identificador único.
+3. **Detección de Traslados:** Si un tambor registrado previamente en el Patio A es escaneado en la Nave B, el sistema actualiza automáticamente su ubicación y asienta el movimiento en el historial.
 
-Se solicita escribir el número exacto del tambor. Se registra «Tambor eliminado» y se elimina el registro de `Tambor`; `Historial` y `Movimiento` permanecen. No hay restauración desde la interfaz. Los eventos actuales no contienen una fotografía completa de todos los datos al crear o eliminar, por lo que conservar eventos no permite reconstruir automáticamente una ficha íntegra.
+---
 
-## Escaneo
+## 3. Flujo de Control de Calidad y Liberación de Lotes
 
-El lector USB debe enviar texto seguido de Enter. Se quitan espacios exteriores y se busca coincidencia exacta, sin distinguir mayúsculas, contra `tambor_id` o `codigo`. Si existe, se abre la ficha. Si no, se muestra el código desconocido, se limpia el campo y se devuelve el foco.
+1. El inspector de calidad accede al módulo exclusivo `/calidad`.
+2. Selecciona el lote o tambor a inspeccionar.
+3. Registra parámetros fisicoquímicos:
+   - **pH:** Valor decimal (rango normal 3.2 - 4.2).
+   - **Salinidad (%):** Concentración de salmuera.
+   - **Temperatura (°C):** Temperatura del tambor.
+   - **Acidez Libre:** Porcentaje de acidez titulable.
+   - **Defectos / Observaciones:** Color, textura, aromas.
+4. Dictamen:
+   - **Liberado:** El tambor/lote queda disponible para calibrado o despacho comercial.
+   - **En Observación / Retenido:** Se bloquea su movimiento o despacho hasta nuevo análisis.
+   - **Rechazado:** Se envía a reproceso o descarte.
 
-## Inventario y resumen
+---
 
-La búsqueda incluye ID, código, producto, variedad, calibre y lote, ignorando acentos. Los filtros cubren los siete catálogos del tambor. Los totales se calculan sobre los resultados filtrados. El dashboard resume todos los tambores, peso total y ubicaciones distintas ocupadas.
+## 4. Flujo de Movimiento y Reubicación de Tambores
 
-## Historial
+- Todo traslado de tambores entre Naves, Filas o Despacho genera un registro inmutable en la tabla de `Movimientos` y un evento en el `Historial`.
+- Campos del movimiento: `tambor_id`, `ubicacion_anterior`, `ubicacion_nueva`, `estado_anterior`, `estado_nuevo`, `usuario`, `fecha` y `observaciones`.
 
-Orden descendente por `created_date`, filtro por texto del número de tambor y consulta desde la ficha. Los valores de catálogo guardados en eventos son referencias; el nombre visible se obtiene del catálogo actual, no de una copia histórica del nombre.
+---
 
-## Límite de consistencia
+## 5. Flujo de Baja de Tambores
 
-El repositorio guarda el conjunto de entidades de forma local en el navegador. La garantía de unicidad de `tambor_id` opera sobre el estado de la sesión local. Detalle en [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]].
+- La eliminación está restringida a personal autorizado (Calidad o Administrador).
+- Se requiere escribir el código visible completo (`T000001`) para confirmar.
+- La baja elimina el tambor del inventario activo pero **conserva todos sus registros de auditoría y movimientos**, evitando huecos en la trazabilidad histórica de la planta.

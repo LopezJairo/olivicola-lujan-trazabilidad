@@ -2,55 +2,64 @@
 title: "00 - Índice general"
 proyecto: "Olivícola Luján"
 tipo: documentacion
-actualizado: 2026-09-24
+actualizado: 2026-10-01
+version: "1.0.6"
 tags:
   - olivicola-lujan
-  - mvp
+  - trazabilidad
+  - industrial
+  - electron
 ---
 
 # 00 - Índice general
 
-Base de conocimiento del **MVP de trazabilidad de tambores de OLIVÍCOLA LUJÁN**. Su objetivo es facilitar el trabajo en planta a personas con muy poca experiencia tecnológica y ofrecer herramientas de gestión a gerentes y administradores.
+Base de conocimiento oficial del **Sistema de Trazabilidad Industrial de Tambores de OLIVÍCOLA LUJÁN**. Su objetivo primordial es garantizar la trazabilidad integral de planta reduciendo al mínimo la fricción tecnológica para operarios, y proporcionando a Calidad y Gerencia herramientas robustas de auditoría, control de red y gestión de personal.
 
-> [!important] Estado al 24 de septiembre de 2026
-> Hay una implementación local con datos de demostración, pruebas de dominio aprobadas y compilación exitosa. La validación en planta y el piloto con la empresa están pendientes. El prototipo todavía no debe tratarse como el inventario oficial.
+> [!tip] Estado del Sistema al 1 de Octubre de 2026 (Versión 1.0.6 Estable)
+> La aplicación está completamente implementada, probada y empaquetada como software ejecutable nativo de escritorio para **Windows (.exe)** y **macOS (.dmg / .zip)** con Electron 33. Dispone de backend embebido Express + SQLite para red local (LAN Host/Cliente), soporte nativo de hardware industrial (**Zebra GC420t** y **HPRT N130BT**), catálogo oficial del Excel de Gerencia y seguridad operacional por perfiles con ocultamiento estricto de roles administrativos para operarios.
+>
+> 🌐 **Portal Oficial de Descargas:** [https://portal-lopezjairos-projects.vercel.app](https://portal-lopezjairos-projects.vercel.app)  
+> 📦 **Repositorio y Releases:** [https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/tag/v1.0.6](https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/tag/v1.0.6)
 
-## Empezar según tu tarea
+---
 
-- **Entender el proyecto:** [[Olivícola Luján/01 - Visión y alcance del MVP|01 - Visión y alcance del MVP]] y [[Olivícola Luján/02 - Personas y experiencia de uso|02 - Personas y experiencia de uso]].
-- **Trabajar en planta:** [[Olivícola Luján/04 - Manual del operario|04 - Manual del operario]] y [[Olivícola Luján/08 - Identificación y etiquetas|08 - Identificación y etiquetas]].
-- **Administrar:** [[Olivícola Luján/05 - Manual de administración|05 - Manual de administración]] y [[Olivícola Luján/07 - Modelo de datos y catálogos|07 - Modelo de datos y catálogos]].
-- **Desarrollar o instalar:** [[Olivícola Luján/06 - Arquitectura y mapa del código|06 - Arquitectura y mapa del código]] y [[Olivícola Luján/09 - Instalación y puesta en marcha|09 - Instalación y puesta en marcha]].
-- **Preparar el piloto:** [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]], [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]] y [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]].
+## Guía de Navegación por Perfil y Tarea
 
-## Índice completo
+- **Comprensión y Alcance:** [[Olivícola Luján/01 - Visión y alcance del MVP|01 - Visión y alcance del MVP]] y [[Olivícola Luján/02 - Personas y experiencia de uso|02 - Personas y experiencia de uso]].
+- **Operación en Planta:** [[Olivícola Luján/04 - Manual del operario|04 - Manual del operario]] y [[Olivícola Luján/08 - Identificación y etiquetas|08 - Identificación y etiquetas]].
+- **Control de Calidad y Procesos:** [[Olivícola Luján/03 - Flujos y reglas del negocio|03 - Flujos y reglas del negocio]] y [[Olivícola Luján/07 - Modelo de datos y catálogos|07 - Modelo de datos y catálogos]].
+- **Gerencia y Administración:** [[Olivícola Luján/05 - Manual de administración|05 - Manual de administración]] y [[Olivícola Luján/09 - Instalación y puesta en marcha|09 - Instalación y puesta en marcha]].
+- **Desarrollo y Arquitectura:** [[Olivícola Luján/06 - Arquitectura y mapa del código|06 - Arquitectura y mapa del código]] y [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]].
+- **Hoja de Ruta y Decisiones:** [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]], [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]] y [[Olivícola Luján/13 - Decisiones y preguntas abiertas|13 - Decisiones y preguntas abiertas]].
+- **Terminología y Referencias:** [[Olivícola Luján/14 - Glosario y mantenimiento|14 - Glosario y mantenimiento]] y [[Olivícola Luján/99 - Especificación original|99 - Especificación original]].
 
-| Nota | Contenido |
+---
+
+## Estructura Completa de la Bóveda
+
+| Documento | Resumen del Contenido |
 |---|---|
-| [[Olivícola Luján/01 - Visión y alcance del MVP|01 - Visión y alcance del MVP]] | Problema, alcance, límites y criterio de éxito. |
-| [[Olivícola Luján/02 - Personas y experiencia de uso|02 - Personas y experiencia de uso]] | Operarios, gerentes y principios de baja fricción. |
-| [[Olivícola Luján/03 - Flujos y reglas del negocio|03 - Flujos y reglas del negocio]] | Alta, edición, movimientos, eliminación e inventario. |
-| [[Olivícola Luján/04 - Manual del operario|04 - Manual del operario]] | Instrucciones prácticas y resolución de problemas. |
-| [[Olivícola Luján/05 - Manual de administración|05 - Manual de administración]] | Catálogos, revisión del inventario y responsabilidades. |
-| [[Olivícola Luján/06 - Arquitectura y mapa del código|06 - Arquitectura y mapa del código]] | Stack, componentes, rutas y persistencia. |
-| [[Olivícola Luján/07 - Modelo de datos y catálogos|07 - Modelo de datos y catálogos]] | Entidades, campos, relaciones y validaciones. |
-| [[Olivícola Luján/08 - Identificación y etiquetas|08 - Identificación y etiquetas]] | Numeración, CODE 128 e impresión. |
-| [[Olivícola Luján/09 - Instalación y puesta en marcha|09 - Instalación y puesta en marcha]] | Puesta en marcha local y comandos de ejecución. |
-| [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]] | Evidencia de implementación y pruebas. |
-| [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]] | Límites concretos antes de cargar inventario oficial. |
-| [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]] | Lista priorizada de trabajo pendiente. |
-| [[Olivícola Luján/13 - Decisiones y preguntas abiertas|13 - Decisiones y preguntas abiertas]] | Decisiones tomadas y cuestiones sin resolver. |
-| [[Olivícola Luján/14 - Glosario y mantenimiento|14 - Glosario y mantenimiento]] | Vocabulario y cómo mantener estas notas. |
-| [[Olivícola Luján/99 - Especificación original|99 - Especificación original]] | Requerimiento original preservado como referencia. |
+| [[Olivícola Luján/01 - Visión y alcance del MVP|01 - Visión y alcance del MVP]] | Propósito, necesidades industriales, arquitectura de escritorio y límites del sistema. |
+| [[Olivícola Luján/02 - Personas y experiencia de uso|02 - Personas y experiencia de uso]] | Perfiles de Operario, Calidad y Gerente; principios de baja fricción y seguridad. |
+| [[Olivícola Luján/03 - Flujos y reglas del negocio|03 - Flujos y reglas del negocio]] | Registro y pesaje, código compacto CODE 128, inventario por sectores y liberación de lotes. |
+| [[Olivícola Luján/04 - Manual del operario|04 - Manual del operario]] | Guía práctica de pesaje, escáner HPRT N130BT, toma por sectores e impresión térmica. |
+| [[Olivícola Luján/05 - Manual de administración|05 - Manual de administración]] | Gestión de personal, clave maestra, configuración de red Host/Cliente, catálogos y backups. |
+| [[Olivícola Luján/06 - Arquitectura y mapa del código|06 - Arquitectura y mapa del código]] | Stack Electron + React + Express + SQLite, mapa de componentes, rutas y tests. |
+| [[Olivícola Luján/07 - Modelo de datos y catálogos|07 - Modelo de datos y catálogos]] | Catálogos oficiales del Excel (Productos, Variedades, Calibres), pesos sugeridos y entidades. |
+| [[Olivícola Luján/08 - Identificación y etiquetas|08 - Identificación y etiquetas]] | Impresora Zebra GC420t (ZPL II y 100x50 mm), escáner HPRT N130BT y código CODE 128. |
+| [[Olivícola Luján/09 - Instalación y puesta en marcha|09 - Instalación y puesta en marcha]] | Instalación de ejecutables Windows/Mac, configuración LAN, puertos y Firewall. |
+| [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]] | Reporte de 94 pruebas Vitest aprobadas, builds verificados y despliegues en producción. |
+| [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]] | Mitigaciones técnicas implementadas, seguridad de red y plan de contingencia. |
+| [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]] | Registro de funcionalidades completadas y roadmap de despliegue en fábrica. |
+| [[Olivícola Luján/13 - Decisiones y preguntas abiertas|13 - Decisiones y preguntas abiertas]] | Resoluciones acordadas con la dirección (hardware, catálogos, red y roles). |
+| [[Olivícola Luján/14 - Glosario y mantenimiento|14 - Glosario y mantenimiento]] | Glosario de términos industriales/técnicos y pautas de actualización documental. |
+| [[Olivícola Luján/99 - Especificación original|99 - Especificación original]] | Requerimiento histórico original preservado como línea de base. |
 
-## Ubicaciones del proyecto
+---
 
-- Código local: `/Users/jairolopez/Documents/ChatGPT/SoftwareTrazabilidad`.
-- Copia versionable de esta documentación: `docs/obsidian/` dentro del proyecto.
-- Sección en Obsidian: `Olivícola Luján/`.
-- Inicio local previsto: [Abrir MVP local](http://127.0.0.1:5173/), mientras el servidor esté ejecutándose.
-- No hay una URL pública de producción verificada en esta sesión.
+## Ubicaciones y Enlaces Clave
 
-## Convenciones de estado
-
-**Implementado** significa que está presente en el código. **Verificado** exige una prueba ejecutada con resultado registrado. **Pendiente** significa que falta desarrollo, configuración o evidencia. Una función presente en el código no equivale a una función validada en planta.
+- **Código Fuente:** `/Users/jairolopez/Library/CloudStorage/OneDrive-Personal/OlivicolaLujanTrazabilidad`
+- **Bóveda de Obsidian:** `/Users/jairolopez/Desktop/Claude by Jairo/Claude by Jairo/Olivícola Luján` y sincronizado en `docs/obsidian/`.
+- **Portal de Descargas en Vercel:** [https://portal-lopezjairos-projects.vercel.app](https://portal-lopezjairos-projects.vercel.app)
+- **GitHub Release Activa:** [v1.0.6 en GitHub](https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/tag/v1.0.6)

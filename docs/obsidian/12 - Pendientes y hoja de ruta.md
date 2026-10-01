@@ -2,56 +2,58 @@
 title: "12 - Pendientes y hoja de ruta"
 proyecto: "Olivícola Luján"
 tipo: documentacion
-actualizado: 2026-09-24
+actualizado: 2026-10-01
+version: "1.0.6"
 tags:
   - olivicola-lujan
-  - mvp
+  - roadmap
+  - estado
 ---
 
 # 12 - Pendientes y hoja de ruta
 
 [[Olivícola Luján/00 - Índice general|← Volver al índice general]]
 
-## Prioridad 1 — Completar una demo comprobable
+## Registro de Trabajo Completado
 
-- [x] Crear estructura React/Vite y pantallas del alcance.
-- [x] Implementar reglas de dominio y catálogos.
-- [x] Modelar las cuatro entidades del sistema (Tambor, Historial, Movimiento, Catálogo).
-- [x] Ejecutar pruebas de dominio, repositorio e interfaz.
-- [x] Organizar documentación e índice para Obsidian.
-- [ ] Validar visualmente escritorio y móvil cuando esté disponible el navegador.
-- [ ] Ejecutar recorridos de alta, edición, movimiento, eliminación y escaneo.
-- [x] Crear un espacio vacío separado para datos propios (Espacio Empresa), preservando la demo.
-- [x] Implementar exportación y restauración de copias JSON.
-- [ ] Corregir los hallazgos de dependencias y repetir pruebas afectadas.
+### Fase 1: Arquitectura y Lógica Central (Completada)
+- [x] Estructura modular React 18 + Vite 5 + Tailwind CSS.
+- [x] Modelo de dominio con 6 entidades normalizadas (Tambor, Movimiento, Historial, Catálogo, Usuario, Configuración).
+- [x] Generación de códigos: Descriptivo (`ENT-VDE-ALOR-121/140-PRI`), Compacto (`ENTVDEALOR121140PRI`) y CODE 128.
+- [x] Incorporación completa de los catálogos oficiales del Excel de Gerencia General.
+- [x] Pesos sugeridos automáticos por tipo de producto (140, 160 y 180 kg).
 
-## Prioridad 2 — Habilitar un piloto con datos reales
+### Fase 2: Hardware Industrial y Flujo de Planta (Completada)
+- [x] Soporte nativo para impresora industrial **Zebra GC420t** (203 dpi, ZPL II y CSS print 100x50 mm).
+- [x] Integración de escáner inalámbrico **HPRT N130BT** en modo memoria batch y emulación teclado.
+- [x] Flujo de Toma de Inventario Físico por Sectores con deduplicación y recuento masivo (`/inventario/toma`).
+- [x] Módulo exclusivo de Control de Calidad y liberación de lotes (`/calidad`).
 
-- [ ] Configurar entidades y catálogos acordados con la empresa.
-- [ ] Centralizar la secuencia y garantizar unicidad de `tambor_id`.
-- [ ] Resolver consistencia de operaciones y reintentos sin duplicar.
-- [ ] Definir roles y restringir operaciones de administración en backend.
-- [ ] Proteger historial y conservar snapshots suficientes.
-- [ ] Verificar auth, registro y recuperación.
-- [ ] Probar respaldo/restauración y documentar responsables.
-- [ ] Elegir hosting y configurar rutas SPA.
-- [ ] Probar impresora y lector de planta.
-- [ ] Capacitar y observar a operarios de la empresa.
+### Fase 3: Escritorio, Red LAN y Seguridad de Accesos (Completada)
+- [x] Empaquetado de escritorio nativo con Electron 33 para Windows (.exe) y macOS (.dmg).
+- [x] Servidor backend embebido en Express + SQLite para red LAN (puerto 4000).
+- [x] Modos de red: Servidor Host, Terminal Cliente LAN y Modo Autónomo.
+- [x] Jerarquía de accesos y autenticación por Legajo y Contraseña.
+- [x] **Seguridad v1.0.6:** Inhabilitación estricta de cambio de rol para operarios y ocultamiento 100% de secciones administrativas.
+- [x] Batería de 94 pruebas unitarias e integración en Vitest (100% aprobadas).
+- [x] Portal web de descargas desplegado en Vercel con integración a GitHub Releases.
 
-## Prioridad 3 — Ajustar con evidencia
+---
 
-- [ ] Reducir o reorganizar campos según tareas observadas.
-- [x] Dividir pantallas y lógica de `App.jsx` en componentes modulares (`src/pages/`).
-- [ ] Ajustar paginación, filtrado y refresco al volumen real si se adopta un backend central.
-- [ ] Evaluar alias de códigos anteriores.
-- [ ] Agregar pruebas de integración y regresión sobre los errores encontrados.
+## Hoja de Ruta Inmediata (Puesta en Marcha en Planta)
 
-## Regla para ampliar el alcance
+1. **Instalación en la PC de Balanza:**
+   - Instalar `Olivicola.Lujan.Trazabilidad.Setup.1.0.6.exe` y configurar como Servidor Host (puerto 4000).
+2. **Conexión de Terminales Secundarias:**
+   - Instalar en el Laboratorio de Calidad y computadoras de supervisión apuntando a la IP Host.
+3. **Calibración de la Zebra GC420t:**
+   - Ajustar el sensor de gap y hacer una tirada de prueba con el rollo de etiquetas de 100 mm × 50 mm.
+4. **Capacitación Operativa:**
+   - Breve inducción de 15 minutos a los operarios sobre el ingreso con legajo y el uso de los atajos numéricos.
 
-Añadir una función solo si resuelve una necesidad observada durante el piloto o fue solicitada por la empresa. Las ideas de ERP, balanzas, cámara, modo offline o analítica adicional no constituyen compromisos del MVP.
+---
 
-## Cierre del MVP
+## Oportunidades Futuras (Post-Piloto)
 
-Se propone declarar el piloto listo cuando se complete el circuito básico con datos de prueba en el entorno que usará la empresa, las etiquetas se lean físicamente, los permisos funcionen y una copia pueda restaurarse. No hay fecha de entrega, presupuesto ni responsable empresarial confirmados.
-
-Relacionado: [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]], [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]], [[Olivícola Luján/13 - Decisiones y preguntas abiertas|13 - Decisiones y preguntas abiertas]].
+- Conexión directa por puerto serie (RS-232 / USB) con balanzas electrónicas industriales (ej. Kretz, Systel, Toledo) para captura automática del peso sin digitación manual.
+- Exportación automática de reportes de inventario a planillas Excel (`.xlsx`) y sincronización en la nube mediante backup automatizado nocturno.
