@@ -35,8 +35,13 @@ tags:
 - [x] Modos de red: Servidor Host, Terminal Cliente LAN y Modo Autónomo.
 - [x] Jerarquía de accesos y autenticación por Legajo y Contraseña.
 - [x] **Seguridad v1.0.6:** Inhabilitación estricta de cambio de rol para operarios y ocultamiento 100% de secciones administrativas.
-- [x] Batería de 94 pruebas unitarias e integración en Vitest (100% aprobadas).
-- [x] Portal web de descargas desplegado en Vercel con integración a GitHub Releases.
+- [x] Portal web de descargas desplegado en Vercel (`https://portal-topaz-five-74.vercel.app`) con integración a GitHub Releases.
+
+### Fase 4: Reportes Ejecutivos & Documentación Gerencial (Completada)
+- [x] Generador en ReportLab del **Informe Ejecutivo de Producción & Métricas** (PDF de 2 páginas con balance de 210.800 kg de stock, calibres, variedades y calidad).
+- [x] **Manual de Uso y Funcionalidades para Gerencia** (PDF corporativo de 4 páginas) con certificación formal de autoría y propiedad de software de Jairo López.
+- [x] Botón integrado en el encabezado del Dashboard con modal de descarga, visualización e impresión directa de ambos reportes.
+- [x] Batería de 96 pruebas automatizadas en Vitest (100% aprobadas con cobertura UI).
 
 ---
 

@@ -19,7 +19,7 @@ tags:
 
 Los instaladores y binarios portables para Windows y macOS están centralizados en el portal oficial de distribución:
 
-🌐 **Portal de Descargas:** [https://portal-lopezjairos-projects.vercel.app](https://portal-lopezjairos-projects.vercel.app)  
+🌐 **Portal de Descargas:** [https://portal-topaz-five-74.vercel.app](https://portal-topaz-five-74.vercel.app) (espejo: [portal-lopezjairos-projects.vercel.app](https://portal-lopezjairos-projects.vercel.app))  
 📦 **GitHub Release v1.0.6:** [https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/tag/v1.0.6](https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/tag/v1.0.6)
 
 ### Enlaces Directos de Descarga (v1.0.6):

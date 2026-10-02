@@ -35,8 +35,9 @@ El sistema se encuentra en estado **100% implementado, probado y validado**, emp
 | **Toma de Inventario por Sectores** | ✅ Implementado y Verificado | Detección de sectores (`NAV-A1`), deduplicación por `tambor_id` y recuento masivo. |
 | **Módulo de Calidad** | ✅ Implementado y Verificado | Registro de pH, salinidad, acidez, temperatura y liberación/retención de lotes. |
 | **Seguridad de Roles (v1.0.6)** | ✅ Implementado y Verificado | Inhabilitación estricta de cambio de rol para operarios y ocultamiento 100% de secciones de administración en el DOM. |
-| **Suite de Pruebas Unitarias** | ✅ Verificado | **94 pruebas aprobadas (0 fallos)** en 7 archivos de pruebas con Vitest. |
-| **Portal Web de Distribución** | ✅ Verificado | Desplegado y operativo en Vercel (`https://portal-lopezjairos-projects.vercel.app`) y GitHub Releases v1.0.6. |
+| **Reportes y Manuales Gerenciales (PDF)** | ✅ Implementado y Verificado | Generador corporativo en ReportLab con balance de 210.800 kg de stock (2 páginas) y Manual de uso con certificación de autoría de Jairo López (4 páginas), integrados con modal en Dashboard y bóveda. |
+| **Suite de Pruebas Unitarias** | ✅ Verificado | **96 pruebas aprobadas (0 fallos)** en 7 archivos de pruebas con Vitest. |
+| **Portal Web de Distribución** | ✅ Verificado | Desplegado y operativo en Vercel (`https://portal-topaz-five-74.vercel.app`) y GitHub Releases v1.0.6. |
 
 ---
 
@@ -75,16 +76,18 @@ Ejecución de `npm test`:
   - Denegación de gestión de usuarios y cambio de claves a operarios
   - Verificación de renderizado: Jerarquía de Perfiles y Gestión de Personal NO se renderizan en el HTML de operarios
 
-✓ tests/ui.test.jsx (8 pruebas)
+✓ tests/ui.test.jsx (10 pruebas)
   - Renderizado sin errores de todas las páginas del sistema
   - Generación de SVG de CODE 128
   - Etiquetas térmicas de sector y tambores con ID
+  - Botón de Reportes Ejecutivos & Manual Gerencia en Dashboard
+  - Firma de autoría y propiedad intelectual de Jairo López en Layout
 
 ✓ tests/sync.test.js (3 pruebas)
   - Sincronización reactiva entre puestos LAN
   - Detección de latencia y estado de conexión en vivo
 
-Total: 7 archivos pasados | 94 pruebas aprobadas | 0 fallos
+Total: 7 archivos pasados | 96 pruebas aprobadas | 0 fallos
 ```
 
 ---
