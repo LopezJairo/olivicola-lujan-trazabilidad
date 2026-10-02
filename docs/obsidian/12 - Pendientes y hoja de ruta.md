@@ -41,7 +41,7 @@ tags:
 - [x] Generador en ReportLab del **Informe Ejecutivo de Producción & Métricas** (PDF de 2 páginas con balance de 210.800 kg de stock, calibres, variedades y calidad).
 - [x] **Manual de Uso y Funcionalidades para Gerencia** (PDF corporativo de 4 páginas) con certificación formal de autoría y propiedad de software de Jairo López.
 - [x] Botón integrado en el encabezado del Dashboard con modal de descarga, visualización e impresión directa de ambos reportes.
-- [x] Batería de 96 pruebas automatizadas en Vitest (100% aprobadas con cobertura UI).
+- [x] Batería de 101 pruebas automatizadas en Vitest (100% aprobadas con cobertura de reporte en tiempo real y UI).
 
 ---
 

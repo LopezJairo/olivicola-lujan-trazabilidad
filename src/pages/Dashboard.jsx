@@ -20,17 +20,21 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase.js';
+import { useAuth } from '../components/Auth.jsx';
 import { calculateInventoryTotals, resolveCatalogName } from '../lib/domain.js';
 import { formatKg, formatDateTime } from '../lib/utils.js';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card.jsx';
 import { Badge } from '../components/ui/badge.jsx';
 import { Button } from '../components/ui/button.jsx';
+import { ExecutiveReportModal } from '../components/ExecutiveReportModal.jsx';
 
 export function Dashboard() {
   const navigate = useNavigate();
   const db = useDatabase();
+  const { user } = useAuth();
   const { tambores = [], catalogos = [], movimientos = [], historial = [] } = db || {};
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showExecutiveReportModal, setShowExecutiveReportModal] = useState(false);
 
   const totals = calculateInventoryTotals(tambores);
 
@@ -77,6 +81,17 @@ export function Dashboard() {
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Button
             type="button"
+            variant="primary"
+            size="default"
+            onClick={() => setShowExecutiveReportModal(true)}
+            className="text-xs flex items-center gap-1.5 shadow-soft-sm font-semibold"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Generar Informe Ejecutivo (PDF / Imprimir)</span>
+          </Button>
+
+          <Button
+            type="button"
             variant="outline"
             size="default"
             onClick={() => setShowReportModal(true)}
@@ -92,7 +107,7 @@ export function Dashboard() {
             </Button>
           </Link>
           <Link to="/tambores/nuevo">
-            <Button variant="primary" size="default" trailingIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+            <Button variant="outline" size="default" trailingIcon={<ArrowRight className="w-3.5 h-3.5" />}>
               Nuevo tambor
             </Button>
           </Link>
@@ -377,6 +392,14 @@ export function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* ---------------- MODAL INFORME EJECUTIVO EN TIEMPO REAL ---------------- */}
+      <ExecutiveReportModal
+        isOpen={showExecutiveReportModal}
+        onClose={() => setShowExecutiveReportModal(false)}
+        db={db}
+        user={user}
+      />
 
       {/* ---------------- MODAL DOCUMENTACIÓN & REPORTES EJECUTIVOS ---------------- */}
       {showReportModal && (

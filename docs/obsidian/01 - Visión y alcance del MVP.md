@@ -56,7 +56,7 @@ El sistema opera en la red local de la empresa (LAN) conectando múltiples puest
 
 ## Criterios de Éxito Cumplidos
 
-- Cero errores de ejecución en pruebas automatizadas (**94 tests pasando** en Vitest).
+- Cero errores de ejecución en pruebas automatizadas (**101 tests pasando** en Vitest en 8 archivos de pruebas).
 - Compilación limpia de ejecutables para Windows y macOS.
 - Compatibilidad exacta con las planillas y catálogos oficiales provistos por la Gerencia General de Olivícola Luján.
 - Reducción del tiempo de registro por tambor a menos de 5 segundos.

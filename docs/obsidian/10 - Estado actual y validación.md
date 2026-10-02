@@ -35,8 +35,9 @@ El sistema se encuentra en estado **100% implementado, probado y validado**, emp
 | **Toma de Inventario por Sectores** | ✅ Implementado y Verificado | Detección de sectores (`NAV-A1`), deduplicación por `tambor_id` y recuento masivo. |
 | **Módulo de Calidad** | ✅ Implementado y Verificado | Registro de pH, salinidad, acidez, temperatura y liberación/retención de lotes. |
 | **Seguridad de Roles (v1.0.6)** | ✅ Implementado y Verificado | Inhabilitación estricta de cambio de rol para operarios y ocultamiento 100% de secciones de administración en el DOM. |
-| **Reportes y Manuales Gerenciales (PDF)** | ✅ Implementado y Verificado | Generador corporativo en ReportLab con balance de 210.800 kg de stock (2 páginas) y Manual de uso con certificación de autoría de Jairo López (4 páginas), integrados con modal en Dashboard y bóveda. |
-| **Suite de Pruebas Unitarias** | ✅ Verificado | **96 pruebas aprobadas (0 fallos)** en 7 archivos de pruebas con Vitest. |
+| **Informe Ejecutivo Dinámico en Tiempo Real (A4)** | ✅ Implementado y Verificado | Generador de informe ejecutivo en vivo desde los datos de planta, modal interactivo de previsualización e impresión directa en A4 / Guardar como PDF con firmas institucionales (excluyendo firmas personales en documentos ejecutivos). |
+| **Reportes y Manuales Gerenciales (PDF)** | ✅ Implementado y Verificado | Informes corporativos de balance de stock y Manual de uso del software con certificación de autoría de Jairo López (exclusiva del software), integrados en el Dashboard. |
+| **Suite de Pruebas Unitarias** | ✅ Verificado | **101 pruebas aprobadas (0 fallos)** en 8 archivos de pruebas con Vitest. |
 | **Portal Web de Distribución** | ✅ Verificado | Desplegado y operativo en Vercel (`https://portal-topaz-five-74.vercel.app`) y GitHub Releases v1.0.6. |
 
 ---
@@ -76,6 +77,13 @@ Ejecución de `npm test`:
   - Denegación de gestión de usuarios y cambio de claves a operarios
   - Verificación de renderizado: Jerarquía de Perfiles y Gestión de Personal NO se renderizan en el HTML de operarios
 
+✓ tests/report.test.js (5 pruebas)
+  - Consolidación y sumatoria exacta de kilos, tambores y toneladas en tiempo real
+  - Prevención de errores de división por cero y NaN en bases vacías
+  - Desglose exhaustivo por producto, variedad, calibre y ubicación
+  - Validación estricta: firma de Jairo López NO aparece en documentos ejecutivos ni informes
+  - Generación de estilos CSS A4 e impresión institucional
+
 ✓ tests/ui.test.jsx (10 pruebas)
   - Renderizado sin errores de todas las páginas del sistema
   - Generación de SVG de CODE 128
@@ -87,7 +95,7 @@ Ejecución de `npm test`:
   - Sincronización reactiva entre puestos LAN
   - Detección de latencia y estado de conexión en vivo
 
-Total: 7 archivos pasados | 96 pruebas aprobadas | 0 fallos
+Total: 8 archivos pasados | 101 pruebas aprobadas | 0 fallos
 ```
 
 ---

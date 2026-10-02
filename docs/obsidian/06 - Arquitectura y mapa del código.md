@@ -55,7 +55,7 @@ graph TB
 - **Gestor de Estado Asíncrono:** `@tanstack/react-query` con invalidación reactiva.
 - **Códigos de Barra:** `jsbarcode` (renderizado SVG de CODE 128) y generador nativo ZPL II para impresoras industriales Zebra.
 - **Backend Embebido:** Node.js con Express, arquitectura de endpoints REST (`/api/status`, `/api/tambores`, `/api/movimientos`, `/api/sync`) y soporte para base de datos SQLite persistente en disco del sistema.
-- **Pruebas y Calidad:** Vitest con 7 archivos de pruebas y **96 tests unitarios y de integración**.
+- **Pruebas y Calidad:** Vitest con 8 archivos de pruebas y **101 tests unitarios y de integración**.
 - **Portal de Distribución:** Vite SPA desplegado en **Vercel** (`portal/` en `https://portal-topaz-five-74.vercel.app`) para descarga pública de instaladores `.exe` y `.dmg`.
 
 ---
@@ -78,13 +78,15 @@ OlivicolaLujanTrazabilidad/
 │   ├── components/
 │   │   ├── Auth.jsx         # Contexto de autenticación, legajos, permisos y guardas
 │   │   ├── Barcode.jsx      # Etiquetas físicas térmicas, calibración 100x50 mm y ZPL II
+│   │   ├── ExecutiveReportModal.jsx # Vista previa interactiva e impresión A4 del informe ejecutivo en tiempo real
 │   │   ├── Layout.jsx       # Barra lateral responsiva, firma de autoría Jairo López y atajos 1-7
 │   │   └── ui/              # Componentes base (Button, Card, Dialog, Badge, Input)
 │   ├── lib/
 │   │   ├── domain.js        # Reglas de negocio: códigos compactos, validaciones y pesos
-│   │   └── logger.js        # Registrador de eventos para la consola de diagnóstico
+│   │   ├── logger.js        # Registrador de eventos para la consola de diagnóstico
+│   │   └── reportGenerator.js # Generación de métricas en tiempo real y formateo de impresión A4
 │   ├── pages/
-│   │   ├── Dashboard.jsx        # Pantalla principal con estadísticas, accesos y modal de reportes PDF
+│   │   ├── Dashboard.jsx        # Pantalla principal con estadísticas, botón de informe ejecutivo y accesos
 │   │   ├── ScanPage.jsx         # Escaneo rápido continuo de tambores con HPRT N130BT
 │   │   ├── InventoryPage.jsx    # Grilla de tambores, filtros y cálculo de kilos
 │   │   ├── InventoryAuditPage.jsx # Toma física de inventario por sectores (Batch Mode)
@@ -106,12 +108,13 @@ OlivicolaLujanTrazabilidad/
 │   ├── upload-release.cjs   # Automatización de subida a GitHub Releases
 │   ├── generate_management_report.py # Generador PDF del Informe Ejecutivo (2 págs, balance 210.800 kg)
 │   └── generate_management_manual.py # Generador PDF del Manual de Gerencia (4 págs, autoría Jairo López)
-├── tests/                   # Suite de 96 pruebas automatizadas
+├── tests/                   # Suite de 101 pruebas automatizadas
 │   ├── domain.test.js       # Pruebas de reglas de negocio, códigos y pesos
 │   ├── architecture.test.js # Pruebas estructurales de componentes y dependencias
 │   ├── hardware_adaptation.test.js # Pruebas de Zebra GC420t (ZPL II) y HPRT N130BT
 │   ├── repository.test.js   # Pruebas de persistencia y aislamiento
 │   ├── auth_security.test.jsx # Pruebas de seguridad, legajos y ocultamiento de roles
+│   ├── report.test.js       # Pruebas del generador de informe ejecutivo en vivo
 │   ├── ui.test.jsx          # Pruebas de renderizado, botón de reportes y firma de Jairo López
 │   └── sync.test.js         # Pruebas de sincronización LAN Host / Cliente
 └── package.json             # Versión activa v1.0.6 y configuración de Electron Builder

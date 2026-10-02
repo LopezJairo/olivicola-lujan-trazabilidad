@@ -48,7 +48,7 @@ Base de conocimiento oficial del **Sistema de Trazabilidad Industrial de Tambore
 | [[Olivícola Luján/07 - Modelo de datos y catálogos|07 - Modelo de datos y catálogos]] | Catálogos oficiales del Excel (Productos, Variedades, Calibres), pesos sugeridos y entidades. |
 | [[Olivícola Luján/08 - Identificación y etiquetas|08 - Identificación y etiquetas]] | Impresora Zebra GC420t (ZPL II y 100x50 mm), escáner HPRT N130BT y código CODE 128. |
 | [[Olivícola Luján/09 - Instalación y puesta en marcha|09 - Instalación y puesta en marcha]] | Instalación de ejecutables Windows/Mac, configuración LAN, puertos y Firewall. |
-| [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]] | Reporte de 94 pruebas Vitest aprobadas, builds verificados y despliegues en producción. |
+| [[Olivícola Luján/10 - Estado actual y validación|10 - Estado actual y validación]] | Reporte de 101 pruebas Vitest aprobadas, builds verificados y despliegues en producción. |
 | [[Olivícola Luján/11 - Riesgos y condiciones del piloto|11 - Riesgos y condiciones del piloto]] | Mitigaciones técnicas implementadas, seguridad de red y plan de contingencia. |
 | [[Olivícola Luján/12 - Pendientes y hoja de ruta|12 - Pendientes y hoja de ruta]] | Registro de funcionalidades completadas y roadmap de despliegue en fábrica. |
 | [[Olivícola Luján/13 - Decisiones y preguntas abiertas|13 - Decisiones y preguntas abiertas]] | Resoluciones acordadas con la dirección (hardware, catálogos, red y roles). |
