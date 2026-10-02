@@ -18,7 +18,7 @@ Base de conocimiento oficial del **Sistema de Trazabilidad Industrial de Tambore
 > [!tip] Estado del Sistema al 1 de Octubre de 2026 (Versión 1.0.6 Estable)
 > La aplicación está completamente implementada, probada y empaquetada como software ejecutable nativo de escritorio para **Windows (.exe)** y **macOS (.dmg / .zip)** con Electron 33. Dispone de backend embebido Express + SQLite para red local (LAN Host/Cliente), soporte nativo de hardware industrial (**Zebra GC420t** y **HPRT N130BT**), catálogo oficial del Excel de Gerencia y seguridad operacional por perfiles con ocultamiento estricto de roles administrativos para operarios.
 >
-> 🌐 **Portal Oficial de Descargas:** [https://portal-lopezjairos-projects.vercel.app](https://portal-lopezjairos-projects.vercel.app)  
+> 🌐 **Portal Oficial de Descargas:** [https://portal-topaz-five-74.vercel.app](https://portal-topaz-five-74.vercel.app) (espejo: [portal-lopezjairos-projects.vercel.app](https://portal-lopezjairos-projects.vercel.app))  
 > 📦 **Repositorio y Releases:** [https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/tag/v1.0.6](https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/tag/v1.0.6)
 
 ---
@@ -62,5 +62,5 @@ Base de conocimiento oficial del **Sistema de Trazabilidad Industrial de Tambore
 
 - **Código Fuente:** `/Users/jairolopez/Library/CloudStorage/OneDrive-Personal/OlivicolaLujanTrazabilidad`
 - **Bóveda de Obsidian:** `/Users/jairolopez/Desktop/Claude by Jairo/Claude by Jairo/Olivícola Luján` y sincronizado en `docs/obsidian/`.
-- **Portal de Descargas en Vercel:** [https://portal-lopezjairos-projects.vercel.app](https://portal-lopezjairos-projects.vercel.app)
+- **Portal de Descargas en Vercel:** [https://portal-topaz-five-74.vercel.app](https://portal-topaz-five-74.vercel.app)
 - **GitHub Release Activa:** [v1.0.6 en GitHub](https://github.com/LopezJairo/olivicola-lujan-trazabilidad/releases/tag/v1.0.6)
