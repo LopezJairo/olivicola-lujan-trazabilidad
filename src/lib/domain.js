@@ -119,6 +119,41 @@ export function buildFullCode(descriptiveCode, tamborId) {
 }
 
 /**
+ * Limpia y normaliza una cadena de código de barras eliminando todos los separadores
+ * y caracteres espurios generados por mapeos de teclado o formatos físicos
+ * (guiones, barras, apóstrofes, comillas, espacios, etc.).
+ * Retorna la cadena limpia en mayúsculas.
+ *
+ * @param {string} str - Cadena a limpiar
+ * @returns {string} Cadena alfanumérica en mayúsculas
+ */
+export function cleanBarcodeSeparators(str) {
+  if (!str) return '';
+  return String(str)
+    .toUpperCase()
+    .replace(/[-_/\s'’`"´\\|:~#*]/g, '')
+    .trim();
+}
+
+/**
+ * Normaliza una entrada de escaneo tolerando las particularidades de teclados
+ * en español (donde el lector USB envía apóstrofes en lugar de guiones y guiones en lugar de barras).
+ * Ejemplo: "FET'VDE'MF'201-240'SDA'T000005" -> "FET-VDE-MF-201/240-SDA-T000005"
+ *
+ * @param {string} str - Cadena cruda del escáner
+ * @returns {string} Cadena normalizada con guiones y barras estándar
+ */
+export function normalizeScanInput(str) {
+  if (!str) return '';
+  let clean = String(str).trim().replace(/^['"`*]+|['"`*]+$/g, '').trim();
+  // Sustituir apóstrofes y comillas simples/inclinadas por guiones
+  clean = clean.replace(/['’`]/g, '-');
+  // Normalizar rangos de calibres numéricos con guión al formato con barra oficial (ej: 201-240 -> 201/240)
+  clean = clean.replace(/(\d{2,3})-(\d{2,3})/g, (m, p1, p2) => `${p1}/${p2}`);
+  return clean;
+}
+
+/**
  * Construye el código compacto (sin guiones ni barra del calibre)
  * especificado por la gerencia de Olivícola Luján como base para la generación de CODE 128.
  * Ejemplo: "ENT-VDE-ALOR-121/140-PRI" -> "ENTVDEALOR121140PRI"
@@ -135,7 +170,7 @@ export function buildCompactCode(input, catalogs = []) {
     if (catalogs && catalogs.length > 0) {
       descriptiveCode = buildDescriptiveCode(input, catalogs);
     } else if (input.codigo_compacto) {
-      return String(input.codigo_compacto).replace(/[-/\s]/g, '').toUpperCase();
+      return cleanBarcodeSeparators(input.codigo_compacto);
     } else if (input.codigo_descriptivo) {
       descriptiveCode = input.codigo_descriptivo;
     } else {
@@ -143,7 +178,7 @@ export function buildCompactCode(input, catalogs = []) {
     }
   }
   if (!descriptiveCode) return '';
-  return descriptiveCode.replace(/[-/\s]/g, '').toUpperCase();
+  return cleanBarcodeSeparators(descriptiveCode);
 }
 
 /**
@@ -468,13 +503,22 @@ export function searchDrums(drums = [], query = '', filters = {}, catalogs = [])
 
     // Búsqueda por texto
     if (normQuery) {
-      const cleanCompactQuery = normQuery.replace(/[-/\s]/g, '');
-      const idMatch = removeAccents(d.tambor_id).includes(normQuery);
-      const codeMatch = removeAccents(d.codigo).includes(normQuery);
-      const descMatch = removeAccents(d.codigo_descriptivo).includes(normQuery);
+      const cleanCompactQuery = cleanBarcodeSeparators(normQuery);
+      const parsedQuery = extractDrumIdAndCode(normQuery, drums);
+      const targetQueryId = parsedQuery.tamborId ? removeAccents(parsedQuery.tamborId) : '';
+
+      const idMatch =
+        removeAccents(d.tambor_id).includes(normQuery) ||
+        (targetQueryId && removeAccents(d.tambor_id) === targetQueryId);
+      const codeMatch =
+        removeAccents(d.codigo).includes(normQuery) ||
+        (cleanCompactQuery.length >= 3 && cleanBarcodeSeparators(d.codigo).includes(cleanCompactQuery));
+      const descMatch =
+        removeAccents(d.codigo_descriptivo).includes(normQuery) ||
+        (cleanCompactQuery.length >= 3 && cleanBarcodeSeparators(d.codigo_descriptivo).includes(cleanCompactQuery));
       const compactMatch =
         removeAccents(d.codigo_compacto || '').includes(normQuery) ||
-        (cleanCompactQuery.length >= 3 && removeAccents(d.codigo_compacto || '').includes(cleanCompactQuery));
+        (cleanCompactQuery.length >= 3 && cleanBarcodeSeparators(d.codigo_compacto || '').includes(cleanCompactQuery));
       const loteMatch = removeAccents(d.lote).includes(normQuery);
       const prodMatch = (catNamesMap.get(d.producto) || '').includes(normQuery);
       const varMatch = (catNamesMap.get(d.variedad) || '').includes(normQuery);
@@ -543,20 +587,25 @@ export function calculateInventoryTotals(drums = []) {
  * Elimina prefijos comunes como 'SEC-', 'SECTOR-', 'UBI-', 'UBICACION-',
  * guiones, barras, espacios y acentos.
  */
+/**
+ * Normaliza un código de sector o ubicación para comparación tolerante.
+ * Elimina prefijos comunes como 'SEC-', 'SECTOR-', 'UBI-', 'UBICACION-',
+ * guiones, barras, apóstrofes, espacios y acentos.
+ */
 export function normalizeSectorCode(str) {
   if (!str) return '';
   let clean = removeAccents(str).toUpperCase().trim();
-  // Eliminar asteriscos de simbologías o etiquetas físicas (ej: * NAV-A1 *)
-  clean = clean.replace(/^\*+|\*+$/g, '').trim();
-  clean = clean.replace(/^(SEC|SECTOR|UBI|UBICACION)[-_:\s]*/i, '');
-  return clean.replace(/[-_/\s]/g, '').trim();
+  // Eliminar asteriscos, comillas y apóstrofes de simbologías o etiquetas físicas
+  clean = clean.replace(/^['"`*]+|['"`*]+$/g, '').trim();
+  clean = clean.replace(/^(SEC|SECTOR|UBI|UBICACION)[-_:\s'’`]*/i, '');
+  return cleanBarcodeSeparators(clean);
 }
 
 /**
  * Determina si una cadena de texto o código escaneado corresponde a un sector de la planta.
  * Compara contra el catálogo oficial de ubicaciones (por código, id o nombre).
  *
- * @param {string} code - Código escaneado (ej: "NAV-A1", "SEC-NAV-A1", "cat-ubi-1")
+ * @param {string} code - Código escaneado (ej: "NAV-A1", "NAV'A1", "SEC-NAV-A1", "cat-ubi-1")
  * @param {Array} catalogs - Catálogos del sistema
  * @returns {{ isSector: boolean, sector: Object | null, sectorCode: string }}
  */
@@ -565,7 +614,7 @@ export function isSectorCode(code, catalogs = []) {
     return { isSector: false, sector: null, sectorCode: '' };
   }
 
-  const rawTrimmed = code.trim().replace(/^\*+|\*+$/g, '').trim();
+  const rawTrimmed = code.trim().replace(/^['"`*]+|['"`*]+$/g, '').trim();
   const upperTrimmed = rawTrimmed.toUpperCase();
   const normalizedInput = normalizeSectorCode(rawTrimmed);
 
@@ -584,7 +633,7 @@ export function isSectorCode(code, catalogs = []) {
       return { isSector: true, sector: loc, sectorCode: loc.codigo || loc.id };
     }
 
-    // 2. Coincidencia por código de sector (ej: "NAV-A1")
+    // 2. Coincidencia por código de sector (ej: "NAV-A1" o con apóstrofe "NAV'A1")
     if (loc.codigo) {
       const locCodeNorm = normalizeSectorCode(loc.codigo);
       if (
@@ -607,8 +656,8 @@ export function isSectorCode(code, catalogs = []) {
   }
 
   // 4. Si tiene prefijo explícito SEC- o SECTOR- pero no está en catálogo, reconocerlo como sector genérico
-  if (/^(SEC|SECTOR)[-_:\s]+/i.test(rawTrimmed)) {
-    const extractedCode = rawTrimmed.replace(/^(SEC|SECTOR)[-_:\s]*/i, '').trim().toUpperCase();
+  if (/^(SEC|SECTOR)[-_:\s'’`]+/i.test(rawTrimmed)) {
+    const extractedCode = rawTrimmed.replace(/^(SEC|SECTOR)[-_:\s'’`]*/i, '').trim().toUpperCase();
     return {
       isSector: true,
       sector: {
@@ -628,8 +677,9 @@ export function isSectorCode(code, catalogs = []) {
 /**
  * Extrae el tambor_id y el código descriptivo/compacto de una lectura de escáner.
  * Soporta múltiples formatos de escaneo:
- * - Código completo: "ENT-VDE-ALOR-121/140-PRI-T000001"
- * - ID único: "T000001"
+ * - Código con apóstrofes de teclado español: "FET'VDE'MF'201-240'SDA'T000005"
+ * - Código completo estándar: "ENT-VDE-ALOR-121/140-PRI-T000001"
+ * - ID único: "T000001" o "'T000001'"
  * - Compacto con ID: "ENTVDEALOR121140PRI-T000001" o "ENTVDEALOR121140PRIT000001"
  * - Código descriptivo solo: "ENT-VDE-ALOR-121/140-PRI" (no fabrica tambor_id arbitrario)
  *
@@ -642,43 +692,51 @@ export function extractDrumIdAndCode(rawString, drums = []) {
     return { tamborId: null, descriptiveCode: '', compactCode: '', raw: '' };
   }
 
-  const raw = rawString.trim().replace(/^\*+|\*+$/g, '').trim();
+  const raw = rawString.trim().replace(/^['"`*]+|['"`*]+$/g, '').trim();
   const upper = raw.toUpperCase();
 
   let tamborId = null;
   let descriptiveCode = '';
 
-  // 1. Buscar patrón de tambor_id (T seguido de 4 a 8 dígitos, ej: T000001)
-  const idMatch = upper.match(/(?:^|[-_/])(T\d{4,})(?:$|[-_/])/i) || upper.match(/(T\d{4,})/i);
+  // 1. Buscar patrón de tambor_id (T seguido de 4 a 8 dígitos, ej: T000001 o T000005)
+  // Tolera delimitadores guion, barra, apóstrofe, comillas, guion bajo o espacio
+  const idMatch =
+    upper.match(/(?:^|[-_/'’`\s])(T\d{4,})(?:$|[-_/'’`\s])/i) ||
+    upper.match(/(T\d{4,})/i);
   if (idMatch) {
     tamborId = idMatch[1].toUpperCase();
   }
 
-  // 2. Extraer código descriptivo si el string tiene formato <codigo>-<tambor_id>
-  if (tamborId && upper.endsWith(tamborId)) {
-    const prefix = raw.slice(0, raw.length - tamborId.length).replace(/[-_/\s]+$/, '').trim();
+  // 2. Extraer código descriptivo si el string tiene prefijo antes de tambor_id
+  if (tamborId && upper.includes(tamborId)) {
+    const idx = upper.indexOf(tamborId);
+    let prefix = raw.slice(0, idx).replace(/[-_/\s'’`]+$/, '').trim();
     if (prefix) {
-      descriptiveCode = prefix;
+      descriptiveCode = normalizeScanInput(prefix);
     }
   }
 
-  // 3. Si se reconoció tambor_id, buscar tambor exacto en BD para enriquecer su código descriptivo
+  // 3. Si se reconoció tambor_id, buscar tambor exacto en BD para enriquecer su código oficial
   if (tamborId) {
-    const drumById = drums.find((d) => d.tambor_id?.toUpperCase() === tamborId);
+    const drumById = (drums || []).find((d) => d && d.tambor_id?.toUpperCase() === tamborId);
     if (drumById?.codigo_descriptivo) {
-      if (!descriptiveCode || !descriptiveCode.includes('-')) {
-        descriptiveCode = drumById.codigo_descriptivo;
-      }
+      descriptiveCode = drumById.codigo_descriptivo;
     }
   } else {
-    // 4. Si NO hay tambor_id explícito, verificar si el texto coincide con ID único técnico (ej: "tb-001")
-    const drumByExactId = drums.find((d) => d.id && d.id.toUpperCase() === upper);
+    // 4. Si NO hay tambor_id explícito, verificar si coincide con ID único técnico (ej: "tb-001")
+    const drumByExactId = (drums || []).find((d) => d && d.id && d.id.toUpperCase() === upper);
     if (drumByExactId) {
       tamborId = drumByExactId.tambor_id;
       descriptiveCode = drumByExactId.codigo_descriptivo || descriptiveCode;
     } else {
       // O si coincide con el código completo único (ej: ENT-VDE-ALOR-121/140-PRI-T000001)
-      const drumByFullCode = drums.find((d) => d.codigo && d.codigo.toUpperCase() === upper);
+      const cleanUpper = cleanBarcodeSeparators(upper);
+      const drumByFullCode = (drums || []).find((d) => {
+        if (!d) return false;
+        if (d.codigo && d.codigo.toUpperCase() === upper) return true;
+        if (d.codigo && cleanBarcodeSeparators(d.codigo) === cleanUpper) return true;
+        return false;
+      });
       if (drumByFullCode) {
         tamborId = drumByFullCode.tambor_id;
         descriptiveCode = drumByFullCode.codigo_descriptivo || descriptiveCode;
@@ -686,16 +744,23 @@ export function extractDrumIdAndCode(rawString, drums = []) {
     }
   }
 
-  // 5. Si aún no hay código descriptivo pero el string contiene especificación o coincide con compacto
+  // 5. Si aún no hay código descriptivo pero el string contiene especificación
   if (!descriptiveCode) {
-    if (raw.includes('-')) {
-      descriptiveCode = raw;
+    const normRaw = normalizeScanInput(raw);
+    if (normRaw.includes('-')) {
+      descriptiveCode = normRaw;
     } else {
-      const drumByCompact = drums.find((d) => d.codigo_compacto && d.codigo_compacto.toUpperCase() === upper);
+      const cleanUpper = cleanBarcodeSeparators(upper);
+      const drumByCompact = (drums || []).find((d) => {
+        if (!d) return false;
+        if (d.codigo_compacto && d.codigo_compacto.toUpperCase() === upper) return true;
+        if (d.codigo_compacto && cleanBarcodeSeparators(d.codigo_compacto) === cleanUpper) return true;
+        return false;
+      });
       if (drumByCompact?.codigo_descriptivo) {
         descriptiveCode = drumByCompact.codigo_descriptivo;
       } else {
-        descriptiveCode = raw;
+        descriptiveCode = normRaw;
       }
     }
   }
@@ -707,6 +772,181 @@ export function extractDrumIdAndCode(rawString, drums = []) {
     descriptiveCode,
     compactCode,
     raw,
+  };
+}
+
+/**
+ * Resuelve una lectura o consulta de escaneo contra el inventario y catálogos.
+ * Maneja formatos estándar, lecturas con apóstrofes del teclado español (ej: FET'VDE'MF'201-240'SDA'T000005),
+ * códigos compactos, IDs directos, sectores y registros dados de baja.
+ *
+ * @param {string} query - Cadena leída del escáner o tipeada por el usuario
+ * @param {Object} context - { tambores, catalogos, historial }
+ * @returns {Object} { type: 'drum'|'multiple'|'sector'|'deleted'|'unknown', drum, drums, sector, sectorCode, deletedTamborId, parsed }
+ */
+export function matchDrumByScan(query, { tambores = [], catalogos = [], historial = [] } = {}) {
+  if (!query || typeof query !== 'string') {
+    return {
+      type: 'unknown',
+      drum: null,
+      drums: [],
+      sector: null,
+      sectorCode: '',
+      deletedTamborId: null,
+      parsed: { tamborId: null, descriptiveCode: '', compactCode: '', raw: '' },
+    };
+  }
+
+  const rawTrimmed = query.trim().replace(/^['"`*]+|['"`*]+$/g, '').trim();
+  if (!rawTrimmed) {
+    return {
+      type: 'unknown',
+      drum: null,
+      drums: [],
+      sector: null,
+      sectorCode: '',
+      deletedTamborId: null,
+      parsed: { tamborId: null, descriptiveCode: '', compactCode: '', raw: '' },
+    };
+  }
+
+  const upper = rawTrimmed.toUpperCase();
+  const cleanQuery = cleanBarcodeSeparators(rawTrimmed);
+  const parsed = extractDrumIdAndCode(rawTrimmed, tambores);
+  const targetTamborId = parsed.tamborId;
+
+  // 1. Coincidencia exacta única por identificador de tambor o código completo
+  const exactUnique = (tambores || []).find((t) => {
+    if (!t) return false;
+
+    // Coincidencia directa por tambor_id extraído (ej: T000005)
+    if (targetTamborId && t.tambor_id?.toUpperCase() === targetTamborId) {
+      return true;
+    }
+
+    const tIdUpper = t.tambor_id?.toUpperCase();
+    const tCodeUpper = t.codigo?.toUpperCase();
+    const tTechnicalId = t.id?.toUpperCase();
+
+    if (tIdUpper === upper || tCodeUpper === upper || tTechnicalId === upper) {
+      return true;
+    }
+
+    // Comparación por código compacto con ID
+    if (t.codigo_compacto) {
+      const compWithId = `${t.codigo_compacto}${t.tambor_id || ''}`.toUpperCase();
+      const compWithDashId = `${t.codigo_compacto}-${t.tambor_id || ''}`.toUpperCase();
+      if (compWithId === upper || compWithDashId === upper) return true;
+    }
+
+    // Comparación limpia sin delimitadores
+    if (cleanQuery && cleanQuery.length >= 4) {
+      const cleanCode = cleanBarcodeSeparators(t.codigo);
+      if (cleanCode && cleanCode === cleanQuery) return true;
+
+      const cleanFull = cleanBarcodeSeparators(`${t.codigo_compacto || ''}${t.tambor_id || ''}`);
+      if (cleanFull && cleanFull === cleanQuery) return true;
+    }
+
+    return false;
+  });
+
+  if (exactUnique) {
+    return {
+      type: 'drum',
+      drum: exactUnique,
+      drums: [exactUnique],
+      sector: null,
+      sectorCode: '',
+      deletedTamborId: null,
+      parsed,
+    };
+  }
+
+  // 2. Coincidencia por código de producto (descriptivo o compacto, sin tambor_id)
+  const matches = (tambores || []).filter((t) => {
+    if (!t) return false;
+
+    if (t.codigo_compacto?.toUpperCase() === upper || t.codigo_descriptivo?.toUpperCase() === upper) {
+      return true;
+    }
+
+    if (cleanQuery && cleanQuery.length >= 3) {
+      const cleanCompact = cleanBarcodeSeparators(t.codigo_compacto);
+      const cleanDesc = cleanBarcodeSeparators(t.codigo_descriptivo);
+      if (cleanCompact === cleanQuery || cleanDesc === cleanQuery) return true;
+    }
+
+    return false;
+  });
+
+  if (matches.length === 1) {
+    return {
+      type: 'drum',
+      drum: matches[0],
+      drums: matches,
+      sector: null,
+      sectorCode: '',
+      deletedTamborId: null,
+      parsed,
+    };
+  }
+
+  if (matches.length > 1) {
+    return {
+      type: 'multiple',
+      drum: null,
+      drums: matches,
+      sector: null,
+      sectorCode: '',
+      deletedTamborId: null,
+      parsed,
+    };
+  }
+
+  // 3. Verificar si corresponde a un Sector de planta
+  const sectorCheck = isSectorCode(rawTrimmed, catalogos);
+  if (sectorCheck.isSector) {
+    return {
+      type: 'sector',
+      drum: null,
+      drums: [],
+      sector: sectorCheck.sector,
+      sectorCode: sectorCheck.sectorCode,
+      deletedTamborId: null,
+      parsed,
+    };
+  }
+
+  // 4. Verificar si es un tambor dado de baja (en historial de auditoría)
+  const deletedEvent = (historial || []).find((h) => {
+    if (!h) return false;
+    if (targetTamborId && h.tambor_id?.toUpperCase() === targetTamborId) return true;
+    if (h.tambor_id?.toUpperCase() === upper) return true;
+    return false;
+  });
+
+  if (deletedEvent) {
+    const id = targetTamborId || deletedEvent.tambor_id;
+    return {
+      type: 'deleted',
+      drum: null,
+      drums: [],
+      sector: null,
+      sectorCode: '',
+      deletedTamborId: id,
+      parsed,
+    };
+  }
+
+  return {
+    type: 'unknown',
+    drum: null,
+    drums: [],
+    sector: null,
+    sectorCode: '',
+    deletedTamborId: null,
+    parsed,
   };
 }
 
@@ -843,11 +1083,13 @@ export function parseInventoryScanStream(rawInput, { catalogos = [], tambores = 
     }
 
     // Buscar en BD
+    const cleanLine = cleanBarcodeSeparators(line);
     const dbDrum = tambores.find(
       (d) =>
         (parsed.tamborId && d.tambor_id?.toUpperCase() === parsed.tamborId.toUpperCase()) ||
         d.codigo?.toUpperCase() === line.toUpperCase() ||
-        d.id === line
+        d.id === line ||
+        (cleanLine && cleanBarcodeSeparators(d.codigo) === cleanLine)
     );
 
     let weight = 0;

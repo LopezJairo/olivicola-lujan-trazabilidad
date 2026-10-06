@@ -16,6 +16,9 @@ import {
   isSectorCode,
   extractDrumIdAndCode,
   parseInventoryScanStream,
+  cleanBarcodeSeparators,
+  normalizeScanInput,
+  matchDrumByScan,
 } from '../src/lib/domain.js';
 
 const mockCatalogs = [
@@ -659,6 +662,112 @@ describe('Reglas de Dominio - OLIVÍCOLA LUJÁN', () => {
     const res2 = isSectorCode('* NAV-A1 *', catalogs);
     expect(res2.isSector).toBe(true);
     expect(res2.sectorCode).toBe('NAV-A1');
+  });
+
+  // Test 20: Descomposición y normalización de etiquetas con apóstrofes de teclado español
+  it("20. extractDrumIdAndCode, normalizeScanInput y cleanBarcodeSeparators procesan correctamente FET'VDE'MF'201-240'SDA'T000005", () => {
+    const rawBarcode = "FET'VDE'MF'201-240'SDA'T000005";
+
+    // 1. Limpieza de separadores
+    expect(cleanBarcodeSeparators(rawBarcode)).toBe('FETVDEMF201240SDAT000005');
+
+    // 2. Normalización de apóstrofes y calibres con guión
+    expect(normalizeScanInput(rawBarcode)).toBe('FET-VDE-MF-201/240-SDA-T000005');
+
+    // 3. Extracción de ID y códigos
+    const mockDrums = [
+      {
+        id: 'tb-5',
+        tambor_id: 'T000005',
+        codigo_descriptivo: 'FET-VDE-MF-201/240-SDA',
+        codigo_compacto: 'FETVDEMF201240SDA',
+        codigo: 'FET-VDE-MF-201/240-SDA-T000005',
+      },
+    ];
+
+    const parsed = extractDrumIdAndCode(rawBarcode, mockDrums);
+    expect(parsed.tamborId).toBe('T000005');
+    expect(parsed.descriptiveCode).toBe('FET-VDE-MF-201/240-SDA');
+    expect(parsed.compactCode).toBe('FETVDEMF201240SDA');
+    expect(parsed.raw).toBe(rawBarcode);
+  });
+
+  // Test 21: Resolución inteligente de lecturas de escaneo con matchDrumByScan
+  it("21. matchDrumByScan resuelve tambor exacto con apóstrofes FET'VDE'MF'201-240'SDA'T000005, 'T000005', sectores y eliminados", () => {
+    const mockDrums = [
+      {
+        id: 'tb-5',
+        tambor_id: 'T000005',
+        codigo_descriptivo: 'FET-VDE-MF-201/240-SDA',
+        codigo_compacto: 'FETVDEMF201240SDA',
+        codigo: 'FET-VDE-MF-201/240-SDA-T000005',
+        ubicacion: 'cat-ubi-1',
+      },
+      {
+        id: 'tb-6',
+        tambor_id: 'T000006',
+        codigo_descriptivo: 'FET-VDE-MF-201/240-SDA',
+        codigo_compacto: 'FETVDEMF201240SDA',
+        codigo: 'FET-VDE-MF-201/240-SDA-T000006',
+        ubicacion: 'cat-ubi-2',
+      },
+    ];
+
+    const catalogs = [
+      { id: 'cat-ubi-1', codigo: 'NAV-A1', nombre: 'Nave A - Fila 1', tipo: 'ubicacion' },
+    ];
+
+    const history = [
+      { tambor_id: 'T000099', tipo: 'Eliminación', descripcion: 'Tambor descartado' },
+    ];
+
+    // 1. Coincidencia exacta con código de etiqueta de planta con apóstrofes
+    const res1 = matchDrumByScan("FET'VDE'MF'201-240'SDA'T000005", { tambores: mockDrums, catalogos: catalogs, historial: history });
+    expect(res1.type).toBe('drum');
+    expect(res1.drum?.tambor_id).toBe('T000005');
+
+    // 2. Coincidencia con ID envuelto en comillas simples
+    const res2 = matchDrumByScan("'T000005'", { tambores: mockDrums });
+    expect(res2.type).toBe('drum');
+    expect(res2.drum?.tambor_id).toBe('T000005');
+
+    // 3. Coincidencia con solo código de producto (múltiples tambores)
+    const res3 = matchDrumByScan("FET'VDE'MF'201-240'SDA", { tambores: mockDrums });
+    expect(res3.type).toBe('multiple');
+    expect(res3.drums.length).toBe(2);
+
+    // 4. Reconocimiento de sector con apóstrofe (NAV'A1)
+    const res4 = matchDrumByScan("NAV'A1", { tambores: mockDrums, catalogos: catalogs });
+    expect(res4.type).toBe('sector');
+    expect(res4.sectorCode).toBe('NAV-A1');
+
+    // 5. Reconocimiento de tambor dado de baja
+    const res5 = matchDrumByScan("T000099", { tambores: mockDrums, catalogos: catalogs, historial: history });
+    expect(res5.type).toBe('deleted');
+    expect(res5.deletedTamborId).toBe('T000099');
+  });
+
+  // Test 22: Búsqueda en Inventario y detección de sectores tolerantes a apóstrofes
+  it("22. searchDrums e isSectorCode toleran apóstrofes y devuelven coincidencias exactas", () => {
+    const mockDrums = [
+      {
+        id: 'tb-5',
+        tambor_id: 'T000005',
+        codigo_descriptivo: 'FET-VDE-MF-201/240-SDA',
+        codigo_compacto: 'FETVDEMF201240SDA',
+        codigo: 'FET-VDE-MF-201/240-SDA-T000005',
+      },
+    ];
+
+    // Búsqueda en lista de tambores con la etiqueta escaneada
+    const searchResult = searchDrums(mockDrums, "FET'VDE'MF'201-240'SDA'T000005");
+    expect(searchResult.length).toBe(1);
+    expect(searchResult[0].tambor_id).toBe('T000005');
+
+    // Detección de sector con apóstrofe
+    const secRes = isSectorCode("NAV'A1", [{ id: 'u1', codigo: 'NAV-A1', tipo: 'ubicacion' }]);
+    expect(secRes.isSector).toBe(true);
+    expect(secRes.sectorCode).toBe('NAV-A1');
   });
 });
 

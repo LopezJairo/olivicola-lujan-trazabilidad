@@ -37,8 +37,8 @@ El sistema se encuentra en estado **100% implementado, probado y validado**, emp
 | **Seguridad de Roles (v1.0.6)** | ✅ Implementado y Verificado | Inhabilitación estricta de cambio de rol para operarios y ocultamiento 100% de secciones de administración en el DOM. |
 | **Informe Ejecutivo Dinámico en Tiempo Real (A4)** | ✅ Implementado y Verificado | Generador de informe ejecutivo en vivo desde los datos de planta, modal interactivo de previsualización e impresión directa en A4 / Guardar como PDF con firmas institucionales (excluyendo firmas personales en documentos ejecutivos). |
 | **Reportes y Manuales Gerenciales (PDF)** | ✅ Implementado y Verificado | Informes corporativos de balance de stock y Manual de uso del software con certificación de autoría de Jairo López (exclusiva del software), integrados en el Dashboard. |
-| **Suite de Pruebas Unitarias** | ✅ Verificado | **101 pruebas aprobadas (0 fallos)** en 8 archivos de pruebas con Vitest. |
-| **Portal Web de Distribución** | ✅ Verificado | Desplegado y operativo en Vercel (`https://portal-topaz-five-74.vercel.app`) y GitHub Releases v1.0.6. |
+| **Suite de Pruebas Unitarias** | ✅ Verificado | **105 pruebas aprobadas (0 fallos)** en 8 archivos de pruebas con Vitest. |
+| **Portal Web de Distribución** | ✅ Verificado | Desplegado y operativo en Vercel (`https://portal-topaz-five-74.vercel.app`) y GitHub Releases v1.0.7. |
 
 ---
 
@@ -47,23 +47,25 @@ El sistema se encuentra en estado **100% implementado, probado y validado**, emp
 Ejecución de `npm test`:
 
 ```text
-✓ tests/domain.test.js (21 pruebas)
+✓ tests/domain.test.js (24 pruebas)
   - Cálculo de Tambor ID y prevención de reutilización de borrados
   - Construcción de código descriptivo, compacto y completo
   - Normalización de pesaje y asignación de pesos sugeridos oficiales
   - Validación de campos requeridos, calidades y calibres oficiales
   - Búsqueda insensible a mayúsculas y acentos
+  - Tolerancia y resolución de escaneo con apóstrofes de teclado español (FET'VDE'MF'201-240'SDA'T000005)
 
 ✓ tests/architecture.test.js (21 pruebas)
   - Estructura de componentes y exportaciones
   - Arquitectura de red y configuración de modos Host / Cliente / Offline
   - Compatibilidad de endpoints y manejo de errores
 
-✓ tests/hardware_adaptation.test.js (20 pruebas)
+✓ tests/hardware_adaptation.test.js (21 pruebas)
   - Calibración física de etiqueta 100 mm × 50 mm apaisada
   - Generación sintácticamente válida de comandos nativos ZPL II (^XA...^XZ)
   - Procesamiento de ráfagas rápidas de escaneo para HPRT N130BT
   - Deduplicación de tambores en toma de inventario por sector
+  - Procesamiento de lecturas con teclado español (guiones emitidos como apóstrofes)
 
 ✓ tests/repository.test.js (13 pruebas)
   - Ciclo de vida CRUD completo de tambores y movimientos
@@ -95,7 +97,7 @@ Ejecución de `npm test`:
   - Sincronización reactiva entre puestos LAN
   - Detección de latencia y estado de conexión en vivo
 
-Total: 8 archivos pasados | 101 pruebas aprobadas | 0 fallos
+Total: 8 archivos pasados | 105 pruebas aprobadas | 0 fallos
 ```
 
 ---

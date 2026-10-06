@@ -17,7 +17,7 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { loadDatabase } from '../api/repository.js';
-import { resolveCatalogName, isSectorCode } from '../lib/domain.js';
+import { resolveCatalogName, isSectorCode, matchDrumByScan } from '../lib/domain.js';
 import { parseScannerStream, HPRT_N130BT_COMMANDS } from '../lib/scannerBurst.js';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card.jsx';
 import { Input } from '../components/ui/input.jsx';
@@ -140,34 +140,16 @@ export function ScanPage() {
     const unknownTokens = [];
 
     tokens.forEach((token) => {
-      const norm = token.toUpperCase();
-      const cleanNorm = norm.replace(/[-/\s]/g, '');
-
-      const drum = tambores.find(
-        (t) =>
-          t.tambor_id?.toUpperCase() === norm ||
-          t.codigo?.toUpperCase() === norm ||
-          t.id?.toUpperCase() === norm ||
-          (t.codigo_compacto && `${t.codigo_compacto}${t.tambor_id}`.toUpperCase() === norm) ||
-          (t.codigo_compacto && `${t.codigo_compacto}-${t.tambor_id}`.toUpperCase() === norm) ||
-          t.codigo_compacto?.toUpperCase() === norm ||
-          t.codigo_descriptivo?.toUpperCase() === norm ||
-          (t.codigo_compacto && t.codigo_compacto.replace(/[-/\s]/g, '').toUpperCase() === cleanNorm) ||
-          (t.codigo_descriptivo && t.codigo_descriptivo.replace(/[-/\s]/g, '').toUpperCase() === cleanNorm)
-      );
-
-      if (drum) {
-        foundDrums.push(drum);
-        return;
+      const match = matchDrumByScan(token, { tambores, catalogos, historial });
+      if (match.type === 'drum') {
+        foundDrums.push(match.drum);
+      } else if (match.type === 'multiple') {
+        foundDrums.push(...match.drums);
+      } else if (match.type === 'sector') {
+        foundSectors.push(match.sector);
+      } else {
+        unknownTokens.push(token);
       }
-
-      const sectorCheck = isSectorCode(token, catalogos);
-      if (sectorCheck.isSector) {
-        foundSectors.push(sectorCheck.sector);
-        return;
-      }
-
-      unknownTokens.push(token);
     });
 
     if (foundDrums.length > 0) {
@@ -191,8 +173,8 @@ export function ScanPage() {
   };
 
   const executeSingleQuery = (query) => {
+    if (!query) return;
     const norm = query.toUpperCase();
-    const cleanNorm = norm.replace(/[-/\s]/g, '');
 
     // Verificar si es un código de configuración del escáner HPRT N130BT
     const hprtCmd = HPRT_N130BT_COMMANDS.find(
@@ -209,105 +191,65 @@ export function ScanPage() {
     setHprtCommandDetected(null);
     setBurstResult(null);
 
-    // 1. Coincidencia exacta única por identificador de tambor
-    const exactUnique = tambores.find(
-      (t) =>
-        t.tambor_id?.toUpperCase() === norm ||
-        t.codigo?.toUpperCase() === norm ||
-        t.id?.toUpperCase() === norm ||
-        (t.codigo_compacto && `${t.codigo_compacto}${t.tambor_id}`.toUpperCase() === norm) ||
-        (t.codigo_compacto && `${t.codigo_compacto}-${t.tambor_id}`.toUpperCase() === norm)
-    );
+    const match = matchDrumByScan(query, { tambores, catalogos, historial });
 
-    if (exactUnique) {
+    if (match.type === 'drum') {
+      const drum = match.drum;
       if (soundEnabled) playChime(true);
       setErrorMessage('');
       setDeletedTamborId(null);
       setDetectedSector(null);
       setMultipleMatches([]);
-      setLastScanned(exactUnique);
+      setLastScanned(drum);
       setScanHistory((prev) => [
-        { drum: exactUnique, timestamp: new Date(), query },
+        { drum, timestamp: new Date(), query },
         ...prev.slice(0, 9),
       ]);
       setScanInput('');
       if (autoRedirect) {
         redirectTimerRef.current = setTimeout(() => {
-          navigate(`/tambores/${exactUnique.tambor_id}`);
+          navigate(`/tambores/${drum.tambor_id}`);
         }, 150);
       }
       return;
     }
 
-    // 2. Coincidencia por código de producto (compacto o descriptivo)
-    const matches = tambores.filter(
-      (t) =>
-        t.codigo_compacto?.toUpperCase() === norm ||
-        t.codigo_descriptivo?.toUpperCase() === norm ||
-        (t.codigo_compacto && t.codigo_compacto.replace(/[-/\s]/g, '').toUpperCase() === cleanNorm) ||
-        (t.codigo_descriptivo && t.codigo_descriptivo.replace(/[-/\s]/g, '').toUpperCase() === cleanNorm)
-    );
-
-    if (matches.length === 1) {
-      const match = matches[0];
-      if (soundEnabled) playChime(true);
-      setErrorMessage('');
-      setDeletedTamborId(null);
-      setDetectedSector(null);
-      setMultipleMatches([]);
-      setLastScanned(match);
-      setScanHistory((prev) => [
-        { drum: match, timestamp: new Date(), query },
-        ...prev.slice(0, 9),
-      ]);
-      setScanInput('');
-      if (autoRedirect) {
-        redirectTimerRef.current = setTimeout(() => {
-          navigate(`/tambores/${match.tambor_id}`);
-        }, 150);
-      }
-    } else if (matches.length > 1) {
+    if (match.type === 'multiple') {
       if (soundEnabled) playChime(true);
       setErrorMessage('');
       setDeletedTamborId(null);
       setDetectedSector(null);
       setLastScanned(null);
-      setMultipleMatches(matches);
+      setMultipleMatches(match.drums);
       setScanHistory((prev) => [
-        { drum: matches[0], timestamp: new Date(), query, count: matches.length },
+        { drum: match.drums[0], timestamp: new Date(), query, count: match.drums.length },
         ...prev.slice(0, 9),
       ]);
       setScanInput('');
-    } else {
-      if (soundEnabled) playChime(false);
-      setMultipleMatches([]);
-      setLastScanned(null);
-
-      // Verificar si es un código de sector de planta
-      const sectorDetection = isSectorCode(query, catalogos);
-      if (sectorDetection.isSector) {
-        setErrorMessage(
-          `El código "${query}" corresponde al Sector de Planta "${sectorDetection.sector?.nombre || sectorDetection.sectorCode}". Para realizar el inventario físico de este sector, utiliza la Toma de Inventario por Sectores.`
-        );
-        setDetectedSector(sectorDetection.sector);
-        setDeletedTamborId(null);
-      } else {
-        setDetectedSector(null);
-        // Verificar si corresponde a un tambor dado de baja en el historial
-        const deletedEvent = (historial || []).find(
-          (h) => h.tambor_id?.toUpperCase() === norm
-        );
-
-        if (deletedEvent) {
-          setErrorMessage(`El tambor "${query}" existe en el registro pero fue dado de baja del inventario activo.`);
-          setDeletedTamborId(deletedEvent.tambor_id);
-        } else {
-          setErrorMessage(`Código desconocido: "${query}". Verifica la etiqueta o el número.`);
-          setDeletedTamborId(null);
-        }
-      }
-      setScanInput('');
+      return;
     }
+
+    if (soundEnabled) playChime(false);
+    setMultipleMatches([]);
+    setLastScanned(null);
+
+    if (match.type === 'sector') {
+      setErrorMessage(
+        `El código "${query}" corresponde al Sector de Planta "${match.sector?.nombre || match.sectorCode}". Para realizar el inventario físico de este sector, utiliza la Toma de Inventario por Sectores.`
+      );
+      setDetectedSector(match.sector);
+      setDeletedTamborId(null);
+    } else if (match.type === 'deleted') {
+      setDetectedSector(null);
+      setErrorMessage(`El tambor "${match.deletedTamborId}" existe en el registro pero fue dado de baja del inventario activo.`);
+      setDeletedTamborId(match.deletedTamborId);
+    } else {
+      setDetectedSector(null);
+      setDeletedTamborId(null);
+      setErrorMessage(`Código desconocido: "${query}". Verifica la etiqueta o el número.`);
+    }
+
+    setScanInput('');
   };
 
   const processQuery = (rawQuery) => {
@@ -483,7 +425,7 @@ export function ScanPage() {
                 type="text"
                 autoFocus
                 autoComplete="off"
-                placeholder="Escanea o tipea el número (ej: T000001)..."
+                placeholder="Escanea etiqueta (ej: FET'VDE'MF'201-240'SDA'T000005 o T000001)..."
                 value={scanInput}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}

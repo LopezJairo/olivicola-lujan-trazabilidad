@@ -14,6 +14,7 @@ import {
   FastScannerBuffer,
   isHprtCommand,
 } from '../src/lib/scannerBurst.js';
+import { matchDrumByScan } from '../src/lib/domain.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -295,6 +296,29 @@ describe('Adaptación de Hardware: Impresora Zebra GC420t (203 dpi) y Escáner H
       expect(burstResult).toEqual(['T000001', 'T000002', 'T000003']);
 
       vi.useRealTimers();
+    });
+
+    it("2.9 parseScannerStream y matchDrumByScan procesan lecturas con teclado español (guiones emitidos como apóstrofes: FET'VDE'MF'201-240'SDA'T000005)", () => {
+      const rawScan = "FET'VDE'MF'201-240'SDA'T000005";
+      const streamResult = parseScannerStream(rawScan);
+      expect(streamResult.tokens).toEqual(["FET'VDE'MF'201-240'SDA'T000005"]);
+
+      const mockDrums = [
+        {
+          id: 'tb-5',
+          tambor_id: 'T000005',
+          codigo_descriptivo: 'FET-VDE-MF-201/240-SDA',
+          codigo_compacto: 'FETVDEMF201240SDA',
+          codigo: 'FET-VDE-MF-201/240-SDA-T000005',
+        },
+      ];
+
+      const match = matchDrumByScan(streamResult.tokens[0], { tambores: mockDrums });
+      expect(match.type).toBe('drum');
+      expect(match.drum.tambor_id).toBe('T000005');
+      expect(match.parsed.tamborId).toBe('T000005');
+      expect(match.parsed.descriptiveCode).toBe('FET-VDE-MF-201/240-SDA');
+      expect(match.parsed.compactCode).toBe('FETVDEMF201240SDA');
     });
   });
 
